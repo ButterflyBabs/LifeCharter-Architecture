@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
-import { KNOWLEDGE_BASE, KB_CATEGORIES, type KbEntry } from "@/lib/knowledgeBase";
+import { CLIENT_KB, KB_CATEGORIES, type KbEntry } from "@/lib/knowledgeBase";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,7 @@ export async function GET() {
     }));
   }
 
-  const all = [...KNOWLEDGE_BASE, ...custom];
+  const all = [...CLIENT_KB, ...custom];
   const categories = [...KB_CATEGORIES];
   for (const e of custom) if (!categories.includes(e.category)) categories.push(e.category);
 

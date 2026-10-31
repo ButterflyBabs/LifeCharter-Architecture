@@ -11,6 +11,8 @@ const BADGE: Record<GlossaryCategory, string> = {
   Sales: "bg-[#7b6b8d]/15 text-[#5b4a70] dark:text-[#cdbfe0]",
   Marketing: "bg-[#c0632f]/12 text-[#9a4a1f] dark:text-[#f0b08a]",
 };
+// Words for LifeCharter's own programs and tools, not part of a client's Suite.
+const NOT_FOR_CLIENTS = ["incubator", "lc-fledge"];
 const sortKey = (t: { term: string; sortAs?: string }) => (t.sortAs || t.term).toLowerCase().replace(/^the\s+/, "");
 
 export default function Glossary() {
@@ -29,7 +31,7 @@ export default function Glossary() {
 
   const needle = q.trim().toLowerCase();
   const letters = useMemo(() => {
-    const list = GLOSSARY.filter((g) => (cat === "All" || g.category === cat) && (!needle || `${g.term} ${g.short} ${g.long}`.toLowerCase().includes(needle))).sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+    const list = GLOSSARY.filter((g) => !NOT_FOR_CLIENTS.includes(g.id) && (cat === "All" || g.category === cat) && (!needle || `${g.term} ${g.short} ${g.long}`.toLowerCase().includes(needle))).sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
     const map = new Map<string, typeof list>();
     for (const g of list) {
       const L = sortKey(g)[0]?.toUpperCase() || "#";

@@ -228,10 +228,10 @@ export default function LinksDirectory() {
       {data && (
         <Section
           title="Forms"
-          hint="Every form stored in your CRM (Campaigns & Broadcasts > Forms)."
+          hint="Every form stored in your CRM (Contacts > Forms)."
           rows={forms}
           q={ql}
-          empty={{ text: "No form yet.", href: "/sequences-manager", label: "Create one in Campaigns & Broadcasts" }}
+          empty={{ text: "No form yet.", href: "/contacts?tab=forms", label: "Create one in Contacts" }}
         />
       )}
       {house && <Section title="Other forms and sign-ups" hint="Forms that live on their own pages." rows={OTHER_FORMS} q={ql} />}

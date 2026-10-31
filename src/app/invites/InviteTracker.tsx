@@ -236,7 +236,7 @@ export default function InviteTracker() {
                 })}
               </div>
               <div className="flex gap-2 max-w-md">
-                <Input value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="New tag, e.g. sneak-peek-invite" aria-label="New invite tag" />
+                <Input value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="New tag, e.g. open-house-invite" aria-label="New invite tag" />
                 <Button
                   variant="outline"
                   disabled={!newTag.trim()}

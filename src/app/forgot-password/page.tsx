@@ -69,7 +69,7 @@ export default function ForgotPasswordPage() {
             defaultValue={prefill}
             key={prefill}
             required
-            placeholder="you@lifecharter.com"
+            placeholder="you@yourbusiness.com"
             className={authInputClass}
           />
         </div>

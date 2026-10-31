@@ -217,7 +217,7 @@ export function LoginView() {
                   type="email"
                   autoComplete="email"
                   required
-                  placeholder="you@lifecharter.com"
+                  placeholder="you@yourbusiness.com"
                   className={inputClass}
                 />
               </div>

@@ -188,7 +188,7 @@ function CreateLink({ domain, onClose, onSaved }: { domain: DomainView | null; o
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-[#5a6472]">What it&apos;s for (optional, just for you)</label>
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Sneak Peek invite on Instagram" />
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Open house invite on Instagram" />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-[#5a6472]">Custom code (optional)</label>

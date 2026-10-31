@@ -468,7 +468,7 @@ function Editor({ id, offers, allTags, templates, tz, sender, setMsg: setPageMsg
           <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">The email</p>
           <fieldset disabled={!editable} className="space-y-3">
             <Input placeholder="Name (only you see this)" value={f.name} onChange={(e) => set({ name: e.target.value })} />
-            <Input placeholder="Offer: the section it sits under (for example LCMC)" list="broadcast-offers" value={f.offer ?? ""} onChange={(e) => set({ offer: e.target.value })} />
+            <Input placeholder="Offer: the section it sits under (for example your program name)" list="broadcast-offers" value={f.offer ?? ""} onChange={(e) => set({ offer: e.target.value })} />
             <datalist id="broadcast-offers">{offers.map((o) => <option key={o} value={o} />)}</datalist>
             {slots.map((k) => {
               const meta = tpl?.slots.find((s) => s.key === k);

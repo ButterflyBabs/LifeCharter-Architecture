@@ -3,1911 +3,3328 @@ import type { GuideEntry } from "./types";
 // The batch waiting for Babs on a review page, written there by /api/user-guide/seed-review. Removed at release.
 export const GUIDE_DRAFTS: GuideEntry[] = [
  {
-  "id": "profile",
-  "name": "Profile",
-  "area": "Settings",
-  "where": "Settings > Profile",
-  "href": "/settings?tab=profile",
-  "what": "Your own details in the Suite: your photo, name, phone, time zone and a short bio. Your sign-in email shows here too.",
+  "id": "set-up-suite",
+  "name": "Set up Suite",
+  "area": "Getting Started",
+  "where": "Getting Started > Set up Suite",
+  "href": "/setup",
+  "what": "Your setup checklist. Five steps get your Command Suite ready: connect your AI, take your Brain, Soul and Profit assessments, then connect at least one tool. A check mark shows beside each step when it is done.",
   "ai": "No AI",
-  "aiNote": "",
+  "aiNote": "This page does not run AI itself. Connect your AI is where you add your own key, and your assistant uses that key afterward. The company you choose charges your own account for what you use.",
   "steps": [
-   "Open Settings from the left menu. Profile opens first.",
-   "Press Upload Photo and choose a picture. To replace it, press Change Photo.",
-   "Fill in your Full Name, Phone and Bio.",
-   "Choose your Timezone. This one saves as soon as you pick it.",
-   "Press Save Changes to save your name, phone and bio."
+   "Open Set up Suite from the left menu. While you are new, Getting Started sits at the top of the menu.",
+   "Press Start beside Connect your AI, then add your Claude or OpenAI key in Settings.",
+   "Press Start beside Brain Assessment, then do the same for Soul and Profit. Finish each one with the Complete button on its last question.",
+   "Press Connect your tools and connect your calendar and email. One connection completes this step.",
+   "When all five steps show a check mark, press Enter your Command Suite."
   ],
-  "health": "This does not change your scores. It keeps your name, photo and time zone right across the Suite.",
+  "health": "This page does not change your scores. The assessments it opens do: your Brain, Soul and Profit answers feed your 12 dimensions and 8 pillars. Your AI key, your tools and your website address do not change a score.",
   "tips": [
-   "Your photo can be up to 5MB. A square picture of 400 by 400 pixels works best.",
-   "Your time zone sets your greeting, your clock and when tasks are due.",
-   "Your profile photo is separate from your business logo, which lives under Settings > Workspace."
+   "Keep your Starter Guide open beside you. Open your Starter Guide at the top of this page takes you there.",
+   "To move faster, open the ChatGPT or Claude you have already trained on your business on one half of your screen and the assessment on the other. Let it help you draft, then paste in what you agree with.",
+   "Each step changes to Review once it is done, so you can go back to it."
   ],
   "questions": [
    {
-    "q": "How do I change the email I sign in with?",
-    "a": "You cannot change it here. Write to support@lccommandsuite.com and we will help."
+    "q": "Can I use my ChatGPT or Claude login?",
+    "a": "No. This step needs an API key from Claude (Anthropic) or OpenAI. A key is not a new account, and a ChatGPT or Claude.ai login will not work here."
    },
    {
-    "q": "Where did my task reminder settings go?",
-    "a": "They are under Settings > Notifications."
+    "q": "Can I stop and come back?",
+    "a": "Yes. The assessments save as you go. Press I'll finish later at the bottom of the page if you want to leave the checklist for now."
    },
    {
-    "q": "What happens to my old photo when I add a new one?",
-    "a": "The new picture replaces it and the old file is removed. Press the small X on your photo to remove it altogether."
+    "q": "Why is Finish setup to continue greyed out?",
+    "a": "One of the five steps is still open. The button changes to Enter your Command Suite when your AI, your three assessments and at least one tool are done."
    }
   ],
   "related": [
-   "notifications",
-   "appearance-and-text-size",
-   "security",
-   "workspace-and-team"
+   "the-assessment-lock",
+   "first-30-days",
+   "starter-guide",
+   "ai-assistant-setup-and-your-key",
+   "integrations",
+   "website-review"
   ],
-  "who": "Everyone. Each person has their own profile.",
+  "who": "Everyone can open it. Connecting your AI and your tools is for the account owner. A team member set to Show only the areas above does not see it.",
   "keywords": [
-   "my profile",
-   "photo",
-   "picture",
-   "headshot",
-   "avatar",
-   "name",
-   "phone",
-   "bio",
-   "time zone",
-   "timezone",
-   "change email",
-   "wrong time"
+   "set up",
+   "setup",
+   "onboarding",
+   "get started",
+   "first steps",
+   "checklist",
+   "connect ai",
+   "ai key",
+   "api key",
+   "connect tools",
+   "connect calendar",
+   "assessments",
+   "website address",
+   "enter your command suite",
+   "finish later"
   ],
   "sections": [
    {
-    "id": "profile-picture",
-    "title": "Profile picture",
-    "body": "Your saved picture stays on the Profile tab after you reload the page. Replacing it removes the old file, and the X on the photo removes it.",
+    "id": "connect-your-ai",
+    "title": "Connect your AI",
+    "body": "Add your own key from Claude (Anthropic) or OpenAI so your assistant can draft plans, insights, reviews, captions and proposals. The company you choose charges your own account. LifeCharter does not receive that money or control it.",
     "keywords": [
-     "profile picture",
-     "photo",
-     "avatar",
-     "remove photo",
-     "change photo"
+     "ai key",
+     "api key",
+     "openai",
+     "claude",
+     "anthropic",
+     "chatgpt",
+     "cost of ai"
+    ]
+   },
+   {
+    "id": "three-assessments",
+    "title": "Your three assessments",
+    "body": "Each one shows its time: Brain about 3 to 5 hours, Soul about 2 to 3 hours and Profit about 1 to 2 hours. Take them in as many sittings as you like.",
+    "keywords": [
+     "brain",
+     "soul",
+     "profit",
+     "how long",
+     "time",
+     "sittings"
+    ]
+   },
+   {
+    "id": "connect-your-tools",
+    "title": "Connect your tools",
+    "body": "Connect your Google or Microsoft calendar and email in Settings. Emailing your contacts is a separate step, set up later in Contacts > Email sending.",
+    "keywords": [
+     "calendar",
+     "email",
+     "google",
+     "microsoft",
+     "integrations",
+     "required"
+    ]
+   },
+   {
+    "id": "website-address",
+    "title": "What's your website address?",
+    "body": "Once your three assessments are finished, type your website here and press Save. It goes to your Website Alignment Review. No website yet? Leave it blank.",
+    "keywords": [
+     "website",
+     "website address",
+     "website review"
+    ]
+   },
+   {
+    "id": "getting-started-at-the-top",
+    "title": "Getting Started at the top of your menu",
+    "body": "While you are new, the whole Getting Started section stays at the top of your left menu. When every First 30 Days step is complete, it goes back to its usual place.",
+    "keywords": [
+     "menu",
+     "left menu",
+     "moved",
+     "pinned",
+     "top of menu"
     ]
    }
   ]
  },
  {
-  "id": "workspace-and-team",
-  "name": "Workspace and team",
-  "area": "Settings",
-  "where": "Settings > Workspace",
-  "href": "/settings?tab=workspace",
-  "what": "Your business details and your team in one place. Set your name, logo, website and social links, then invite people, choose their roles and see what they have been doing.",
+  "id": "first-30-days",
+  "name": "First 30 Days",
+  "area": "Getting Started",
+  "where": "Getting Started > First 30 Days",
+  "href": "/first-30-days",
+  "what": "Your guided first month, in 23 steps. It starts with your three assessments, then gives you a few small steps a week. Each step ticks itself off from your own data when the work is done.",
   "ai": "No AI",
-  "aiNote": "Team members run AI on the account owner's key. The owner can set a monthly limit for each person here.",
+  "aiNote": "This page does not use AI. Some of the pages its steps open do, such as your plans, and those use your own AI key.",
   "steps": [
-   "Open Settings, then Workspace.",
-   "Add your logo, Workspace Name, Description, Website and Social Profiles, then press Save Workspace.",
-   "Under Team Members, press Add Member.",
-   "Enter their email, choose Admin, Editor or Viewer, and press Send Invitation.",
-   "Use Edit access on an Editor or Viewer if you want to narrow what they can reach."
+   "Finish your three assessments, then open First 30 Days from the left menu.",
+   "Press a step to open the page where that work happens.",
+   "Do the work there. The step ticks itself off, so there is nothing to mark here.",
+   "Start with any step marked Focus for you.",
+   "When a week is fully done, the next one opens."
   ],
-  "health": "This does not change your scores. It keeps your business details in one place and lets your team help you.",
+  "health": "This page does not change your scores. It reads your latest scores and marks the steps that strengthen your three lowest dimensions with Focus for you. It helps you turn the Suite into how you run your business. Each step's own page says whether that work counts toward a score.",
   "tips": [
-   "Press Send invitation on a person's card to send it again. The link in the invitation works once and expires in 7 days.",
-   "Your client portals show the logo from your first workspace.",
-   "You count as one person on your team. Your plan sets how many people and workspaces you can have."
+   "Open the Starter Guide link at the top of the page for a checklist version with where to click.",
+   "The bar at the top shows your day and how many steps are done.",
+   "The Your first 30 days card on Executive Home shows the week you are on."
   ],
   "questions": [
    {
-    "q": "What can each role do?",
-    "a": "An Admin runs the account day to day and manages the team, but has no billing, connected accounts or account deletion. An Editor works on tasks, plans, content, finance and sales activity. A Viewer sees what an Editor sees and cannot change anything."
+    "q": "Why will a step not tick off?",
+    "a": "Steps tick from your real data, so the work has to be saved on its own page. Some need more than one item, such as three income or expense entries, or five posts or ideas on your Content Calendar."
    },
    {
-    "q": "Someone says their invitation never came. What do I do?",
-    "a": "Press Send invitation on their card. A link appears there too, so you can copy it and send it to them yourself."
+    "q": "Why is a week locked?",
+    "a": "Each week opens once the one before it is complete. Finish what is still open in the earlier week and the next one opens."
    },
    {
-    "q": "Can my team see what each other has done?",
-    "a": "No. Only you and your admins can see the Activity tab."
+    "q": "What happens after day 30?",
+    "a": "Nothing closes. The day count stops at 30, and your steps stay here for you to finish at your own pace."
    }
   ],
   "related": [
-   "team-access-limits",
+   "set-up-suite",
+   "starter-guide",
+   "the-assessment-lock",
+   "executive-home",
+   "business-alignment"
+  ],
+  "who": "Everyone. It opens once your three assessments are finished. A team member set to Show only the areas above does not see it.",
+  "keywords": [
+   "first 30 days",
+   "first month",
+   "30 day plan",
+   "getting started",
+   "what do i do next",
+   "onboarding",
+   "steps",
+   "checklist",
+   "week 1",
+   "focus for you",
+   "locked week",
+   "step not ticking"
+  ],
+  "sections": [
+   {
+    "id": "the-weeks",
+    "title": "The weeks",
+    "body": "Start here is your assessments. Week 1 is your foundation: vision, offers, Pipeline and income goal. Week 2 is money and rhythm. Week 3 is systems and plans. Week 4 is momentum: content, Client Care, goals, email sending and Quick Pulse.",
+    "keywords": [
+     "week 1",
+     "week 2",
+     "week 3",
+     "week 4",
+     "start here",
+     "foundation",
+     "momentum",
+     "systems and plans",
+     "money and rhythm"
+    ]
+   },
+   {
+    "id": "focus-for-you",
+    "title": "Focus for you",
+    "body": "A gold Focus for you label shows the dimension and score a step strengthens. These steps move to the top of their week until they are done.",
+    "keywords": [
+     "focus for you",
+     "lowest scores",
+     "weakest",
+     "gold label"
+    ]
+   },
+   {
+    "id": "how-steps-tick",
+    "title": "How steps tick off",
+    "body": "Each step checks your own account. Your first SOP must be one you made active or wrote yourself, because an untouched template does not count. Legal needs five items marked done or not applicable. Pillars need Go deeper answers on three of your eight.",
+    "keywords": [
+     "tick",
+     "check off",
+     "sop",
+     "legal",
+     "pillars",
+     "go deeper",
+     "not ticking"
+    ]
+   },
+   {
+    "id": "executive-home-card",
+    "title": "The Your first 30 days card",
+    "body": "This card on Executive Home shows the week you are on. It leaves when every step is done, or after 60 days.",
+    "keywords": [
+     "executive home",
+     "card",
+     "dashboard"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "starter-guide",
+  "name": "Starter Guide",
+  "area": "Getting Started",
+  "where": "Getting Started > Starter Guide",
+  "href": "/starter-guide.html",
+  "what": "A step-by-step checklist for all 30 days, with a time estimate for every day. Each step says where to click and how you will know it worked. It also lists your calls, next steps, where to get help and common questions.",
+  "ai": "No AI",
+  "aiNote": "The guide does not use AI. Its steps show you when and how to use your assistant, and one optional step shows how to get help from your own ChatGPT or Claude.",
+  "steps": [
+   "Open Starter Guide from the left menu, or press Open your Starter Guide on Set up Suite.",
+   "Use the row of links at the top to jump to a day. Start with Day 1.",
+   "Follow each step. Press its Open button to go to the right page.",
+   "Tick each box as you finish it.",
+   "Check You will know it worked when, so you know the step is done.",
+   "Bookmark the guide and come back to it each day."
+  ],
+  "health": "This does not change your scores. Ticking a box here only tracks your place in the guide. The work you do in the Suite is what counts, and each page's own entry says how.",
+  "tips": [
+   "Day 1 is about 6 to 10 hours, in as many sittings as you like, because it holds your three assessments. Most other days are under an hour. These are estimates.",
+   "It is a path, not a deadline. Stop whenever you like and pick up at the next step.",
+   "The guide stays open while you finish your assessments, so keep it beside you."
+  ],
+  "questions": [
+   {
+    "q": "Do my ticks save?",
+    "a": "Yes, as you go. Press Clear my ticks at the bottom of the guide if you want to start over."
+   },
+   {
+    "q": "How is this different from First 30 Days?",
+    "a": "First 30 Days ticks itself off from your data. The Starter Guide is the fuller checklist you tick yourself, with where to click for every step."
+   },
+   {
+    "q": "What if I skip a step?",
+    "a": "Nothing breaks. Your assistant simply knows a little less about you until you come back to it."
+   }
+  ],
+  "related": [
+   "first-30-days",
+   "set-up-suite",
+   "welcome-overview",
+   "coaching-calls-and-replays",
+   "the-assessment-lock"
+  ],
+  "who": "Everyone. A team member set to Show only the areas above does not see it.",
+  "keywords": [
+   "starter guide",
+   "checklist",
+   "day 1",
+   "30 days",
+   "step by step",
+   "where do i start",
+   "tick boxes",
+   "how long does setup take",
+   "your calls",
+   "next steps",
+   "bookmark"
+  ],
+  "sections": [
+   {
+    "id": "thirty-days-at-a-glance",
+    "title": "Your thirty days at a glance",
+    "body": "A table near the top lists what you do each day and about how long it takes. Days 1 to 5 get you started. Days 6 to 30 cover your money, SOPs, legal, plans, outreach, goals, email setup, content and getting paid.",
+    "keywords": [
+     "table",
+     "each day",
+     "time estimate",
+     "days 6 to 30",
+     "overview"
+    ]
+   },
+   {
+    "id": "your-calls",
+    "title": "Your calls",
+    "body": "This part lists your live calls in Mountain time. You do not need to join every call. Pick what serves you.",
+    "keywords": [
+     "calls",
+     "office hours",
+     "alignment anchor",
+     "launch call",
+     "schedule"
+    ]
+   },
+   {
+    "id": "one-question",
+    "title": "One question I want to ask",
+    "body": "Day 5 has a box for the question on your mind. Type it in and it is saved with your ticks.",
+    "keywords": [
+     "question",
+     "day 5",
+     "catch up"
+    ]
+   },
+   {
+    "id": "next-steps-and-help",
+    "title": "Next steps and help",
+    "body": "After Day 30 the guide lists more to set up when you are ready, such as your contacts, booking page and landing pages. If you get stuck tells you how to reach Help and support.",
+    "keywords": [
+     "next steps",
+     "help",
+     "support",
+     "after day 30",
+     "if you get stuck"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "welcome-overview",
+  "name": "Welcome Overview",
+  "area": "Getting Started",
+  "where": "Getting Started > Welcome Overview",
+  "href": "/handouts/client-welcome-overview.pdf",
+  "what": "A 16-page picture tour of your Command Suite. It holds a welcome note from Babs, a map of the whole Suite, your first 30 days, ten area maps, life after day 30 and your first steps. It is a map, not a to-do list.",
+  "ai": "No AI",
+  "aiNote": "This is a PDF to read. It does not use AI.",
+  "steps": [
+   "Open Welcome Overview from the left menu, just under Starter Guide.",
+   "Read the welcome note and look at the big-picture map.",
+   "Turn to any of the ten area pages you want to know more about.",
+   "Use What it is, Where to find it and Start here on that page.",
+   "Finish with Your First Steps on the last page."
+  ],
+  "health": "This does not change your scores. It helps you see how the Suite fits together, including how your assessments become your Business Health Score.",
+  "tips": [
+   "You need to be signed in to open it.",
+   "It stays open while you finish your three assessments, so it is a good place to see what is coming."
+  ],
+  "questions": [
+   {
+    "q": "Is this the same as the Starter Guide?",
+    "a": "No. The Welcome Overview shows you the whole Suite. The Starter Guide is your day-by-day checklist."
+   },
+   {
+    "q": "Do I have to read it all?",
+    "a": "No. Read the pages you need, whenever you like."
+   }
+  ],
+  "related": [
+   "starter-guide",
+   "first-30-days",
+   "set-up-suite",
+   "glossary"
+  ],
+  "who": "Everyone. A team member set to Show only the areas above does not see it.",
+  "keywords": [
+   "welcome overview",
+   "welcome pdf",
+   "overview",
+   "big picture",
+   "map",
+   "brain map",
+   "tour",
+   "what is in the suite",
+   "handout",
+   "pdf"
+  ],
+  "sections": [
+   {
+    "id": "area-maps",
+    "title": "The ten area maps",
+    "body": "Coaching, Support & Community; Alignment & Health; Run Your Day; Your AI Assistant; Plans & Goals; Clients & Delivery; Sales & Marketing; Your Money; Meetings & Team; Systems & Operations. Each has its own map.",
+    "keywords": [
+     "area maps",
+     "ten areas",
+     "maps",
+     "what it is",
+     "where to find it",
+     "start here"
+    ]
+   },
+   {
+    "id": "first-30-and-after",
+    "title": "Your First 30 Days and Life After Day 30",
+    "body": "One page shows your first month at a glance. Another shows how the Suite and coaching work together after that.",
+    "keywords": [
+     "first 30 days",
+     "after day 30",
+     "life after day 30",
+     "coaching"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "website-review",
+  "name": "Website Review",
+  "area": "Getting Started",
+  "where": "Getting Started > Website Review",
+  "href": "/website-review",
+  "what": "Your Website Alignment Review. Our team reads your website against the positioning, voice and offer you are building here, then gives you the five changes that matter most. It is included with Command Suite.",
+  "ai": "No AI",
+  "aiNote": "Our team writes your Review. There is no AI button on this page.",
+  "steps": [
+   "Open Website Review from the left menu.",
+   "Under What's your website address?, type your address and press Save.",
+   "Your Review is being written then shows on the page, with the date to expect it.",
+   "Watch your email. We email you when it is ready, and it appears on this page.",
+   "Read your five changes. Write to support@lccommandsuite.com if you want to talk it through."
+  ],
+  "health": "This does not change your scores. It helps your website match the positioning and offer you are building in the Suite.",
+  "tips": [
+   "No website yet? Leave it blank and add it whenever you are ready.",
+   "Type the address like yourbusiness.com. You do not need the https part."
+  ],
+  "questions": [
+   {
+    "q": "Can I have more than one website reviewed?",
+    "a": "Your plan includes a set number of reviews. The Add another website box shows how many you have used. Type the address and press Add website while you have a place left."
+   },
+   {
+    "q": "I added the wrong website. What do I do?",
+    "a": "Press Take this website off my list. This frees up the place, and it works until the Review has been delivered."
+   },
+   {
+    "q": "Can I remove a Review once it is delivered?",
+    "a": "No. A delivered Review stays on your list, so you can keep coming back to it."
+   }
+  ],
+  "related": [
+   "set-up-suite",
+   "first-30-days",
+   "workspace-and-team",
+   "marketing-plan",
+   "business-plan"
+  ],
+  "who": "Everyone. It opens once your three assessments are finished. Team members need the Website Review area.",
+  "keywords": [
+   "website review",
+   "website alignment review",
+   "review my website",
+   "website feedback",
+   "add website",
+   "five changes",
+   "website address",
+   "my website"
+  ],
+  "sections": [
+   {
+    "id": "add-another-website",
+    "title": "Add another website",
+    "body": "Once your first website is in, this box shows how many reviews you have used. Each website gets its own Review, and they all show on this page.",
+    "keywords": [
+     "another website",
+     "second website",
+     "add website",
+     "used",
+     "limit"
+    ]
+   },
+   {
+    "id": "take-a-website-off",
+    "title": "Take this website off my list",
+    "body": "This shows while a Review is being written. Taking a website off frees up a place on your list.",
+    "keywords": [
+     "remove website",
+     "wrong website",
+     "delete website",
+     "take off"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "glossary",
+  "name": "Glossary",
+  "area": "Getting Started",
+  "where": "Getting Started > Glossary",
+  "href": "/glossary",
+  "what": "The Command Suite's own words, plus the business, sales and marketing terms it uses, from A to Z.",
+  "ai": "No AI",
+  "aiNote": "",
+  "steps": [
+   "Open Glossary from the left menu.",
+   "Search for a word, or use the letter bar to jump.",
+   "Press a term's type button to see only Command Suite, Business, Sales or Marketing words. Press All terms to see everything again."
+  ],
+  "health": "This does not change your scores. It helps you read your scores and plans with confidence.",
+  "tips": [
+   "A word with a dotted underline in the app shows a one-line meaning when you hover over it or tap it.",
+   "The Glossary stays open while you finish your three assessments."
+  ],
+  "questions": [
+   {
+    "q": "What does a dotted underline mean?",
+    "a": "That word is in the Glossary. Hover over it or tap it for a quick meaning."
+   }
+  ],
+  "related": [
+   "business-alignment",
+   "set-up-suite",
+   "how-your-scores-work"
+  ],
+  "who": "Everyone. A team member set to Show only the areas above does not see it.",
+  "keywords": [
+   "definitions",
+   "meaning",
+   "words",
+   "terms",
+   "dictionary",
+   "what does this mean",
+   "glossary",
+   "travel partner",
+   "hope seat",
+   "true north",
+   "buried",
+   "domain scores"
+  ],
+  "sections": [
+   {
+    "id": "filter-by-type",
+    "title": "Filter by type",
+    "body": "The buttons under the search box show All terms, Command Suite, Business, Sales or Marketing. Each term has its own type button that does the same.",
+    "keywords": [
+     "filter",
+     "type",
+     "business",
+     "sales",
+     "marketing",
+     "command suite"
+    ]
+   },
+   {
+    "id": "you-will-see-it-in",
+    "title": "You will see it in",
+    "body": "Many terms list the pages where the word appears. Press one to open that page.",
+    "keywords": [
+     "where is this used",
+     "pages",
+     "links"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "the-assessment-lock",
+  "name": "The assessment lock",
+  "area": "Getting Started",
+  "where": "Every new account",
+  "href": "/setup",
+  "what": "Until you finish your Brain, Soul and Profit assessments, only a few pages open. Your whole Suite is built from your answers, so the rest waits until they are in. It opens by itself when the third one is finished.",
+  "ai": "No AI",
+  "aiNote": "Your assistant stays closed during the lock and opens with the rest of your Suite. You can still connect your AI key in Settings.",
+  "steps": [
+   "Open Set up Suite from the left menu.",
+   "Take your Brain, Soul and Profit assessments. They save as you go, so use as many sittings as you like.",
+   "On the last question of Brain and Soul, press Complete. On Profit, press Complete Assessment.",
+   "When the third one is finished, the rest of your Suite opens by itself. If your menu still looks short, refresh the page."
+  ],
+  "health": "The lock itself does not change your scores. It makes sure your scores and plans start from your real answers, because your assessments feed your 12 dimensions and 8 pillars.",
+  "tips": [
+   "Saving some answers is not the same as finishing. Press Complete at the end of each assessment.",
+   "Stuck? Help stays open, and so does Contact Support."
+  ],
+  "questions": [
+   {
+    "q": "Why can I only open a few pages?",
+    "a": "Your three assessments are not all finished yet. Your Suite shows Set up Suite, the three assessments, Settings, Help, your User Guide, Starter Guide, Welcome Overview and Glossary until they are."
+   },
+   {
+    "q": "Can someone open the rest for me early?",
+    "a": "No. Finishing your three assessments is what opens it."
+   },
+   {
+    "q": "What does it mean when a save says to finish my assessments first?",
+    "a": "You tried to change something outside the pages that are open. Finish your three assessments, and you can do it then."
+   }
+  ],
+  "related": [
+   "set-up-suite",
+   "saving-your-assessment-answers",
+   "alignment-profile",
+   "brain-profile",
+   "soul-profile",
+   "profit-profile"
+  ],
+  "who": "New client accounts. Team members are not locked.",
+  "keywords": [
+   "locked",
+   "lock",
+   "cannot open",
+   "can't open",
+   "greyed out",
+   "menu empty",
+   "short menu",
+   "only setup",
+   "unlock",
+   "full access",
+   "finish assessments first",
+   "pages missing",
+   "assistant missing"
+  ],
+  "sections": [
+   {
+    "id": "what-stays-open",
+    "title": "What stays open",
+    "body": "Set up Suite, your Brain, Soul and Profit assessments, Alignment Profile, Settings, Help, your User Guide, Starter Guide, Welcome Overview and Glossary. Quick Pulse and Command Shift open with the rest of your Suite.",
+    "keywords": [
+     "open pages",
+     "settings",
+     "help",
+     "quick pulse",
+     "command shift"
+    ]
+   },
+   {
+    "id": "what-counts-as-finished",
+    "title": "What counts as finished",
+    "body": "An assessment is finished when you press its last button: Complete on Brain and Soul, Complete Assessment on Profit. Your check mark on Set up Suite shows it counted.",
+    "keywords": [
+     "finished",
+     "complete",
+     "complete assessment",
+     "check mark",
+     "done"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "signing-in-and-resetting-your-password",
+  "name": "Signing in and resetting your password",
+  "area": "Getting Started",
+  "where": "Sign-in page, at lccommandsuite.com/login",
+  "href": "/forgot-password",
+  "what": "How to sign in to your Command Suite, and how to set or reset your password by email. If you turned on two-factor sign-in, you also enter a code from your authenticator app.",
+  "ai": "No AI",
+  "aiNote": "Signing in does not use AI.",
+  "steps": [
+   "Go to lccommandsuite.com/login, type your email and password, and press Enter the Suite.",
+   "If you have two-factor sign-in on, type the 6-digit code from your authenticator app and press Verify & enter.",
+   "To set or reset your password, press Forgot or set your password?, type your email and press Send my link.",
+   "Open the email and press Choose my password, then press Set my new password.",
+   "Type your new password twice and press Update password. You land in your Suite, signed in."
+  ],
+  "health": "This does not change your scores. It keeps your account safe.",
+  "tips": [
+   "Passwords need at least 8 characters. A short phrase of 3 or 4 unrelated words works well.",
+   "The email link works once and lasts 24 hours.",
+   "Turn on two-factor sign-in in Settings > Security."
+  ],
+  "questions": [
+   {
+    "q": "It says it couldn't find an account with that email. What now?",
+    "a": "Check the spelling, and try the address you used when you signed up. If it still is not found, write to support@lccommandsuite.com and we will help."
+   },
+   {
+    "q": "My reset email has not come. Where is it?",
+    "a": "It comes from community@lccommandsuite.com. Check Other, Promotions and Spam, or wait a moment and try again."
+   },
+   {
+    "q": "It says my link has expired. What do I do?",
+    "a": "Press Request a new link, or go back to Forgot or set your password?. A fresh link comes straight to you."
+   }
+  ],
+  "related": [
+   "security",
+   "the-assessment-lock",
    "accepting-a-team-invitation",
+   "profile"
+  ],
+  "who": "Everyone.",
+  "keywords": [
+   "sign in",
+   "log in",
+   "login",
+   "password",
+   "forgot password",
+   "reset password",
+   "set password",
+   "change password",
+   "locked out",
+   "no account",
+   "link expired",
+   "two-factor",
+   "2fa",
+   "authenticator",
+   "verification code",
+   "can't log in"
+  ],
+  "sections": [
+   {
+    "id": "no-account-found",
+    "title": "Email with no account",
+    "body": "If no account uses that address, the page tells you so, with the support address, so you are not left waiting for an email. The page allows a few tries every 15 minutes. If it asks you to wait, wait a few minutes and try again.",
+    "keywords": [
+     "couldn't find an account",
+     "wrong email",
+     "not registered",
+     "too many requests",
+     "try again"
+    ]
+   },
+   {
+    "id": "account-ready-sign-in-button",
+    "title": "The sign-in button in your account emails",
+    "body": "Your account-ready email has a Choose my password and sign in button. It signs you in and opens the page to choose your password. If the link has expired, use Forgot or set your password? with the same email address.",
+    "keywords": [
+     "account ready email",
+     "first time sign in",
+     "choose my password",
+     "sign in button",
+     "new account"
+    ]
+   },
+   {
+    "id": "two-step-verification",
+    "title": "Two-step verification",
+    "body": "With two-factor sign-in on, a second screen asks for the 6-digit code after your password. Your authenticator app shows the code.",
+    "keywords": [
+     "two-step verification",
+     "authentication code",
+     "authenticator app",
+     "6-digit code",
+     "2fa code"
+    ]
+   },
+   {
+    "id": "password-will-not-save",
+    "title": "If your new password is refused",
+    "body": "A password that has shown up in a known data breach cannot be used here, even if it is long. Choose a different one.",
+    "keywords": [
+     "password refused",
+     "data breach",
+     "weak password",
+     "password not accepted"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "your-welcome-emails-and-calls",
+  "name": "Your welcome emails and calls",
+  "area": "Getting Started",
+  "where": "Sent to your email automatically",
+  "href": "/setup",
+  "what": "What arrives after you join: a series of welcome emails from Babs, and invitations to your first calls. They show you where to start and who is with you. They come to the email address on your account.",
+  "ai": "No AI",
+  "aiNote": "These are written emails. They do not use your AI key.",
+  "steps": [
+   "Look for your setup email, Your first hour in Command Suite, step by step, shortly after your account opens.",
+   "Follow it to sign in, open your Starter Guide, connect your AI and begin your assessments.",
+   "Book your one-on-one Welcome Call with Babs, then open your Launch Call invitation and add it to your calendar.",
+   "Finish your three assessments, and look for your Next Chapter Call invitation.",
+   "Reply to any of these emails if you have a question."
+  ],
+  "health": "These do not change your scores. The Next Chapter Call goes through what your scores show and what to do first.",
+  "tips": [
+   "Can't find an email? Check Other, Promotions and Spam, or write to support@lccommandsuite.com.",
+   "Every Command Suite client is welcome at any Launch Call, so if your date does not work you can join the next one."
+  ],
+  "questions": [
+   {
+    "q": "How do I book my Next Chapter Call?",
+    "a": "Use the button in your invitation, or go to lccommandsuite.com/book/next-chapter-call. If no time fits, reply to the email and we will find one."
+   },
+   {
+    "q": "When is the New Client Launch Call?",
+    "a": "Every other Thursday at 1:00 PM Mountain, for 90 minutes on Zoom. Your invitation has your date, the Zoom link and a calendar file."
+   },
+   {
+    "q": "Why did I not get the Why your assessment answers matter email?",
+    "a": "It is skipped once your three assessments are done."
+   }
+  ],
+  "related": [
+   "set-up-suite",
+   "starter-guide",
+   "the-assessment-lock",
+   "coaching-calls-and-replays",
+   "website-review",
+   "signing-in-and-resetting-your-password"
+  ],
+  "who": "New clients. Team members do not get these emails.",
+  "keywords": [
+   "welcome email",
+   "welcome emails",
+   "setup email",
+   "first hour",
+   "next chapter call",
+   "launch call",
+   "new client launch call",
+   "welcome call",
+   "book a call",
+   "call with babs",
+   "one on one",
+   "calendar invitation",
+   "zoom link",
+   "did not get email"
+  ],
+  "sections": [
+   {
+    "id": "welcome-series",
+    "title": "Your welcome emails",
+    "body": "Your setup email comes first and you get it once. More follow over your first two weeks, covering your tool connection and website, The Collective, your Website Alignment Review and what is next. One that no longer applies to you may be skipped.",
+    "keywords": [
+     "welcome series",
+     "email series",
+     "first two weeks",
+     "setup email"
+    ]
+   },
+   {
+    "id": "why-your-answers-matter",
+    "title": "Why your assessment answers matter so much",
+    "body": "This email comes after your setup email. It explains why thorough answers build the foundation your Suite supports you from.",
+    "keywords": [
+     "assessment email",
+     "why answers matter",
+     "thorough answers"
+    ]
+   },
+   {
+    "id": "next-chapter-call",
+    "title": "Next Chapter Call",
+    "body": "Once you have finished all three assessments, you are invited to a 30-minute one-on-one with Babs. She reads your results first, and the call goes through what they show and what to do first.",
+    "keywords": [
+     "next chapter call",
+     "results call",
+     "after assessments",
+     "one on one",
+     "1:1"
+    ]
+   },
+   {
+    "id": "new-client-launch-call",
+    "title": "New Client Launch Call",
+    "body": "When you book your Welcome Call, you get a separate invitation to the next Launch Call, a live group session for clients in their first 30 days. Book by the Wednesday before a Thursday call to join that one. Otherwise you join the next one, and it always comes after your Welcome Call.",
+    "keywords": [
+     "launch call",
+     "group call",
+     "every other thursday",
+     "cut-off",
+     "invitation"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "saving-your-assessment-answers",
+  "name": "Saving your assessment answers",
+  "area": "Getting Started",
+  "where": "Each assessment page, beside the save icon",
+  "href": "/assessments",
+  "what": "Your Brain, Soul and Profit answers save to your account as you go, so you can stop and come back on any device. The words beside the save icon tell you exactly where your answers are.",
+  "ai": "No AI",
+  "aiNote": "Saving does not use AI. Fill this section with my AI copies a ready-made prompt for your own ChatGPT or Claude. You paste its reply back and review every answer, so it does not use your Suite AI key.",
+  "steps": [
+   "Open your assessment from Set up Suite or Alignment Profile.",
+   "Answer in your own words. Your answers save a few seconds after you stop typing.",
+   "Look beside the save icon. You want it to say Saved to your account.",
+   "If a notice says a save failed, keep the page open and check your internet. The Suite keeps trying by itself.",
+   "To carry on elsewhere, sign in on another device and open the same assessment.",
+   "When you reach the last question, press Complete, or Complete Assessment on Profit."
+  ],
+  "health": "Saving does not change your scores by itself. Your Brain, Soul and Profit answers feed your 12 dimensions and 8 pillars, and an assessment only counts as finished when you press its last button.",
+  "tips": [
+   "Keep the page open until it says Saved to your account.",
+   "If the failed notice stays, sign out and sign back in, then come back. Tell your coach if it still does not clear."
+  ],
+  "questions": [
+   {
+    "q": "I saved my AI's answers but do I have to click through them?",
+    "a": "No. When you press Save on the answers, such as Save 50 answers, they go straight in. Press Next only if you want to read or change one."
+   },
+   {
+    "q": "I answered on two devices. Which answer wins?",
+    "a": "The answer on the device you are using stays as it is. Your saved answers fill in any questions still empty there."
+   },
+   {
+    "q": "Can a failed save erase what I already saved?",
+    "a": "No. A failed save never erases earlier answers. Your latest answers stay on the device until the save goes through."
+   }
+  ],
+  "related": [
+   "alignment-profile",
+   "brain-profile",
+   "soul-profile",
+   "profit-profile",
+   "the-assessment-lock",
+   "set-up-suite"
+  ],
+  "who": "Everyone. Team members need the Assessments & Alignment area.",
+  "keywords": [
+   "save",
+   "saved",
+   "not saved",
+   "saved on this device",
+   "saved to your account",
+   "lost answers",
+   "assessment answers",
+   "another device",
+   "different device",
+   "phone",
+   "progress bar",
+   "bar did not move",
+   "answered",
+   "fill this section with my ai",
+   "come back later"
+  ],
+  "sections": [
+   {
+    "id": "save-status-words",
+    "title": "What the save words mean",
+    "body": "Saved to your account means the Suite has your answers. Saving means it is on its way. Saved on this device means only this browser has them so far. Not saved to your account yet means a save failed and the Suite is trying again.",
+    "keywords": [
+     "saved to your account",
+     "saving",
+     "saved on this device",
+     "not saved to your account yet",
+     "status"
+    ]
+   },
+   {
+    "id": "progress-bars",
+    "title": "The progress bars",
+    "body": "The bars and the N of M answered line show how many questions you have answered, not where you are in the assessment. Answers from Fill this section with my AI show the moment you press Save.",
+    "keywords": [
+     "progress bar",
+     "answered",
+     "n of m",
+     "section bar",
+     "fill this section"
+    ]
+   },
+   {
+    "id": "any-device",
+    "title": "Assessments on any device",
+    "body": "Saved answers come back from your account on any computer, phone or browser. You can start on one and finish on another.",
+    "keywords": [
+     "any device",
+     "switch devices",
+     "computer",
+     "phone",
+     "browser",
+     "continue"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "help-and-qa",
+  "name": "Help and Q&A",
+  "area": "Help and everywhere",
+  "where": "Help at the bottom of the left menu, or the question mark in the top bar",
+  "href": "/help/qa",
+  "what": "A searchable library of answers about the Suite, plus any questions and answers you add yourself. The Help group in the left menu also has short guides to each health card on your dashboard.",
+  "ai": "No AI",
+  "aiNote": "This page is a plain search. For an answer in a sentence or two, open Travel Partner, choose Help & setup, then How do I…. It answers from this same library.",
+  "steps": [
+   "Press the question mark in the top bar to open Help & Q&A.",
+   "Type in Search the knowledge base, or press a category such as Getting Started.",
+   "Press a question to open its answer. Press it again to close it.",
+   "To keep your own answer here, press Add your own Q&A at the bottom of the page.",
+   "Fill in the category, question and answer, then press Save."
+  ],
+  "health": "Reading Help does not change your scores. The guides in the Help group explain what your health cards mean and how to read them.",
+  "tips": [
+   "Your own Q&A entries belong to your account, and Travel Partner can answer from them too.",
+   "Press any picture in an answer to open it full size."
+  ],
+  "questions": [
+   {
+    "q": "Can I remove an entry?",
+    "a": "Yes, if you added it. Open it and press Remove this entry. The built-in answers stay."
+   },
+   {
+    "q": "What if I cannot find my answer?",
+    "a": "Open Contact Support and send a request. The team replies by email, and you can follow it under My requests."
+   }
+  ],
+  "related": [
+   "travel-partner",
+   "contact-support-and-whats-new",
+   "glossary",
+   "how-your-scores-work"
+  ],
+  "who": "Everyone, including team members and anyone still finishing their assessments.",
+  "keywords": [
+   "help",
+   "q&a",
+   "faq",
+   "questions",
+   "answers",
+   "knowledge base",
+   "how do i",
+   "search help",
+   "help center",
+   "add my own answer"
+  ],
+  "sections": [
+   {
+    "id": "help-explainer-pages",
+    "title": "Help explainer pages",
+    "body": "The Help group in the left menu has a short guide to each of these: Overall Business Health, 12-Domain Business Alignment, AI Business Guide, Next 3 Moves, Domain Scores, Business Health Trend, Operating Rhythm, Milestones & Momentum and Revenue Snapshot.",
+    "keywords": [
+     "health card",
+     "explainer",
+     "what does this card mean",
+     "domain scores",
+     "next 3 moves",
+     "health trend",
+     "revenue snapshot",
+     "milestones",
+     "operating rhythm"
+    ]
+   },
+   {
+    "id": "client-journey-maps",
+    "title": "Client Journey Maps",
+    "body": "Four one-page maps show how the Suite works from your first hello onward: Executive Consultation Journey, Self-Serve Starter Journey, Inside the Suite: Your First 30 Days, and Life After Day 30. Press Getting Started in Help & Q&A and open the question about the whole client journey. Gold dots are what you do, teal dots are what the Suite does automatically, and ivory dots are what the team does.",
+    "keywords": [
+     "journey map",
+     "client journey",
+     "first 30 days",
+     "life after day 30",
+     "map",
+     "gold dot",
+     "what happens next"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "contact-support-and-whats-new",
+  "name": "Contact Support and What's New",
+  "area": "Help and everywhere",
+  "where": "Help > Contact Support, or the lifebuoy in the top bar",
+  "href": "/help/contact",
+  "what": "Your one place to reach the LifeCharter team and see what has changed. Send a support request, follow your replies under My requests, and read What's new and Recently answered.",
+  "ai": "No AI",
+  "aiNote": "",
+  "steps": [
+   "Press the lifebuoy in the top bar, or open Help, then Contact Support.",
+   "Under Submit a Support Request, fill in your name, email, category, subject and message.",
+   "Choose Which app is this about and a Priority.",
+   "Press Send Message.",
+   "Read any suggested answers that appear under While you wait, these might answer it.",
+   "Watch your email for a reply, or open My requests on this page to read it and press Send reply."
+  ],
+  "health": "This does not change your scores. It gets you help and shows you what is new in the Suite.",
+  "tips": [
+   "The more detail you put in your message, the faster the team can help.",
+   "Check Recently answered first. Your answer may already be there.",
+   "Support hours and the team's response commitment are on the page."
+  ],
+  "questions": [
+   {
+    "q": "Can I email instead of using the form?",
+    "a": "Yes. Email support@lccommandsuite.com. The Email Us card at the top of the page has the address."
+   },
+   {
+    "q": "Is there live help?",
+    "a": "Yes. The Command Suite Office Hours card offers live help on Zoom. Press See the schedule."
+   },
+   {
+    "q": "Who can see what I send?",
+    "a": "Support requests go to the LifeCharter support team. What's new and Recently answered are the same for every account, and Recently answered has names removed."
+   }
+  ],
+  "related": [
+   "suggestions-light-bulb",
+   "help-and-qa",
+   "travel-partner",
+   "lc-volant",
+   "who-has-opened-my-account"
+  ],
+  "who": "Everyone. Team members keep Help and Contact Support even when their other areas are limited.",
+  "keywords": [
+   "support",
+   "contact",
+   "contact support",
+   "help desk",
+   "ticket",
+   "email support",
+   "my requests",
+   "reply",
+   "whats new",
+   "updates",
+   "fixes",
+   "recently answered",
+   "office hours",
+   "support hours",
+   "something is broken"
+  ],
+  "sections": [
+   {
+    "id": "my-requests",
+    "title": "My requests",
+    "body": "Every request you send is listed here with its replies. Open one to read the conversation, type in Add a reply, and press Send reply. You also get an email when the team replies.",
+    "keywords": [
+     "my requests",
+     "ticket status",
+     "reply to support",
+     "follow up"
+    ]
+   },
+   {
+    "id": "whats-new",
+    "title": "What's new",
+    "body": "Every update and fix to the Suite, newest first. Press an update to open or close it, or use Expand all and Collapse all. Press the What's new heading to fold the whole list away. This device remembers that choice. Press Show earlier updates for older ones.",
+    "keywords": [
+     "whats new",
+     "updates",
+     "changelog",
+     "release notes",
+     "fixes",
+     "new features",
+     "collapse",
+     "expand all"
+    ]
+   },
+   {
+    "id": "recently-answered",
+    "title": "Recently answered",
+    "body": "Questions other clients have asked and how they were resolved, with names removed.",
+    "keywords": [
+     "recently answered",
+     "resolved",
+     "common questions"
+    ]
+   },
+   {
+    "id": "one-support-route",
+    "title": "One route for every app",
+    "body": "Which app is this about lets you choose Command Suite or LC Volant, so your request reaches the right person. The Get help button in LC Volant opens this same form with LC Volant already chosen.",
+    "keywords": [
+     "which app",
+     "lc volant help",
+     "get help",
+     "volant support"
+    ]
+   },
+   {
+    "id": "reported-on-this-page",
+    "title": "Your reports and the boards",
+    "body": "Anything you send with the light bulb shows here too. Glitches your team has reported is private to your account. Suggestions and General Feedback are boards every Command Suite login can see and vote on. Press Share a suggestion or Share your feedback to add to them.",
+    "keywords": [
+     "glitches",
+     "suggestions",
+     "general feedback",
+     "vote",
+     "board"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "travel-partner",
+  "name": "Travel Partner",
+  "area": "Help and everywhere",
+  "where": "Floating button, bottom right of every page",
+  "href": "/",
+  "what": "Your helper that follows you from page to page. One tab is your AI assistant. The other is Help & setup, with your setup checklist and a box for how-to questions.",
+  "ai": "AI-powered",
+  "aiNote": "The assistant tab and How do I… both use your own AI key. Anything the assistant changes for you waits behind Approve. Without a key, How do I… still gives you the closest answer from the Help library.",
+  "steps": [
+   "Press Travel Partner at the bottom right of the page.",
+   "To talk to your assistant, press the Ask tab, which carries your assistant's name.",
+   "For setup, press Help & setup, then Setup checklist, and press Next Step to go to it.",
+   "For a how-to answer, press Help & setup, then How do I…, and type in Ask about any feature.",
+   "If the answer does not cover it, press Send this to support.",
+   "To move the button, drag the grip. Press Reset to put it back."
+  ],
+  "health": "Using Travel Partner does not change your scores. The setup checklist points you to your assessments, and those are what set your scores.",
+  "tips": [
+   "Until your setup is finished it opens on Help & setup. After that it opens on your assistant.",
+   "Setup steps tick themselves when you finish them. The steps under Get going you tick by hand.",
+   "How do I… answers how to use the Suite. For questions about your own business, use your assistant."
+  ],
+  "questions": [
+   {
+    "q": "Does it know my business?",
+    "a": "Your assistant does. How do I… only answers from the Help library and any Q&A you added."
+   },
+   {
+    "q": "Why is the button missing?",
+    "a": "It does not show inside The Collective, which has its own space."
+   },
+   {
+    "q": "Where do I see a question I sent to support?",
+    "a": "You get an email reply, and it is under Help > Contact Support > My requests."
+   }
+  ],
+  "related": [
+   "ai-assistant",
    "ai-assistant-setup-and-your-key",
-   "billing-and-plan",
+   "help-and-qa",
+   "contact-support-and-whats-new",
+   "what-your-assistant-can-do-for-you"
+  ],
+  "who": "Everyone. A team member's AI use runs on the account owner's key, and the owner can set a monthly limit.",
+  "keywords": [
+   "travel partner",
+   "floating button",
+   "widget",
+   "help widget",
+   "assistant",
+   "chat",
+   "setup checklist",
+   "how do i",
+   "ask",
+   "move the button",
+   "progress",
+   "bottom right"
+  ],
+  "sections": [
+   {
+    "id": "setup-checklist",
+    "title": "Setup checklist",
+    "body": "The same steps as Set up Suite, then Get going. The percentage on the button shows how far along you are. Press Finish setup when it appears to open Set up Suite.",
+    "keywords": [
+     "setup checklist",
+     "progress",
+     "percent",
+     "get going",
+     "next step"
+    ]
+   },
+   {
+    "id": "how-do-i",
+    "title": "How do I…",
+    "body": "Type any how-to question. Answers come from the Help library and your own Q&A.",
+    "keywords": [
+     "how do i",
+     "ask about any feature",
+     "how to"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "quick-add",
+  "name": "Quick add (+)",
+  "area": "Help and everywhere",
+  "where": "The + button in the top bar",
+  "href": "/",
+  "what": "A shortcut for the things you add most, from any page: a task, a reminder, a sale, a post or a planning session.",
+  "ai": "No AI",
+  "aiNote": "",
+  "steps": [
+   "Press the + in the top bar.",
+   "Press New task or New reminder to add one in a small box without leaving your page.",
+   "For a task, type what needs doing. Add a date, time and priority if you want them, then press Add to today or Add task.",
+   "For a reminder, type what you need to remember and press a quick time, or pick a date and time and press Save.",
+   "Press Log a sale, Create content or Schedule planning session to open that page, ready to fill in."
+  ],
+  "health": "The + itself does not change your scores. A task you add here counts toward your Internal Process & Culture pillar like any other task.",
+  "tips": [
+   "A task with no date goes straight to Today.",
+   "If you add a time to a task, choose Due by this time or Do it at this time.",
+   "Pressing the + again closes the menu."
+  ],
+  "questions": [
+   {
+    "q": "Where do these go?",
+    "a": "Tasks go to Tasks, reminders to Reminders, sales to Sales Activities and posts to the Content Calendar."
+   },
+   {
+    "q": "What is the difference between a task and a reminder?",
+    "a": "A task is work to do. A reminder is a one-off thing you want to be told about at a set time."
+   }
+  ],
+  "related": [
+   "tasks",
+   "reminders",
+   "sales-activities",
+   "planning-hub",
    "business-segments"
   ],
-  "who": "The account owner and Admins. Editors and Viewers do not see this tab. Only the owner can set AI limits or delete a workspace.",
+  "who": "Everyone. Team members can use what their areas allow.",
   "keywords": [
-   "team",
-   "invite",
-   "add member",
-   "add someone",
-   "staff",
-   "assistant",
-   "roles",
-   "admin",
-   "editor",
-   "viewer",
-   "workspace",
-   "business name",
-   "logo",
-   "social links",
-   "website",
-   "remove member",
-   "activity log"
-  ],
-  "sections": [
-   {
-    "id": "your-workspace",
-    "title": "Your workspaces",
-    "body": "Your Workspaces lists each one with how many your plan allows. Press Create New Workspace to add one, or Set as Default Workspace to change your default. You must keep at least one.",
-    "keywords": [
-     "workspace",
-     "default workspace",
-     "new workspace",
-     "second business",
-     "delete workspace",
-     "slug"
-    ]
-   },
-   {
-    "id": "team-roles",
-    "title": "Team roles",
-    "body": "Choose Admin, Editor or Viewer when you invite someone. Change it any time from the menu on their card. The Role Permissions box lists what each one can do.",
-    "keywords": [
-     "roles",
-     "admin",
-     "editor",
-     "viewer",
-     "permissions",
-     "change role"
-    ]
-   },
-   {
-    "id": "ai-limits-per-member",
-    "title": "AI limits for each person",
-    "body": "Each card shows AI this month. The owner can press Set a monthly limit and enter a number of requests. Leave it blank for no limit. When someone reaches it, their AI stops until the next month.",
-    "keywords": [
-     "ai limit",
-     "monthly limit",
-     "ai cap",
-     "ai use",
-     "requests"
-    ]
-   },
-   {
-    "id": "team-activity",
-    "title": "Team activity",
-    "body": "Open the Activity tab to see who did what. Past 7 days sums up each person, and you can filter the log by Person, Area, From and To.",
-    "keywords": [
-     "activity",
-     "activity log",
-     "who did what",
-     "audit",
-     "history"
-    ]
-   }
+   "plus",
+   "+",
+   "quick add",
+   "add task fast",
+   "new task",
+   "new reminder",
+   "log a sale",
+   "create content",
+   "schedule planning session",
+   "shortcut",
+   "top bar"
   ]
  },
  {
-  "id": "team-access-limits",
-  "name": "Team access limits",
-  "area": "Settings",
-  "where": "Settings > Workspace > Team Members > Edit access",
-  "href": "/settings?tab=workspace",
-  "what": "Choose exactly what one team member can reach. Turn each area to No access, View or Edit, start from a preset, and add limits such as only their own tasks or no deleting.",
-  "ai": "No AI",
-  "aiNote": "This page does not use AI. If you leave the AI assistant area on for someone, the assistant acts only within the areas they have.",
-  "steps": [
-   "Open Settings, then Workspace, and find the person under Team Members.",
-   "Press Edit access on their card.",
-   "Under What they can reach, choose a preset or Custom.",
-   "Set each area to No access, View or Edit.",
-   "Tick any limits you want, then press Save access."
-  ],
-  "health": "This does not change your scores. It lets you share the work while keeping the rest of your account private.",
-  "tips": [
-   "Changes apply the next time they open a page.",
-   "The summary on each card shows what the person can edit, what they can view and their limits.",
-   "To undo it all, choose Everything their role allows and press Save access."
-  ],
-  "questions": [
-   {
-    "q": "Why is there no Edit access button for my Admin?",
-    "a": "Edit access is there for Editors and Viewers only. An Admin has what the Admin role allows."
-   },
-   {
-    "q": "What will a team member never see?",
-    "a": "Billing, API keys, connected accounts and other members' details stay closed, whatever you choose here."
-   },
-   {
-    "q": "Can I share one of My Pages without opening all of them?",
-    "a": "Yes. Under My Pages, one at a time, choose View or Edit for just that page. It works even when the My Pages area is off."
-   }
-  ],
-  "related": [
-   "workspace-and-team",
-   "accepting-a-team-invitation",
-   "ai-assistant-setup-and-your-key"
-  ],
-  "who": "The account owner and Admins.",
-  "keywords": [
-   "permissions",
-   "limit access",
-   "restrict",
-   "what can my team see",
-   "view only",
-   "hide",
-   "bookkeeper",
-   "virtual assistant",
-   "va",
-   "presets",
-   "cannot delete",
-   "only their own",
-   "share a page"
-  ],
-  "sections": [
-   {
-    "id": "access-presets",
-    "title": "Presets",
-    "body": "Start from Virtual assistant, Bookkeeper, Sales, Content, Viewer, or Support & client care, then adjust any area. Changing an area makes it Custom.",
-    "keywords": [
-     "presets",
-     "virtual assistant",
-     "bookkeeper",
-     "sales",
-     "content",
-     "support"
-    ]
-   },
-   {
-    "id": "show-only-the-areas-above",
-    "title": "Show only the areas above",
-    "body": "Everything else closes and leaves their menu, including Executive Home and the assistant. Settings and Help stay open.",
-    "keywords": [
-     "show only",
-     "restrict",
-     "hide menu",
-     "closed"
-    ]
-   },
-   {
-    "id": "only-their-own",
-    "title": "Tasks and Reminders: only their own",
-    "body": "They see only the tasks and reminders that are theirs. The reminders they make are emailed to them and stay off your list and your bell.",
-    "keywords": [
-     "only their own",
-     "own tasks",
-     "own reminders",
-     "private"
-    ]
-   },
-   {
-    "id": "cannot-delete",
-    "title": "Cannot delete anything without your permission",
-    "body": "They can add, edit and update. A delete is refused and they are asked to come to you.",
-    "keywords": [
-     "cannot delete",
-     "no delete",
-     "permission to delete"
-    ]
-   }
-  ]
- },
- {
-  "id": "notifications",
-  "name": "Notifications",
-  "area": "Settings",
-  "where": "Settings > Notifications",
+  "id": "notifications-bell",
+  "name": "Notifications bell",
+  "area": "Help and everywhere",
+  "where": "The bell in the top bar",
   "href": "/settings?tab=notifications",
-  "what": "Choose when you hear about timed tasks, and whether the Suite emails you once a day when something needs your attention.",
+  "what": "A live list of what needs you right now, built from your own account: tasks due, bills coming up, follow-ups ready, score changes, reminders and more.",
   "ai": "No AI",
   "aiNote": "",
   "steps": [
-   "Open Settings, then Notifications.",
-   "Under Task reminders, choose how long before a timed task is due you want a reminder.",
-   "Tick and by email if you also want it by email.",
-   "Tick or untick the once-a-day email about things that need your attention."
+   "Look for the gold number on the bell. It shows how many alerts you have not read.",
+   "Press the bell to open your list.",
+   "Press an alert to go to the page that deals with it.",
+   "Press Mark all read to clear the gold number.",
+   "Hover over an alert and press the X to dismiss it."
   ],
-  "health": "This does not change your scores. It tells you when something needs you, such as a score drop or a slipped goal.",
+  "health": "The bell does not change your scores. It tells you when something has moved, such as a score drop, a slipped plan goal or a pillar in the Survival phase.",
   "tips": [
-   "Changes save as you make them. There is no Save button.",
-   "Emails for sign-ups, bookings and registrations are set on each form, calendar and campaign, not here.",
-   "The bell in the app keeps showing an alert until it is resolved or dismissed, even after you have been emailed about it."
+   "Most alerts clear on their own once you deal with what caused them.",
+   "The list checks for new alerts every minute.",
+   "An alert stays on the bell until it is resolved or dismissed, even after it has been emailed to you."
   ],
   "questions": [
    {
-    "q": "What is in the once-a-day email?",
-    "a": "Things like a score drop, a slipped goal, a stalled pipeline or a bill coming due. Each alert is emailed once."
+    "q": "Can I get these by email?",
+    "a": "Yes. Turn on the once-a-day email under Settings > Notifications. The important alerts are sent once each."
    },
    {
-    "q": "I am new and have not had this email. Is something wrong?",
-    "a": "No. It waits until your Brain, Soul and Profit assessments are done or your account is 14 days old, so your first emails are a welcome and not a to-do list."
+    "q": "It says You're all caught up. Is that right?",
+    "a": "Yes. Nothing in your account needs attention right now."
    },
    {
-    "q": "How do I stop these emails while I am away?",
-    "a": "Use Pause my reminder emails under Settings > Out of office."
+    "q": "Does the bell cover The Collective?",
+    "a": "This bell covers your Suite account. See Collective profile and notifications for that space."
    }
   ],
   "related": [
-   "out-of-office",
-   "profile"
-  ],
-  "who": "Everyone. The once-a-day attention email goes to the account owner.",
-  "keywords": [
    "notifications",
+   "out-of-office",
    "reminders",
-   "task reminder",
-   "email alerts",
-   "stop emails",
-   "turn off emails",
-   "daily email",
-   "too many emails",
+   "tasks",
+   "collective-profile-and-notifications"
+  ],
+  "who": "Everyone on the account. It shows the account's alerts.",
+  "keywords": [
+   "bell",
+   "notifications",
    "alerts",
-   "bell"
+   "gold number",
+   "unread",
+   "mark all read",
+   "dismiss",
+   "what needs my attention",
+   "all caught up"
+  ]
+ },
+ {
+  "id": "business-switcher",
+  "name": "Business switcher",
+  "area": "Help and everywhere",
+  "where": "Top bar, beside the page title",
+  "href": "/segments",
+  "what": "If you run more than one business, this filters your key pages to one of them, or shows All businesses together. With one business it simply shows your business name.",
+  "ai": "No AI",
+  "aiNote": "",
+  "steps": [
+   "Add your businesses under Settings > Business Segments.",
+   "Press the Business menu in the top bar.",
+   "Choose a business, or All businesses. The page reloads.",
+   "Work as usual. New items go to the business you chose."
+  ],
+  "health": "Choosing a business only changes what you see. Each business also has its own score on Progress, under Health by business.",
+  "tips": [
+   "A gold highlight on the menu means you are looking at one business, not all of them.",
+   "Your choice is kept on this device, so another device can show a different business.",
+   "Press Manage businesses at the bottom of the menu to add or change them."
+  ],
+  "questions": [
+   {
+    "q": "What does it filter?",
+    "a": "Executive Home, Daily Compass, tasks, finances, Sales Activities, Pipeline and Offers & Packages. Legal & Compliance and Progress follow it too."
+   },
+   {
+    "q": "Why do I not see it on my phone?",
+    "a": "The Business menu shows on larger screens only. Use a tablet or computer to switch."
+   },
+   {
+    "q": "Numbers look too low for one business. Why?",
+    "a": "Money with no business yet is left out. Look for the banner on the Finance page and press Assign them to."
+   }
+  ],
+  "related": [
+   "business-segments",
+   "finance-center",
+   "legal-compliance",
+   "progress",
+   "workspace-and-team"
+  ],
+  "who": "Everyone with two or more businesses. The account switcher shows only for people with their own account who are also on another account's team.",
+  "keywords": [
+   "business switcher",
+   "switch business",
+   "two businesses",
+   "multiple businesses",
+   "all businesses",
+   "filter by business",
+   "change account",
+   "my account",
+   "second business",
+   "brand"
   ],
   "sections": [
    {
-    "id": "new-client-alert-emails-held",
-    "title": "New accounts",
-    "body": "The once-a-day email is held until your assessments are done or your account is 14 days old.",
+    "id": "account-switcher",
+    "title": "Account switcher",
+    "body": "If you own an account and are also on someone else's team, a toggle in the top bar lets you switch between My Account and theirs. In their account you use their data and AI, within the limits of your role. Your own account stays as it was.",
     "keywords": [
-     "no alert email",
-     "new account",
-     "held",
-     "assessments"
+     "account switcher",
+     "my account",
+     "team account",
+     "two accounts",
+     "switch account"
+    ]
+   },
+   {
+    "id": "finance-per-business",
+    "title": "Finance per business",
+    "body": "Money you add goes to the business chosen at the top, and Income, Expenses, Bills, Profit & Loss and Pulse show just that business. All businesses adds them together. If some money has no business yet, a banner offers Assign them to, one press for all of it. Budget, income goals and tax set-aside stay account-wide.",
+    "keywords": [
+     "finance by business",
+     "assign to business",
+     "unassigned money",
+     "profit and loss by business",
+     "banner"
+    ]
+   },
+   {
+    "id": "health-by-business",
+    "title": "Health by business",
+    "body": "Open Progress to see each business's own score. It starts from your account's assessment scores and moves with what is tied to that business, such as its tasks, its money and its compliance checklist. Choose a business at the top to see its dimensions and notes.",
+    "keywords": [
+     "health by business",
+     "score per business",
+     "business score",
+     "progress"
+    ]
+   },
+   {
+    "id": "legal-compliance-per-business",
+    "title": "Legal & Compliance per business",
+    "body": "Each business keeps its own checklist, which starts empty. All businesses is the account-wide checklist. Your account's Legal figure is the average of the checklists you have started.",
+    "keywords": [
+     "compliance by business",
+     "legal checklist",
+     "per business checklist"
     ]
    }
   ]
  },
  {
-  "id": "out-of-office",
-  "name": "Out of office",
-  "area": "Settings",
-  "where": "Settings > Out of office",
-  "href": "/settings?tab=away",
-  "what": "Going away? Pick your dates once and the Suite covers for you. It can close your booking pages, answer portal messages and pause your reminder emails. Everything your clients signed up for keeps running.",
+  "id": "suggestions-light-bulb",
+  "name": "Suggestions light bulb",
+  "area": "Help and everywhere",
+  "where": "The light bulb in the top bar",
+  "href": "/help/contact",
+  "what": "The quick way to tell the team something from any page: report a glitch, share a suggestion or give general feedback.",
   "ai": "No AI",
-  "aiNote": "You can also tell your assistant your away dates. It prepares a card and nothing changes until you press Approve. This uses your own AI key.",
+  "aiNote": "",
   "steps": [
-   "Open Settings, then Out of office.",
-   "Pick your First day away and Last day away.",
-   "Write a Note to clients, or leave it blank to use the standard note.",
-   "Tick what you want the Suite to do while you are away.",
-   "Press Set my away dates."
+   "Press the light bulb in the top bar.",
+   "Choose Something's not working, I have a suggestion or General feedback.",
+   "Add a short title and a few details.",
+   "For a glitch, leave the box ticked if you want a support ticket so the team follows up with you directly.",
+   "Press Send."
   ],
-  "health": "This does not change your scores. It looks after your clients and quiets your reminders while you rest.",
+  "health": "This does not change your scores. It tells the team what would make the Suite better for you.",
   "tips": [
-   "Your Gmail or Outlook inbox needs its own vacation responder. The Suite cannot answer email sent straight to your inbox.",
-   "If you leave the note blank, clients see that you are away, the day you are back, and that you will reply then."
+   "Suggestions and general feedback can be seen by everyone with a Command Suite login, so leave out private details.",
+   "Say what you were doing and what you expected. It helps the team find a glitch faster.",
+   "Vote on other people's ideas under Help > Contact Support."
   ],
   "questions": [
    {
-    "q": "Do my campaigns stop while I am away?",
-    "a": "No. Campaigns, event emails, booking reminders and Client Care keep running."
+    "q": "Who can see a glitch I report?",
+    "a": "Only your account, your team and the LifeCharter team."
    },
    {
-    "q": "I came home early. How do I turn this off?",
-    "a": "Press I'm back (turn off). Everything goes back to normal."
+    "q": "Where do I see what I sent?",
+    "a": "Press See it on your Support page after you send, or open Help > Contact Support."
    },
    {
-    "q": "Will a client get my note every time they message?",
-    "a": "No. Each client gets it once per trip, and you still get their message."
+    "q": "Will I hear about the fix?",
+    "a": "Fixes are listed under What's new on the Contact Support page. If you opened a support ticket, the team follows up with you directly."
+   }
+  ],
+  "related": [
+   "contact-support-and-whats-new",
+   "help-and-qa"
+  ],
+  "who": "Everyone.",
+  "keywords": [
+   "light bulb",
+   "lightbulb",
+   "feedback",
+   "suggestion",
+   "idea",
+   "feature request",
+   "report a bug",
+   "glitch",
+   "something is not working",
+   "vote"
+  ]
+ },
+ {
+  "id": "left-menu",
+  "name": "Left menu",
+  "area": "Help and everywhere",
+  "where": "Left side of every page",
+  "href": "/",
+  "what": "Your way around the Suite. Pages sit in sections, and you can fold, shrink and rearrange the menu to suit how you work.",
+  "ai": "No AI",
+  "aiNote": "",
+  "steps": [
+   "Press a section name to fold or open it.",
+   "Press the arrow at the top of the menu to shrink it to icons. Hover over an icon to see its name.",
+   "Drag a page to a new place. Or use the small up and down arrows beside it.",
+   "Drag a whole section by its grip to move it.",
+   "Hover over a section name and press A–Z to sort its pages.",
+   "To go back to the standard order, press Reset menu order at the bottom."
+  ],
+  "health": "The menu does not change your scores. It only changes how you get around.",
+  "tips": [
+   "Your order is saved to your account, so it is the same on every device and for your whole team.",
+   "Rearranging works with the full menu open, not the icon view.",
+   "If a drag does not land, use the small up and down arrows. They always work."
+  ],
+  "questions": [
+   {
+    "q": "Why do I not see a page someone else has?",
+    "a": "Team members see the areas they were given. Team Huddle shows only when your account has a team."
+   },
+   {
+    "q": "Where is Help?",
+    "a": "At the bottom of the menu, under the sections. Press Help to open its list."
+   },
+   {
+    "q": "How do I open the menu on a phone?",
+    "a": "Press the menu button at the top left. Press Close menu when you are done."
+   }
+  ],
+  "related": [
+   "use-it-on-your-phone",
+   "team-access-limits",
+   "appearance-and-text-size",
+   "help-and-qa"
+  ],
+  "who": "Everyone. Reset menu order shows once your order has been changed.",
+  "keywords": [
+   "left menu",
+   "sidebar",
+   "navigation",
+   "menu",
+   "reorder menu",
+   "drag pages",
+   "move section",
+   "fold section",
+   "collapse menu",
+   "reset menu order",
+   "a to z",
+   "where is",
+   "cannot find page"
+  ],
+  "sections": [
+   {
+    "id": "menu-sections",
+    "title": "Sections in the menu",
+    "body": "Daily Operations, Clients & Sales, Marketing, Client Delivery, Money, Alignment & Systems, Settings and Getting Started. Help sits below them.",
+    "keywords": [
+     "sections",
+     "daily operations",
+     "clients and sales",
+     "marketing",
+     "client delivery",
+     "money",
+     "alignment and systems",
+     "getting started"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "use-it-on-your-phone",
+  "name": "Use it on your phone",
+  "area": "Help and everywhere",
+  "where": "Daily Operations > Quick Capture has the steps",
+  "href": "/capture",
+  "what": "Put the Suite on your phone's home screen so it opens like an app. Every signed-in page is made to fit a phone.",
+  "ai": "No AI",
+  "aiNote": "",
+  "steps": [
+   "Sign in to the Suite in your phone's browser.",
+   "On iPhone in Safari, tap Share, then Add to Home Screen.",
+   "On Android in Chrome, tap the three-dot menu, then Install app.",
+   "Open the Suite from the new icon on your home screen.",
+   "Press and hold the icon for shortcuts to Quick capture, Daily Compass and your tasks."
+  ],
+  "health": "Using a phone does not change your scores. Tasks and money you capture there count the same as anywhere else.",
+  "tips": [
+   "Quick Capture is built for the phone, for a task or money in or out while you are out.",
+   "Tap the menu button at the top left to reach the left menu and Help.",
+   "On a phone, Contact Support sits under Help in the menu."
+  ],
+  "questions": [
+   {
+    "q": "Do I need to download it from an app store?",
+    "a": "No. You add it from your phone's browser."
+   },
+   {
+    "q": "What looks different on a phone?",
+    "a": "The left menu opens from a button, and Contact Support moves into it. The top search box and the Business menu do not show."
+   },
+   {
+    "q": "Is there a separate step for The Collective?",
+    "a": "Yes. The Collective has its own steps. See The Collective on your phone."
+   }
+  ],
+  "related": [
+   "quick-capture",
+   "left-menu",
+   "collective-on-your-phone",
+   "business-switcher"
+  ],
+  "who": "Everyone.",
+  "keywords": [
+   "phone",
+   "mobile",
+   "iphone",
+   "android",
+   "install",
+   "add to home screen",
+   "home screen",
+   "app",
+   "app icon",
+   "download app",
+   "tablet",
+   "shortcut"
+  ],
+  "sections": [
+   {
+    "id": "install-on-phone",
+    "title": "Install on your phone",
+    "body": "Add to Home Screen on iPhone, or Install app on Android. The same steps are on the Quick Capture page.",
+    "keywords": [
+     "install",
+     "add to home screen",
+     "install app",
+     "safari",
+     "chrome"
+    ]
+   },
+   {
+    "id": "phone-width-layout",
+    "title": "How pages fit a phone",
+    "body": "Pages stay within your screen. The feedback, notification and quick-add panels fit inside it, and the account switcher gets its own row.",
+    "keywords": [
+     "phone layout",
+     "fits screen",
+     "sideways",
+     "small screen"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "what-the-suite-does-on-its-own",
+  "name": "What the Suite does on its own",
+  "area": "Help and everywhere",
+  "where": "Runs automatically, with nothing to open",
+  "href": "/settings?tab=notifications",
+  "what": "The Suite keeps working when you are away from your screen. It sends what you scheduled, reminds you of what is coming and keeps your connected tools up to date.",
+  "ai": "No AI",
+  "aiNote": "",
+  "steps": [
+   "Set up what you want sent, such as a campaign, a broadcast or a calendar.",
+   "Connect your tools under Settings, such as Stripe and your calendar.",
+   "Choose your reminder emails under Settings > Notifications.",
+   "Let it run. The bell tells you if something needs you."
+  ],
+  "health": "These jobs do not change your scores by themselves. Income from a connected Stripe account lands in your Finance records, which feed your Finance dimension.",
+  "tips": [
+   "Going away? Use Settings > Out of office to pause your reminder emails.",
+   "Nothing goes to your clients unless you turned it on or scheduled it."
+  ],
+  "questions": [
+   {
+    "q": "Do I have to leave the Suite open?",
+    "a": "No. These all run on their own, whether or not you are signed in."
+   },
+   {
+    "q": "What if a connected calendar stops working?",
+    "a": "The Suite checks it regularly. You get a bell alert and an email with a link to reconnect it."
+   },
+   {
+    "q": "Why did I not get an email I expected?",
+    "a": "Check Settings > Notifications and Settings > Out of office. Emails to your own contacts depend on your email sending setup."
    }
   ],
   "related": [
    "notifications",
-   "what-your-assistant-can-do-for-you",
-   "profile"
+   "out-of-office",
+   "email-sending-setup",
+   "connect-stripe",
+   "calendars-and-booking-pages",
+   "integrations"
   ],
-  "who": "The account owner and Admins. Editors and Viewers do not see this tab.",
+  "who": "Everyone. Each job works on the account's own data and only where it has been set up.",
   "keywords": [
-   "out of office",
-   "away",
-   "vacation",
-   "holiday",
-   "time off",
-   "auto reply",
-   "autoreply",
-   "close bookings",
-   "block dates",
-   "away message",
-   "pause reminders"
+   "automatic",
+   "automations",
+   "runs by itself",
+   "background",
+   "scheduled",
+   "reminder emails",
+   "broadcast",
+   "stripe sync",
+   "booking reminders",
+   "what happens automatically"
   ],
   "sections": [
    {
-    "id": "close-my-booking-pages",
-    "title": "Close my booking pages on those dates",
-    "body": "No one can book a time on those days. Your booking pages show your note.",
+    "id": "sends-for-you",
+    "title": "What it sends",
+    "body": "Scheduled broadcasts, the emails in your campaign series, reminders for booked meetings and events, and nudges to anyone who has not yet signed a document in LC Plume.",
     "keywords": [
-     "close bookings",
-     "block dates",
-     "booking pages",
-     "no bookings"
+     "broadcast",
+     "campaign",
+     "booking reminder",
+     "event reminder",
+     "sign reminder"
     ]
    },
    {
-    "id": "answer-portal-messages",
-    "title": "Answer portal messages for me",
-    "body": "A client who messages you in their portal gets your note back once per trip. You still get their message.",
+    "id": "reminds-you",
+    "title": "What it reminds you of",
+    "body": "Timed tasks and reminders you typed in, if you have email reminders on, and the once-a-day email about what needs your attention.",
     "keywords": [
-     "portal",
-     "auto reply",
-     "client messages"
+     "task reminder",
+     "daily email",
+     "reminder email"
     ]
    },
    {
-    "id": "pause-my-reminder-emails",
-    "title": "Pause my reminder emails",
-    "body": "Your daily alerts, task reminders and to-do emails stop until you are back.",
+    "id": "keeps-connected",
+    "title": "What it keeps up to date",
+    "body": "Sales from your connected Stripe account come into your records each morning, and connected calendars are checked regularly. If you turned on the automatic pick-up in LC Volant, your Zoom recordings are collected and transcribed.",
     "keywords": [
-     "pause reminders",
-     "stop emails",
+     "stripe sync",
+     "calendar check",
+     "zoom recordings",
+     "volant"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "calls-with-the-lifecharter-team",
+  "name": "Calls with the LifeCharter team",
+  "area": "Help and everywhere",
+  "where": "Booking links the team sends you",
+  "href": "/book/new-client-welcome-call",
+  "what": "One-on-one calls you book yourself: your New Client Welcome Call, and a Client Check-In Call when you need extra support. Both are 30 minutes with Babs on Zoom.",
+  "ai": "No AI",
+  "aiNote": "",
+  "steps": [
+   "Open the booking link in your email.",
+   "Choose a day and time. Times show in your own time zone.",
+   "Fill in your name, your email and any question on the form.",
+   "Press Confirm booking.",
+   "Watch for your confirmation email. It has your Zoom link and a calendar invitation."
+  ],
+  "health": "Booking a call does not change your scores. It is your time with Babs to get help with what matters most.",
+  "tips": [
+   "Choose Reschedule or cancel after you book if your plans change.",
+   "Your confirmation email has everything you need to join."
+  ],
+  "questions": [
+   {
+    "q": "When do I book my Welcome Call?",
+    "a": "After you sign. The link is in the email you get, with your name and email filled in."
+   },
+   {
+    "q": "What happens after I book my Welcome Call?",
+    "a": "You are invited to the next New Client Launch Call. The date, Zoom link and a calendar file come by email."
+   },
+   {
+    "q": "How far ahead can I book?",
+    "a": "Up to 30 days ahead. A Welcome Call needs 12 hours' notice and a Check-In Call needs 24 hours' notice."
+   }
+  ],
+  "related": [
+   "coaching-calls-and-replays",
+   "contact-support-and-whats-new",
+   "calendars-and-booking-pages"
+  ],
+  "who": "LifeCharter clients. These are the team's calendars, not your own booking pages.",
+  "keywords": [
+   "welcome call",
+   "new client welcome call",
+   "check-in call",
+   "client check-in",
+   "book a call",
+   "call with babs",
+   "zoom call",
+   "launch call",
+   "reschedule",
+   "cancel call",
+   "one on one"
+  ],
+  "sections": [
+   {
+    "id": "new-client-welcome-call",
+    "title": "New Client Welcome Call",
+    "body": "A 30-minute one-on-one with Babs on Zoom, once you have signed. Book at lccommandsuite.com/book/new-client-welcome-call.",
+    "keywords": [
+     "welcome call",
+     "first call",
+     "new client"
+    ]
+   },
+   {
+    "id": "client-check-in-call",
+    "title": "Client Check-In Call",
+    "body": "A 30-minute one-on-one with Babs on Zoom for when you need extra support. Book at lccommandsuite.com/book/client-check-in-call.",
+    "keywords": [
+     "check-in call",
+     "extra support",
+     "stuck",
      "quiet"
     ]
    }
   ]
  },
  {
-  "id": "appearance-and-text-size",
-  "name": "Appearance and text size",
-  "area": "Settings",
-  "where": "Settings > Appearance",
-  "href": "/settings?tab=appearance",
-  "what": "Make the Suite comfortable for your eyes. Choose light or dark, a colour scheme, a text size and how tightly the pages are spaced.",
+  "id": "privacy-terms-and-your-agreement",
+  "name": "Privacy, terms and your agreement",
+  "area": "Help and everywhere",
+  "where": "Legal pages on lccommandsuite.com",
+  "href": "/legal/privacy-policy",
+  "what": "The legal pages that cover your Suite account: the Privacy Policy, the Terms of Sale & Service Agreement, the Year-1 Commitment Acknowledgment and the Community Guidelines & Terms of Use.",
   "ai": "No AI",
   "aiNote": "",
   "steps": [
-   "Open Settings, then Appearance.",
-   "Under Theme, press Light, Dark or System.",
-   "Under Color Scheme, press LifeCharter, Sacred or Modern.",
-   "Under Font Size, press Small, Medium or Large.",
-   "Tick Compact mode if you want less padding and more on screen."
+   "Open the page you need. The addresses are listed below.",
+   "Read it in your browser. These pages are public, so you do not need to sign in.",
+   "Questions about your agreement? Send a request through Help > Contact Support."
   ],
-  "health": "This does not change your scores. It makes the Suite easier to read and use.",
+  "health": "These pages do not change your scores. Your Legal & Compliance checklist is what feeds your Legal dimension.",
   "tips": [
-   "System follows the light or dark setting on your device.",
-   "You can also switch between light and dark from the bottom of the left menu.",
-   "Your choices save as you press them. There is no Save button."
+   "The Privacy Policy explains what is collected and how it is used, including Google data.",
+   "The Community Guidelines are for The LifeCharter Collective."
   ],
   "questions": [
    {
-    "q": "Will my text size follow me to my phone?",
-    "a": "Yes. Your font size is saved to your account and follows you to other devices. Your theme, colour scheme and compact mode are saved on the device you set them on."
+    "q": "Where do I control my own data?",
+    "a": "Under Settings > Data & Privacy. The Privacy Policy explains your choices."
    },
    {
-    "q": "The left menu is hard to read. Can I make it bigger?",
-    "a": "Yes. The menu text follows your Font Size, so Large makes it bigger too."
+    "q": "Can LifeCharter support see my account?",
+    "a": "Only in a read-only view, to help with a support request. See Who has opened my account."
    }
   ],
   "related": [
-   "profile",
-   "notifications"
-  ],
-  "who": "Everyone. Each person sets their own.",
-  "keywords": [
-   "dark mode",
-   "light mode",
-   "theme",
-   "colors",
-   "colours",
-   "text size",
-   "font size",
-   "bigger text",
-   "hard to read",
-   "small text",
-   "compact",
-   "accessibility"
-  ],
-  "sections": [
-   {
-    "id": "text-size",
-    "title": "Text size on every page",
-    "body": "Small, Medium and Large change the text on every page, including small labels and tags. Medium is the starting size.",
-    "keywords": [
-     "text size",
-     "font size",
-     "bigger text",
-     "labels"
-    ]
-   },
-   {
-    "id": "left-menu-readability",
-    "title": "Left menu",
-    "body": "The menu text follows your Font Size. New clients also see Getting Started pinned at the top of the menu until First 30 Days is complete.",
-    "keywords": [
-     "left menu",
-     "menu text",
-     "getting started",
-     "pinned"
-    ]
-   },
-   {
-    "id": "theme",
-    "title": "Theme",
-    "body": "Choose Light, Dark or System here. The button at the bottom of the left menu switches between light and dark.",
-    "keywords": [
-     "theme",
-     "dark mode",
-     "light mode",
-     "system"
-    ]
-   }
-  ]
- },
- {
-  "id": "ai-assistant-setup-and-your-key",
-  "name": "AI Assistant setup and your key",
-  "area": "Settings",
-  "where": "Settings > AI Assistant",
-  "href": "/settings?tab=ai",
-  "what": "Connect your own AI key so your assistant comes online. Name your assistant, tell it how to reply and what to remember about you, and see everything it has prepared.",
-  "ai": "No AI",
-  "aiNote": "This page does not call AI itself. It is where you connect your own key, which powers every AI feature in your Suite. Without a key, your assistant stays offline.",
-  "steps": [
-   "Open AI Assistant under Settings in the left menu.",
-   "Press Get a Claude key or Get an OpenAI key and create an API key on that company's site.",
-   "Paste it into the AI key box.",
-   "Add an Assistant name, how it should reply, and what it should know about you. All three are optional.",
-   "Press Save AI settings, and check for Key configured under the box."
-  ],
-  "health": "This does not change your scores. It turns on the AI features that read your scores and plans and help you act on them.",
-  "tips": [
-   "An API key is different from a Claude or ChatGPT subscription, so those logins will not work here.",
-   "Create a separate key just for the Command Suite so you can see exactly what it costs.",
-   "Voice notes need an OpenAI key. Everything else works with either."
-  ],
-  "questions": [
-   {
-    "q": "Who pays for the AI?",
-    "a": "The AI company you chose charges your own account for what you use. LifeCharter does not receive any of that charge."
-   },
-   {
-    "q": "If I switch from OpenAI to Claude, does my assistant forget everything?",
-    "a": "No. Paste the new key to replace the old one. Your conversations, assessments and plans live in your Command Suite, not with the AI company."
-   },
-   {
-    "q": "Does my team need their own key?",
-    "a": "No. Team members use your key, and you can set a monthly limit for each person under Settings > Workspace."
-   }
-  ],
-  "related": [
-   "ai-assistant",
-   "what-your-assistant-can-do-for-you",
-   "what-your-assistant-will-and-will-not-do",
-   "workspace-and-team",
-   "pop-out-assistant"
-  ],
-  "who": "The account owner only.",
-  "keywords": [
-   "ai key",
-   "api key",
-   "openai",
-   "claude",
-   "anthropic",
-   "chatgpt",
-   "connect ai",
-   "assistant offline",
-   "needs a key",
-   "name my assistant",
-   "instructions",
-   "what does ai cost",
-   "sidekick"
-  ],
-  "sections": [
-   {
-    "id": "name-and-instructions",
-    "title": "Name your assistant and how it replies",
-    "body": "Leave the name blank to use the default. Under How should it reply, give standing instructions on tone, length and format, or press a suggestion to add it. These shape how it replies. It still uses only your own information.",
-    "keywords": [
-     "name",
-     "instructions",
-     "tone",
-     "how it replies",
-     "shorter answers"
-    ]
-   },
-   {
-    "id": "what-it-should-know",
-    "title": "What your assistant should know about you",
-    "body": "Facts it should always keep in mind, such as your team, your schedule and your preferences. This is private to your account. Update it whenever things change.",
-    "keywords": [
-     "remember",
-     "memory",
-     "about me",
-     "notes"
-    ]
-   },
-   {
-    "id": "your-own-key",
-    "title": "Your own key",
-    "body": "Your key can be from Claude or OpenAI, and the Suite recognises which. It is stored securely and is never shown again. Paste a new key any time to replace it.",
-    "keywords": [
-     "key",
-     "claude key",
-     "openai key",
-     "replace key",
-     "encrypted"
-    ]
-   },
-   {
-    "id": "what-your-assistant-has-done",
-    "title": "What your assistant has done",
-    "body": "Open this list to see what your assistant prepared and how it ended: Done, Waiting for you, Cancelled, Undone or Didn't work.",
-    "keywords": [
-     "activity",
-     "history",
-     "what has my assistant done",
-     "log"
-    ]
-   }
-  ]
- },
- {
-  "id": "integrations",
-  "name": "Integrations",
-  "area": "Settings",
-  "where": "Settings > Integrations",
-  "href": "/settings?tab=integrations",
-  "what": "Connect the outside accounts your Suite works with: your Google or Microsoft 365 calendar and email, and your own Stripe account. You also set your main currency here.",
-  "ai": "No AI",
-  "aiNote": "",
-  "steps": [
-   "Open Settings, then Integrations.",
-   "Under Calendar & Email, press Add Google account or Add Microsoft 365 account and sign in.",
-   "On the Stripe card, press Connect with Stripe, or paste a read-only key using the steps on the card.",
-   "Under Currency, choose your main currency.",
-   "Use Disconnect on any account to remove it."
-  ],
-  "health": "Connecting Stripe can change your scores. The payments, fees and refunds it adds to your ledger count toward your Finance dimension, which looks at revenue against your goal, margin and cash runway. Your calendar and email connections do not change your scores.",
-  "tips": [
-   "Your AI key and email accounts do not count toward your plan's integration spots.",
-   "Emailing your contacts is separate. Campaigns, broadcasts and booking emails go through your own Resend account, set up in Contacts > Email sending.",
-   "If a Google account shows Calendar is read-only, add that account again so the app can add events."
-  ],
-  "questions": [
-   {
-    "q": "Can I read my Gmail inside the Suite?",
-    "a": "No. A Google account lets the Suite send email from your own address and use your calendar. It does not read your Gmail inbox. A Microsoft 365 account does show your inbox."
-   },
-   {
-    "q": "Will disconnecting Stripe remove my income from Finance?",
-    "a": "No. Payments already in your ledger stay there."
-   },
-   {
-    "q": "Why can I not add another email account?",
-    "a": "You have reached your plan's limit. Disconnect one, or look at your plan under Settings > Billing."
-   }
-  ],
-  "related": [
-   "billing-and-plan",
-   "ai-assistant-setup-and-your-key",
    "data-privacy",
-   "workspace-and-team"
-  ],
-  "who": "The account owner only. Team members do not see this tab.",
-  "keywords": [
-   "connect",
-   "google",
-   "gmail",
-   "microsoft",
-   "outlook",
-   "calendar",
-   "email account",
-   "stripe",
-   "payments",
-   "disconnect",
-   "reconnect",
-   "currency",
-   "gst",
-   "hst"
-  ],
-  "sections": [
-   {
-    "id": "calendar-and-email",
-    "title": "Calendar & Email",
-    "body": "Connect Google or Microsoft 365 to see your calendar, send email from your own address and let the app add events. The card shows how many email accounts your plan allows.",
-    "keywords": [
-     "calendar",
-     "email",
-     "google",
-     "microsoft",
-     "add account"
-    ]
-   },
-   {
-    "id": "gmail-sending-and-calendar",
-    "title": "Gmail: sending and calendar only",
-    "body": "The Suite does not read Gmail inboxes, so read your messages in Gmail itself. Your replies from the Suite still go out from your own address.",
-    "keywords": [
-     "gmail",
-     "inbox",
-     "read email",
-     "missing emails"
-    ]
-   },
-   {
-    "id": "stripe-your-payments",
-    "title": "Stripe",
-    "body": "Every payment you take through Stripe goes into your Finance Center as income, with fees and refunds as expenses. It syncs each morning, and Sync now runs it any time. Connect with Stripe also lets the Suite make payment links for your offers.",
-    "keywords": [
-     "stripe",
-     "sync",
-     "ledger",
-     "payment links",
-     "fees",
-     "refunds"
-    ]
-   },
-   {
-    "id": "currency-and-sales-tax",
-    "title": "Currency and Canadian sales tax",
-    "body": "Choose US or Canadian dollars as your main currency. The two are kept separate and never converted. With Canadian dollars, a sales tax card also appears for GST/HST, QST and PST. The Suite is a tool, not tax advice.",
-    "keywords": [
-     "currency",
-     "canadian dollars",
-     "cad",
-     "gst",
-     "hst",
-     "qst",
-     "pst"
-    ]
-   }
-  ]
- },
- {
-  "id": "billing-and-plan",
-  "name": "Billing and plan",
-  "area": "Settings",
-  "where": "Settings > Billing",
-  "href": "/settings?tab=billing",
-  "what": "See which plan you are on and manage your billing. Update your card, see your invoices and change your plan through Stripe's secure billing page.",
-  "ai": "No AI",
-  "aiNote": "",
-  "steps": [
-   "Open Settings, then Billing.",
-   "Check your plan and renewal date under Current plan.",
-   "Press Manage billing. This opens Stripe's billing page.",
-   "Update your card, open your invoices or choose a different plan.",
-   "When you finish, you return to Settings."
-  ],
-  "health": "This does not change your scores. It keeps your account paid and up to date.",
-  "tips": [
-   "If your card fails, start with Manage billing to update it.",
-   "Press Change to on another plan's card to open the same billing page."
-  ],
-  "questions": [
-   {
-    "q": "How do I cancel?",
-    "a": "Cancelling is not available in Manage billing. Please contact support."
-   },
-   {
-    "q": "What happens when I change plans?",
-    "a": "When you move up, your card on file is charged the prorated difference and you get an email confirming your new plan. When you move down, the unused part of your current period is credited."
-   },
-   {
-    "q": "My team cannot see this page. Is that right?",
-    "a": "Yes. Billing is for the account owner only."
-   }
-  ],
-  "related": [
-   "if-a-payment-fails",
-   "workspace-and-team",
-   "integrations"
-  ],
-  "who": "The account owner only.",
-  "keywords": [
-   "billing",
-   "invoice",
-   "receipt",
-   "update card",
-   "credit card",
-   "payment method",
-   "change plan",
-   "upgrade",
-   "downgrade",
-   "cancel",
-   "renewal",
-   "subscription"
-  ],
-  "sections": [
-   {
-    "id": "plan-limits",
-    "title": "What your plan sets",
-    "body": "Your plan sets how many workspaces, team seats, email accounts and integrations you can have, and your AI limits. You can see what you have used on Settings > Workspace and Settings > Integrations.",
-    "keywords": [
-     "limits",
-     "seats",
-     "how many",
-     "plan limit",
-     "reached limit"
-    ]
-   },
-   {
-    "id": "plan-upgrade-emails",
-    "title": "Emails when you move up",
-    "body": "When you move up a plan, you get an email confirming it, followed by one short check-in email. Moving down sends no emails.",
-    "keywords": [
-     "upgrade email",
-     "confirmation",
-     "check-in"
-    ]
-   }
-  ]
- },
- {
-  "id": "security",
-  "name": "Security",
-  "area": "Settings",
-  "where": "Settings > Security",
-  "href": "/settings?tab=security",
-  "what": "Keep your account safe. Change your password, turn on two-factor sign-in, sign out of other devices and see when support has opened your account.",
-  "ai": "No AI",
-  "aiNote": "",
-  "steps": [
-   "Open Settings, then Security.",
-   "To change your password, enter your current one and your new one twice, then press Update Password.",
-   "To add two-factor, press Enable 2FA.",
-   "Add the account to your authenticator app by scanning the code, copying the setup key or opening it in your app.",
-   "Enter the 6-digit code and press Confirm."
-  ],
-  "health": "This does not change your scores. It protects your account and everything in it.",
-  "tips": [
-   "Your new password needs at least 8 characters.",
-   "Lost a device, or used a shared one? Press Sign out other devices. It signs you out everywhere except where you are now.",
-   "Google Authenticator, 1Password and Authy all work for two-factor."
-  ],
-  "questions": [
-   {
-    "q": "I forgot my password. What do I do?",
-    "a": "On the sign-in page, choose Forgot or set your password and enter your email. We will send you a link."
-   },
-   {
-    "q": "What happens when two-factor is on?",
-    "a": "You enter a code from your authenticator app when you sign in. Press Turn off 2FA here if you ever want to stop."
-   },
-   {
-    "q": "Is this the same as Logins & Passwords?",
-    "a": "No. This page protects your Suite sign-in. Logins & Passwords is your private vault for other logins."
-   }
-  ],
-  "related": [
    "who-has-opened-my-account",
-   "logins-passwords",
-   "data-privacy",
-   "profile"
-  ],
-  "who": "Everyone. Who has opened my account shows for the account owner only.",
-  "keywords": [
-   "password",
-   "change password",
-   "reset password",
-   "two factor",
-   "2fa",
-   "mfa",
-   "authenticator",
-   "security code",
-   "sign out",
-   "lost phone",
-   "hacked",
-   "who has access"
-  ],
-  "sections": [
-   {
-    "id": "sign-out-other-devices",
-    "title": "Sign out other devices",
-    "body": "Under Sessions, press Sign out other devices to sign out everywhere except here.",
-    "keywords": [
-     "sign out",
-     "log out everywhere",
-     "lost device",
-     "shared device"
-    ]
-   },
-   {
-    "id": "who-has-opened-my-account",
-    "title": "Who has opened my account",
-    "body": "Support can open your account read-only to help with a request. It can look but not change, send or delete anything. Each time is listed here.",
-    "keywords": [
-     "support access",
-     "who has seen my account",
-     "read-only",
-     "privacy"
-    ]
-   }
-  ]
- },
- {
-  "id": "data-privacy",
-  "name": "Data & Privacy",
-  "area": "Settings",
-  "where": "Settings > Data & Privacy",
-  "href": "/settings?tab=data",
-  "what": "Download a copy of your information, and ask us to delete your account if you ever need to.",
-  "ai": "No AI",
-  "aiNote": "",
-  "steps": [
-   "Open Settings, then Data & Privacy.",
-   "Under Export Your Data, press the download you want.",
-   "Save the file somewhere safe.",
-   "Only if you want to close your account, press Delete under Danger Zone and follow the steps."
-  ],
-  "health": "This does not change your scores. It gives you your own copy of your plans, reviews and records.",
-  "tips": [
-   "This year's ledger (CSV) is handy for your bookkeeper or accountant.",
-   "Your backup never includes your passwords or API keys.",
-   "Your backup never includes private links. Uploaded files stay in the Suite."
-  ],
-  "questions": [
-   {
-    "q": "What is in each download?",
-    "a": "Full account backup (JSON) is a data file with your records across the Suite: contacts, plans, tasks, finance, pipeline, bookings, projects, agreements, assessments and more. Your plans, goals and reviews (document) is one written document. This year's ledger (CSV) is your income and expenses for the year."
-   },
-   {
-    "q": "If I press Delete, is my account gone right away?",
-    "a": "No. It sends a request to our support team. We confirm with you by email before anything is removed."
-   },
-   {
-    "q": "Can my team download a backup?",
-    "a": "No. Only the account owner can."
-   }
-  ],
-  "related": [
+   "legal-compliance",
    "security",
-   "billing-and-plan",
-   "who-has-opened-my-account"
+   "lc-plume"
   ],
-  "who": "The account owner only. Team members do not see this tab.",
+  "who": "Everyone. These pages are public.",
   "keywords": [
-   "export",
-   "download",
-   "backup",
+   "privacy",
+   "privacy policy",
+   "terms",
+   "terms of sale",
+   "agreement",
+   "year 1",
+   "year-1 agreement",
+   "contract",
+   "legal",
+   "community guidelines",
    "my data",
-   "csv",
-   "json",
-   "ledger",
-   "delete account",
-   "close account",
-   "privacy",
-   "accountant"
+   "cancel terms"
   ],
   "sections": [
    {
-    "id": "delete-account",
-    "title": "Delete Account",
-    "body": "Press Delete, read the note, type DELETE and press Request account deletion. Nothing is removed until we confirm with you by email. Download a backup first if you want to keep your data. Keep my account closes the box.",
+    "id": "privacy-policy",
+    "title": "Privacy Policy",
+    "body": "lccommandsuite.com/legal/privacy-policy",
     "keywords": [
-     "delete account",
-     "close account",
-     "remove my data",
-     "danger zone"
+     "privacy policy",
+     "data",
+     "google data"
+    ]
+   },
+   {
+    "id": "terms-of-sale",
+    "title": "Terms of Sale & Service Agreement",
+    "body": "lccommandsuite.com/legal/terms-of-sale",
+    "keywords": [
+     "terms of sale",
+     "service agreement",
+     "terms"
+    ]
+   },
+   {
+    "id": "year-1-agreement",
+    "title": "Year-1 Commitment Acknowledgment",
+    "body": "lccommandsuite.com/legal/year-1-agreement",
+    "keywords": [
+     "year 1",
+     "year-1",
+     "commitment",
+     "agreement"
+    ]
+   },
+   {
+    "id": "community-guidelines",
+    "title": "Community Guidelines & Terms of Use",
+    "body": "lccommandsuite.com/legal/community-guidelines",
+    "keywords": [
+     "community guidelines",
+     "collective rules"
     ]
    }
   ]
  },
  {
-  "id": "logins-passwords",
-  "name": "Logins & Passwords",
-  "area": "Settings",
-  "where": "Settings > Logins & Passwords",
-  "href": "/vault",
-  "what": "A private vault for your logins and passwords. Each person has their own, and team members cannot open anyone else's. Passwords, secrets, notes and recovery codes are stored encrypted.",
-  "ai": "No AI",
-  "aiNote": "Your vault is never available to your assistant, and it does not use your AI key.",
-  "steps": [
-   "Open Logins & Passwords from the left menu.",
-   "Enter your Suite password and press Open my vault. It stays open for 15 minutes, or press Lock now.",
-   "Press Add a login and fill in its name, type, web address, login and password. Make one creates a strong password for you.",
-   "Enter your Suite password at the bottom of the window and press Save.",
-   "Use Show or the Password copy button when you need a password. Show hides itself after 20 seconds."
-  ],
-  "health": "This does not change your scores. It keeps your business logins in one protected place.",
-  "tips": [
-   "Adding, editing and deleting each ask for your Suite password again.",
-   "Please do not store bank card numbers or government ID numbers here.",
-   "Press a column heading to sort. Use the filters to see one type, or only logins with 2FA on or off."
-  ],
-  "questions": [
-   {
-    "q": "Can my team or LifeCharter see my passwords?",
-    "a": "No. Each person has their own vault, and nobody else on your team or at LifeCharter sees yours in the app."
-   },
-   {
-    "q": "Can my assistant read my logins?",
-    "a": "No. Your assistant has no access to your vault, and it should never ask you for a password."
-   },
-   {
-    "q": "Can I get a deleted login back?",
-    "a": "No. Delete removes the login and its saved password for good, so the window asks for your Suite password first."
-   }
-  ],
-  "related": [
-   "security",
-   "data-privacy",
-   "who-has-opened-my-account"
-  ],
-  "who": "Private to each person. It opens once your three assessments are finished. Some limited team roles do not have this page.",
-  "keywords": [
-   "vault",
-   "password manager",
-   "credentials",
-   "security",
-   "secret",
-   "2fa",
-   "two-step sign-in",
-   "recovery codes",
-   "backup codes",
-   "save my passwords",
-   "lock",
-   "generate password"
-  ],
-  "sections": [
-   {
-    "id": "what-each-entry-holds",
-    "title": "What each entry holds",
-    "body": "Name, type, web address, login, password, a secret such as a security answer or PIN, notes, whether 2FA is on and which kind, a recovery email or phone, recovery codes, and when the password last changed.",
-    "keywords": [
-     "fields",
-     "type",
-     "security answer",
-     "pin",
-     "recovery email",
-     "password changed"
-    ]
-   },
-   {
-    "id": "show-and-copy",
-    "title": "Show and copy",
-    "body": "Only one login opens at a time. Show displays its password, secret, recovery codes and notes for 20 seconds. They never appear in the list.",
-    "keywords": [
-     "reveal",
-     "show password",
-     "copy password",
-     "20 seconds",
-     "hide"
-    ]
-   },
-   {
-    "id": "recent-activity",
-    "title": "Recent activity",
-    "body": "Press Show recent activity under the list to see when your vault was opened and when a login was added, changed, shown or deleted.",
-    "keywords": [
-     "activity log",
-     "history",
-     "who opened",
-     "audit"
-    ]
-   }
-  ]
- },
- {
-  "id": "business-segments",
-  "name": "Business Segments",
-  "area": "Settings",
-  "where": "Settings > Business Segments",
-  "href": "/segments",
-  "what": "Your businesses or brands, and the segments inside each, such as a product line, service, program or audience. Tag income, expenses, tasks, plan goals and sales activity to a segment, and it shows what it earns and its own score.",
-  "ai": "Has an AI button",
-  "aiNote": "Suggest tags with your assistant proposes a segment for anything not yet tagged, and Read my segments compares your segments and says where to put your attention. Both use your own AI key. Suggested tags wait for you: nothing is tagged until you press Apply, and existing tags are never overwritten.",
-  "steps": [
-   "Open Business Segments from the left menu.",
-   "Press Add your business or brand and type its name.",
-   "Press + Add a segment or offering for each thing you want to track, such as Coaching or Courses.",
-   "Tag income and expenses to a segment in Finance, and tasks, plan goals and sales activity where you add them.",
-   "Or press Suggest tags with your assistant, untick anything that is wrong, and press Apply.",
-   "Come back to each segment's card to see its score, what needs work and what is showing progress."
-  ],
-  "health": "Each segment gets its own score across the 12 dimensions. It starts from your business-wide score and moves with what is tagged to it: Finance from its income and expenses, Sales from its sales activity, and any dimension from its plan goals and tasks. Segment scores do not change your overall score or your business-wide dimension scores.",
-  "tips": [
-   "With little tagged to a segment, it keeps the business-wide score and says so. The more you tag, the more its own picture shows.",
-   "Hover over a bar on a segment's card to see that dimension's score and where it came from.",
-   "You can leave general overhead untagged. Pick Leave untagged in the suggestions."
-  ],
-  "questions": [
-   {
-    "q": "Do I have to rate each segment myself?",
-    "a": "No. You don't rate anything. The score comes from your assessments and what is tagged to that segment."
-   },
-   {
-    "q": "What happens if I delete a segment?",
-    "a": "Its scores go with it. Income, expenses and tasks tagged to it stay, just untagged."
-   },
-   {
-    "q": "Why does my segment show the same score as my business?",
-    "a": "Not enough is tagged to it yet. Tag tasks, goals, income or sales activity to it, and it will be scored on its own activity."
-   }
-  ],
-  "related": [
-   "ai-assistant",
-   "ai-assistant-setup-and-your-key",
-   "team-access-limits"
-  ],
-  "who": "Everyone once the three assessments are finished. Team members need the Assessments & Alignment area, and a view-only member can look but not change anything.",
-  "keywords": [
-   "segment",
-   "segments",
-   "offering",
-   "brand",
-   "product line",
-   "multiple businesses",
-   "score by offer",
-   "income by service",
-   "tag income",
-   "profit by segment",
-   "auto tag",
-   "untagged"
-  ],
-  "sections": [
-   {
-    "id": "how-segment-scores-work",
-    "title": "How segment scores work",
-    "body": "Each segment starts from your business-wide score for every dimension, then moves with what is tied to it. A card tells you whether it is scored on its own activity or still on the business-wide score.",
-    "keywords": [
-     "12 dimensions",
-     "needs work",
-     "showing progress",
-     "business-wide score",
-     "dimension strip"
-    ]
-   },
-   {
-    "id": "suggest-tags",
-    "title": "Suggest tags",
-    "body": "Once you have a segment and untagged items, a panel shows how many are not tied to a segment. Your assistant suggests one for each item. Untick or change any of them, then press Apply.",
-    "keywords": [
-     "tie activity",
-     "auto tag",
-     "leave untagged",
-     "apply tags",
-     "confidence"
-    ]
-   },
-   {
-    "id": "read-my-segments",
-    "title": "Read my segments",
-    "body": "Press Read my segments and your assistant compares your businesses and segments, then gives you a focus, what to watch and next steps.",
-    "keywords": [
-     "segment read",
-     "compare",
-     "focus",
-     "next steps"
-    ]
-   }
-  ]
- },
- {
-  "id": "ai-assistant",
-  "name": "AI Assistant",
-  "area": "Settings",
-  "where": "Executive Home > AI Assistant card. Set it up in Settings > AI Assistant.",
+  "id": "newer-version-notice",
+  "name": "Newer version notice",
+  "area": "Help and everywhere",
+  "where": "Bar at the bottom of any page, when an update is ready",
   "href": "/",
-  "what": "Chat with your own named assistant. It answers from your assessments, scores, pillars, tasks, income, SOPs, plans and your next 7 days of calendar, plus the Help library and what you have taught it. It can also prepare changes for you.",
-  "ai": "AI-powered",
-  "aiNote": "This runs on your own AI key. It answers straight away, and anything that would change your account waits behind Approve. Emails it writes are saved as drafts: it never sends or schedules a broadcast or campaign. The microphone and speaker use your browser's own speech tools, so they need no key.",
-  "steps": [
-   "Add your AI key in Settings > AI Assistant if you have not yet. Until then the assistant stays offline.",
-   "Open Executive Home and type in the AI Assistant box. Enter sends, and Shift+Enter adds a line.",
-   "Or press the microphone and speak your question. Press the speaker to have replies read aloud.",
-   "When it prepares a change, read the card and press Approve, Edit or Cancel.",
-   "Press New conversation to start fresh. The old one is saved under Past conversations.",
-   "Press Teach to tell it about you, your team and how you work."
-  ],
-  "health": "Chatting does not change your scores. Your assistant reads your 12 dimensions, 8 pillars, scores and plans so its answers fit your business. It can also write plan sections for you, behind Approve.",
-  "tips": [
-   "With the speaker on, a spoken question is sent when you pause, so it works like a conversation.",
-   "Your assistant is also in the floating button in the corner of every page, on the tab with its name.",
-   "Ask for your top priorities or your easiest tasks, and it ranks your open tasks for you."
-  ],
-  "questions": [
-   {
-    "q": "Why can't I open my assistant yet?",
-    "a": "It stays closed until your three assessments are finished. It opens on its own when the third one is done."
-   },
-   {
-    "q": "Does it forget me when I start a new conversation?",
-    "a": "No. It still knows your account, your notes and your settings. Only the chat on the card starts fresh."
-   },
-   {
-    "q": "Can it see my private answers?",
-    "a": "Answers flagged as sensitive are never included, and your logins vault is never available to it."
-   }
-  ],
-  "related": [
-   "ai-assistant-setup-and-your-key",
-   "what-your-assistant-can-do-for-you",
-   "what-your-assistant-will-and-will-not-do",
-   "pop-out-assistant",
-   "have-my-assistant-work-on-this"
-  ],
-  "who": "Everyone once the three assessments are finished. Team members use the account owner's AI key and only within their areas, the owner can set a monthly limit for each one, and some limited team roles do not get the assistant.",
-  "keywords": [
-   "chat",
-   "ask",
-   "sidekick",
-   "assistant name",
-   "voice",
-   "microphone",
-   "read aloud",
-   "past conversations",
-   "new conversation",
-   "teach",
-   "thumbs",
-   "ai key",
-   "what do you know about me"
-  ],
-  "sections": [
-   {
-    "id": "assistant-chat",
-    "title": "The chat",
-    "body": "The conversation stays on the card with the newest message first. It is the same conversation in the pop-out window and the floating button.",
-    "keywords": [
-     "conversation",
-     "newest first",
-     "card",
-     "executive home"
-    ]
-   },
-   {
-    "id": "assistant-voice",
-    "title": "Voice",
-    "body": "Press the microphone to speak a question, and the speaker to hear replies. Voice works in Chrome, Edge and Safari, at no extra cost and with no key.",
-    "keywords": [
-     "speak",
-     "microphone",
-     "speaker",
-     "read aloud",
-     "chrome",
-     "safari"
-    ]
-   },
-   {
-    "id": "past-conversations",
-    "title": "Past conversations",
-    "body": "New conversation saves the current chat under Past conversations, where you can read it, continue it or delete it.",
-    "keywords": [
-     "history",
-     "old chats",
-     "continue",
-     "delete conversation"
-    ]
-   },
-   {
-    "id": "assistant-answer-ratings",
-    "title": "Rating an answer",
-    "body": "Use the thumbs up or down under an answer. Thumbs down asks for an optional note. Your rating is saved with the question and answer, and LifeCharter uses it to improve the assistant.",
-    "keywords": [
-     "thumbs up",
-     "thumbs down",
-     "feedback",
-     "wrong answer",
-     "note"
-    ]
-   }
-  ]
- },
- {
-  "id": "accepting-a-team-invitation",
-  "name": "Accepting a team invitation",
-  "area": "Settings",
-  "where": "Your invitation email",
-  "href": "/login",
-  "what": "How you join an account as a team member. You open your invitation email, set a password, and you are signed in.",
+  "what": "When the Suite is updated while you have a page open, a small bar lets you know and loads the newest version with one press.",
   "ai": "No AI",
   "aiNote": "",
   "steps": [
-   "Open the email from LifeCharter Command Suite called You're invited to join, followed by the team's name.",
-   "Press Set your password. If you already have a LifeCharter login with this email, the button says Sign in to Command Suite, so use your usual password.",
-   "Type a new password of at least 8 characters, then type it again to confirm.",
-   "Press Set password & sign in. The Command Suite opens."
+   "Look for A newer version of the Suite is ready at the bottom of your page.",
+   "Finish and save anything you are typing.",
+   "Press Refresh now.",
+   "Or press Later to hide the bar for now."
   ],
-  "health": "This does not change anyone's scores. It gives you your own login to the account you were invited to.",
+  "health": "This does not change your scores or your data. It only loads the latest version of the page.",
   "tips": [
-   "The link works once and expires in 7 days.",
-   "Questions about your role? Reply to the email to reach the person who added you."
+   "The Suite checks every 10 minutes, and when you come back to the tab.",
+   "If a menu or page looks out of date, refresh your browser."
   ],
   "questions": [
    {
-    "q": "My link says it has expired or isn't valid. What now?",
-    "a": "Invitation links are single-use and time-limited. Ask whoever invited you to send a fresh one."
+    "q": "Do I have to refresh right away?",
+    "a": "No. Press Later and carry on. The bar comes back at the next check."
    },
    {
-    "q": "What will I be able to see?",
-    "a": "That depends on the role and areas the account owner gave you. Your invitation email says what your role can do."
-   },
-   {
-    "q": "The email never arrived. What can I do?",
-    "a": "Ask the person who invited you to press Send invitation again, or to copy your link and send it to you themselves."
+    "q": "Where can I read what changed?",
+    "a": "Open Help > Contact Support and look under What's new."
    }
   ],
   "related": [
-   "workspace-and-team",
-   "team-access-limits",
-   "profile",
-   "security"
+   "contact-support-and-whats-new",
+   "help-and-qa"
   ],
-  "who": "Invited team members. The account owner or a team admin sends the invitation.",
+  "who": "Everyone.",
   "keywords": [
-   "invite",
-   "invitation",
-   "join team",
-   "set password",
-   "team member login",
-   "invite expired",
-   "link not working",
-   "accept invite",
-   "no email"
+   "newer version",
+   "refresh",
+   "refresh now",
+   "update",
+   "update available",
+   "reload",
+   "bar at bottom",
+   "new version",
+   "later"
+  ]
+ },
+ {
+  "id": "content-calendar",
+  "name": "Content Calendar",
+  "area": "Marketing",
+  "where": "Marketing > Content Calendar",
+  "href": "/daily-compass/calendar",
+  "what": "A month calendar and a place to write your social posts. Create content drafts a caption and hashtags for you, ready to copy into your social apps. The Suite does not post to social accounts for you.",
+  "ai": "Has an AI button",
+  "aiNote": "Draft with AI writes a caption and hashtags using your own AI key, and leans on your Marketing Plan when it is filled in. It only fills the Caption box, and nothing is posted. Your chat assistant can also write posts in chat for you to copy.",
+  "steps": [
+   "Open Content Calendar from the left menu and press Create content.",
+   "Press the platforms you are writing for, so the caption fits them.",
+   "Under Draft with AI, type a few words about the post and press Draft.",
+   "Read the Caption box and change anything you like.",
+   "Copy your caption and paste it into your social app."
+  ],
+  "health": "This page does not change your scores. It helps you turn your Marketing Plan into posts you can use.",
+  "tips": [
+   "Copy your caption before you close the panel, so you do not lose it.",
+   "Fill in your Marketing Plan first. Your drafts will sound more like you.",
+   "Put your own details in wherever a draft shows [brackets]."
+  ],
+  "questions": [
+   {
+    "q": "Why can't I press Schedule or Publish now?",
+    "a": "Posting to social accounts from the Suite is not available on your account right now, so those buttons are greyed out and a notice says so. Paste your post into each social app yourself."
+   },
+   {
+    "q": "Why does it ask me to connect my AI key?",
+    "a": "Draft with AI uses your own key. Connect it in Settings and press Draft again."
+   }
+  ],
+  "related": [
+   "marketing-plan",
+   "testimonials",
+   "scripts-templates",
+   "daily-compass",
+   "ai-assistant-setup-and-your-key"
+  ],
+  "who": "Everyone. Team members need the Content Calendar area.",
+  "keywords": [
+   "content calendar",
+   "create content",
+   "social post",
+   "caption",
+   "hashtags",
+   "draft with ai",
+   "instagram post",
+   "facebook post",
+   "linkedin post",
+   "plan my content",
+   "write a post"
   ],
   "sections": [
    {
-    "id": "set-your-password",
-    "title": "Setting your password",
-    "body": "The link opens a page with your name and email. Choose a password of at least 8 characters and press Set password & sign in.",
+    "id": "draft-with-ai",
+    "title": "Draft with AI",
+    "body": "Type a few words about the post and press Draft. Your caption and hashtags land in the Caption box, where you can change them.",
     "keywords": [
-     "accept invite",
-     "new password",
-     "8 characters",
-     "confirm password"
-    ]
-   },
-   {
-    "id": "team-invitation-email",
-    "title": "The invitation email",
-    "body": "The owner or an admin presses Send invitation beside your name in Settings > Workspace. The email comes from LifeCharter Command Suite, and replies go to the person who added you. If there is no reply address on file, they go to support.",
-    "keywords": [
-     "invitation email",
-     "support@lccommandsuite.com",
-     "send invitation",
-     "resend invite",
-     "reply"
-    ]
-   }
-  ]
- },
- {
-  "id": "who-has-opened-my-account",
-  "name": "Who has opened my account",
-  "area": "Settings",
-  "where": "Settings > Security, at the bottom",
-  "href": "/settings?tab=security",
-  "what": "A list of each time LifeCharter support opened your account read-only to help with a request, with the date and time.",
-  "ai": "No AI",
-  "aiNote": "",
-  "steps": [
-   "Open Settings from the left menu.",
-   "Choose Security.",
-   "Scroll to Who has opened my account at the bottom.",
-   "Read the list. Each line shows the date and time. If it has never happened, it says No one has opened your account."
-  ],
-  "health": "This does not change your scores. It shows you when support has been in your account.",
-  "tips": [
-   "Support can look, but cannot change, send or delete anything.",
-   "Support cannot see your inbox, calendar, connected accounts, logins vault or billing.",
-   "The list shows your 20 most recent times."
-  ],
-  "questions": [
-   {
-    "q": "Why would support open my account?",
-    "a": "To help with a support request. Every time it happens is listed here."
-   },
-   {
-    "q": "Does the list say why they opened it?",
-    "a": "It shows the date and time only. If a date surprises you, open Help, then Contact Support."
-   }
-  ],
-  "related": [
-   "security",
-   "data-privacy",
-   "logins-passwords"
-  ],
-  "who": "The account owner.",
-  "keywords": [
-   "support access",
-   "who logged in",
-   "account access log",
-   "read-only",
-   "view my account",
-   "privacy",
-   "did someone open my account"
-  ]
- },
- {
-  "id": "if-a-payment-fails",
-  "name": "If a payment fails",
-  "area": "Settings",
-  "where": "The bell, then Settings > Billing",
-  "href": "/settings?tab=billing",
-  "what": "What to do when a renewal payment for your plan does not go through. The bell tells you, and you update your card in Settings > Billing.",
-  "ai": "No AI",
-  "aiNote": "",
-  "steps": [
-   "Look in the bell for Your last payment didn't go through.",
-   "Open Settings from the left menu and choose Billing.",
-   "Press Manage billing.",
-   "Update your card on the billing page that opens.",
-   "Come back to the Suite. The alert clears once a payment goes through."
-  ],
-  "health": "This does not change your scores. It keeps your plan running.",
-  "tips": [
-   "Update your card as soon as you see the alert, so your plan keeps running without interruption.",
-   "Need a hand? Open Help, then Contact Support."
-  ],
-  "questions": [
-   {
-    "q": "Who can update the card?",
-    "a": "Only the account owner. Billing is closed to team members."
-   },
-   {
-    "q": "Why is the alert still in my bell?",
-    "a": "It stays until a payment goes through. If you have updated your card and it is still there, open Help, then Contact Support."
-   }
-  ],
-  "related": [
-   "billing-and-plan",
-   "notifications"
-  ],
-  "who": "The account owner.",
-  "keywords": [
-   "payment failed",
-   "card declined",
-   "past due",
-   "update card",
-   "expired card",
-   "billing problem",
-   "payment didn't go through",
-   "manage billing",
-   "renewal"
-  ]
- },
- {
-  "id": "what-your-assistant-can-do-for-you",
-  "name": "What your assistant can do for you",
-  "area": "Settings",
-  "where": "Any assistant chat, plus Daily Operations > Waiting for my approval",
-  "href": "/assistant-approvals",
-  "what": "Ask in plain words and your assistant prepares the change as a card for you to check. Nothing happens until you press Approve, and most actions have Undo.",
-  "ai": "AI-powered",
-  "aiNote": "This uses your own AI key. Anything that changes your account waits behind Approve. Broadcasts and email campaigns are saved as drafts: your assistant never sends or schedules them. Two things do send email once you approve them, and the card says so: starting named people on an existing campaign, and an invoice, which Stripe emails.",
-  "steps": [
-   "Ask in the chat, for example add a task or draft a broadcast to my newsletter tag.",
-   "Read the card it prepares. Press its link if you want to see where the work will land.",
-   "Press Approve, or Edit to say what to change, or Cancel.",
-   "If you are not ready, open Waiting for my approval from the left menu. Every card waits there with its own buttons.",
-   "After you approve, press Undo if you change your mind and the card offers it."
-  ],
-  "health": "This does not change your scores. It can write or revise your Business, Marketing, Sales and Forecasting plan sections from your assessments, one section at a time behind Approve.",
-  "tips": [
-   "Be specific. Name the contact, tag, form or page you mean, and it can find the right one.",
-   "Settings > AI Assistant > What your assistant has done lists what it prepared and how each one turned out.",
-   "A card that renames something shows the old name and the new name."
-  ],
-  "questions": [
-   {
-    "q": "Can my assistant email people on its own?",
-    "a": "No. It saves broadcasts and campaigns as drafts for you to review and schedule. Email only goes out from it if you press Approve on a card that says so, such as starting named people on a campaign."
-   },
-   {
-    "q": "Can I undo everything?",
-    "a": "Most things. You cannot undo starting people on a campaign, because email 1 goes right away and cannot be unsent. Adding a contact and sending a problem to support have no Undo either."
-   },
-   {
-    "q": "Why does it say it can't do something?",
-    "a": "It only works in your own account, and a team member is limited by their role. Some things stay with you, such as publishing a page or sending an agreement for signature."
-   }
-  ],
-  "related": [
-   "ai-assistant",
-   "what-your-assistant-will-and-will-not-do",
-   "have-my-assistant-work-on-this",
-   "ai-assistant-setup-and-your-key",
-   "team-access-limits"
-  ],
-  "who": "Everyone once the three assessments are finished. Team members can only prepare and approve work inside the areas they have.",
-  "keywords": [
-   "approve",
-   "preview",
-   "undo",
-   "edit card",
-   "what can my assistant do",
-   "draft",
-   "waiting for my approval",
-   "actions",
-   "tools",
-   "add a task",
-   "tag contacts",
-   "draft email",
-   "can it send"
-  ],
-  "sections": [
-   {
-    "id": "contacts-tasks-sales",
-    "title": "Contacts, tasks and sales",
-    "body": "Tag or untag contacts and add a contact. Create and change tasks and reminders. Create an outreach pipeline, add and move people, and add a Sales Pipeline deal.",
-    "keywords": [
-     "tag",
-     "contact",
-     "task",
-     "reminder",
-     "outreach",
-     "pipeline",
-     "deal"
-    ]
-   },
-   {
-    "id": "email-and-content",
-    "title": "Email and content drafts",
-    "body": "Write a broadcast or email campaign as a draft. Write social posts or a content plan onto your Content Calendar. Create, update and delete pages in your left menu.",
-    "keywords": [
-     "broadcast",
-     "campaign",
      "draft",
-     "social posts",
-     "content calendar",
-     "my pages"
+     "caption",
+     "hashtags",
+     "ai caption"
     ]
+   }
+  ]
+ },
+ {
+  "id": "campaigns",
+  "name": "Campaigns",
+  "area": "Marketing",
+  "where": "Marketing > Campaigns & Broadcasts > Campaigns tab",
+  "href": "/sequences-manager",
+  "what": "Timed email series. Each email goes out a set number of days after someone joins, at the hour you choose in that person's own time zone. People join from your forms, your booking calendars or a contact record.",
+  "ai": "No AI",
+  "aiNote": "This page has no AI button. Your chat assistant can write a whole campaign for you. It waits behind Approve, arrives paused with nobody in it, and you turn it on yourself.",
+  "steps": [
+   "Open Campaigns & Broadcasts. If a note says email sending is not set up, press Set up email sending first.",
+   "Type a name in New campaign name and press the plus button.",
+   "Press Add email, fill in Send on day, Subject and your text, then press Save.",
+   "Choose your Daily send time.",
+   "Press Turn on when the emails are ready.",
+   "Open the People tab to add someone, or have a form or booking calendar start the campaign."
+  ],
+  "health": "Each campaign you have turned on counts toward your Communication pillar. Pausing a campaign takes it out of that count. Nothing else on this page changes your scores.",
+  "tips": [
+   "Press Preview to see the email, or the send icon on any email for a test to your own inbox.",
+   "Use Skip anyone tagged to keep people out. Anyone who picks up that tag later is taken out too.",
+   "Type {{first_name}} in your text to fill in each person's name. Your sign-off and footer are added for you."
+  ],
+  "questions": [
+   {
+    "q": "Who do my campaign emails come from?",
+    "a": "From you. They go out through your own Resend account and your own domain, using the sender you set under Contacts > Email sending. Nothing goes to your contacts until that is done."
    },
    {
-    "id": "starting-a-campaign",
-    "title": "Starting people on a campaign",
-    "body": "It can start named people on one of your existing email campaigns, up to 20 per approval. The card lists who, what is sent and when, and who is left out. On Approve, email 1 goes right away and cannot be unsent.",
+    "q": "What does Pause whole campaign do?",
+    "a": "Nothing more goes out until you turn it back on. To stop one person only, use the pause or Stop for good buttons beside them on the People tab."
+   },
+   {
+    "q": "What is the difference between a campaign and a broadcast?",
+    "a": "A campaign is a series that each person moves through on their own timing. A broadcast is one email to a group, sent once."
+   }
+  ],
+  "related": [
+   "broadcasts",
+   "email-sending-setup",
+   "forms",
+   "calendars-and-booking-pages",
+   "resend-a-single-email",
+   "contact-record"
+  ],
+  "who": "Everyone. Team members need the Campaigns area. Email sending must be set up before anything goes out.",
+  "keywords": [
+   "campaign",
+   "email series",
+   "email sequence",
+   "drip",
+   "automated emails",
+   "follow up emails",
+   "nurture",
+   "send on day",
+   "turn on campaign",
+   "pause campaign",
+   "unsubscribe"
+  ],
+  "sections": [
+   {
+    "id": "campaign-people",
+    "title": "People in a campaign",
+    "body": "The People tab shows who is in it, how many emails they have had, whether they registered and their status. Add someone from your contacts or add someone new. Their first email goes when the campaign is on.",
     "keywords": [
+     "people tab",
+     "add someone",
      "enroll",
-     "start campaign",
-     "email 1",
-     "20 people",
-     "unsent"
+     "registered",
+     "stop for good"
     ]
    },
    {
-    "id": "forms-bookings-sops",
-    "title": "Forms, booking links, fields and SOPs",
-    "body": "Create or change a form, booking link, extra contact field or SOP. When it changes one, the card shows before and after, and Undo restores it.",
+    "id": "unsubscribe",
+    "title": "Unsubscribe",
+    "body": "Your emails carry an Unsubscribe link. One click takes that person off your emails and stops any campaign they are in. It touches that contact only, and they cannot be added back to a campaign.",
     "keywords": [
-     "form",
-     "booking link",
-     "custom field",
-     "sop",
-     "before and after"
+     "unsubscribe",
+     "opt out",
+     "stop emails",
+     "unsubscribed"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "broadcasts",
+  "name": "Broadcasts",
+  "area": "Marketing",
+  "where": "Marketing > Campaigns & Broadcasts > Broadcasts tab",
+  "href": "/sequences-manager?tab=broadcasts",
+  "what": "A one-time email to everyone with the tags you choose, plus anyone you add by name. Send it now or schedule it. Unsubscribed contacts are always left out.",
+  "ai": "No AI",
+  "aiNote": "This page has no AI button. Your chat assistant can write a broadcast for you. It waits behind Approve and arrives as a draft. It never sends or schedules it. You do that yourself.",
+  "steps": [
+   "Open Campaigns & Broadcasts and press the Broadcasts tab.",
+   "Type a name in New blank broadcast and press the plus button.",
+   "Under Who gets it, press your tags. Add skips or names if you need them, then press Save.",
+   "Under The email, write your Subject and text. Press Preview, then Send me a test.",
+   "Under Send, pick a Date and Time and press Schedule, or press Send now."
+  ],
+  "health": "Broadcasts do not change your scores. They help you reach your whole list, or one group of it, at once.",
+  "tips": [
+   "Use Skip anyone with these tags to leave people out, even if they match your other tags.",
+   "Tick a campaign under Skip anyone still receiving so nobody gets two things at once.",
+   "The list is fixed the moment sending starts, so check the people count first."
+  ],
+  "questions": [
+   {
+    "q": "Who does a broadcast come from?",
+    "a": "From you, through your own Resend account and your own domain. Set this up under Contacts > Email sending. A note on the page tells you if it is not ready."
+   },
+   {
+    "q": "Can I change my mind after I schedule it?",
+    "a": "Yes. Press Unschedule and it is a draft again, or change the date and press Reschedule."
+   },
+   {
+    "q": "Can I stop one that is already going out?",
+    "a": "Press Stop sending while it is sending. Anyone already emailed stays emailed."
+   }
+  ],
+  "related": [
+   "campaigns",
+   "tag-library",
+   "email-sending-setup",
+   "resend-a-single-email",
+   "contacts"
+  ],
+  "who": "Everyone. Team members need the Campaigns area. Email sending must be set up before anything goes out.",
+  "keywords": [
+   "broadcast",
+   "newsletter",
+   "one time email",
+   "email blast",
+   "email my list",
+   "send to a tag",
+   "schedule email",
+   "email everyone",
+   "mass email"
+  ],
+  "sections": [
+   {
+    "id": "after-a-broadcast",
+    "title": "After it goes out",
+    "body": "An open broadcast shows how many were sent, waiting, failed and skipped. People · who this went to lists each person, their status and when.",
+    "keywords": [
+     "sent",
+     "failed",
+     "skipped",
+     "who got it",
+     "recipients"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "events",
+  "name": "Events",
+  "area": "Marketing",
+  "where": "Marketing > Events",
+  "href": "/events",
+  "what": "Run a live event or a multi-day challenge with its own sign-up page in your name and color. The Suite sends the confirmation, reminders, each challenge day and your replay, and adds sign-ups to Contacts with a tag.",
+  "ai": "No AI",
+  "aiNote": "This page has no AI button. Your chat assistant can draft an event for you behind Approve. It never opens sign-ups. You press Open for sign-ups yourself.",
+  "steps": [
+   "Type a name under New event, choose Live event or Challenge, and press Create.",
+   "Fill in The page, then your date, time and join link, or your challenge days. Press Save.",
+   "For a challenge, write Each day and press Save the days.",
+   "Press Open for sign-ups, then Copy sign-up link and share it.",
+   "After a live event, press Attended or Missed beside each person.",
+   "Add your Replay link and press Email the replay to everyone."
+  ],
+  "health": "Someone new to your contacts counts as a new contact in your Customer Acquisition pillar for 30 days. The event itself and attendance do not change your scores.",
+  "tips": [
+   "Use your own join link from Zoom, Meet, Teams or any other service.",
+   "Choose a Follow-up campaign. It starts when the replay goes out, or when a challenge ends.",
+   "Press Open the page to see what people will see."
+  ],
+  "questions": [
+   {
+    "q": "What emails go out, and from whom?",
+    "a": "A confirmation with add-to-calendar links, then reminders the day before and one hour before. They come from your own address, through your own Resend account, so set up email sending first."
+   },
+   {
+    "q": "How do tags work on an event?",
+    "a": "Everyone who signs up gets a registered tag with your event's web address in it. Attended and Missed add their own tags. Extra tags for sign-ups adds yours too."
+   },
+   {
+    "q": "When does a challenge start?",
+    "a": "On the date you set for Day 1. If you leave it empty, each person starts the day after they join."
+   }
+  ],
+  "related": [
+   "landing-pages",
+   "campaigns",
+   "email-sending-setup",
+   "invite-tracker",
+   "contacts",
+   "tag-library"
+  ],
+  "who": "Everyone. Team members need the Contacts area. Email sending must be set up for the emails to go out.",
+  "keywords": [
+   "event",
+   "webinar",
+   "workshop",
+   "masterclass",
+   "challenge",
+   "live event",
+   "sign up page",
+   "registration",
+   "replay",
+   "reminder emails",
+   "attended",
+   "zoom link"
+  ],
+  "sections": [
+   {
+    "id": "live-events",
+    "title": "Live events",
+    "body": "Set the date, time, length and your join link. You can add a Seat limit. When it is over, mark who came with Attended or Missed.",
+    "keywords": [
+     "webinar",
+     "workshop",
+     "seat limit",
+     "attended",
+     "missed"
     ]
    },
    {
-    "id": "offers-money-payments",
-    "title": "Offers, money and payments",
-    "body": "Add or change offers, record income or expense entries, prepare an invoice or a payment link, and read how your year is going. It can also show who likely needs a 1099-NEC, as a guide for your accountant and not tax advice.",
+    "id": "challenges",
+    "title": "Challenges",
+    "body": "Set the number of days and the daily email time. Each day goes out by email and opens on each person's private challenge page, where they tick it off.",
     "keywords": [
-     "offer",
-     "income",
-     "expense",
-     "invoice",
-     "payment link",
-     "year so far",
-     "1099"
+     "challenge",
+     "daily email",
+     "challenge page",
+     "tick off"
     ]
    },
    {
-    "id": "plans-and-projects",
-    "title": "Plans and projects",
-    "body": "Write or revise plan sections, create a project from a template or blank, and add tasks to a project.",
+    "id": "event-replay",
+    "title": "Replay and follow-up",
+    "body": "Add your replay link and how many hours it stays open. Leave the hours empty for no limit. If you set a limit, people who got the replay get a reminder about 12 hours before it closes.",
     "keywords": [
-     "business plan",
-     "marketing plan",
-     "sales plan",
-     "forecast",
-     "project",
+     "replay",
+     "video",
+     "deadline",
+     "follow-up"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "landing-pages",
+  "name": "Landing Pages",
+  "area": "Marketing",
+  "where": "Marketing > Landing Pages",
+  "href": "/landing-pages",
+  "what": "Simple branded pages built on your own forms, events, offers and booking pages. Pick a template, fill in the words with a live preview, and publish. Each page counts its visits and how many people took action.",
+  "ai": "Has an AI button",
+  "aiNote": "Draft the words has your assistant write from your form, event, offer or booking page and your notes, using your own AI key. Nothing changes until you press Use on a part or Use all, then Save. It never makes up results or testimonials. Your chat assistant can also draft a page behind Approve, but you press Publish yourself.",
+  "steps": [
+   "Type a Page name if you like, then press a template under Make a new page.",
+   "Under Basics, choose the form, event, offer or booking page it uses.",
+   "Press Draft the words, or type your own words under Words. Press Use on the parts you want.",
+   "Set your Look and add testimonials if you like, then press Save.",
+   "Press Preview to check it, then press Publish.",
+   "Back on All landing pages, press Copy beside the link and share it."
+  ],
+  "health": "A new person who signs up through an opt-in or event page counts as a new contact in your Customer Acquisition pillar for 30 days. The page itself and its visits do not change your scores.",
+  "tips": [
+   "Running Facebook or Instagram ads? Paste your Meta pixel ID under Ads tracking.",
+   "Press Duplicate to start a new page from one that works.",
+   "If you have a verified short-link domain, your page also opens on your own domain."
+  ],
+  "questions": [
+   {
+    "q": "Why does my page say something is missing?",
+    "a": "Each template needs its piece: a form, an event, an offer with a payment link or a pasted Buy link, or a booking page. Choose it under Basics."
+   },
+   {
+    "q": "What does Unpublish do?",
+    "a": "It takes the page down, and the link stops working until you publish again. Archive also takes it offline and moves it to Archived, where you can press Restore as draft."
+   },
+   {
+    "q": "Which testimonials can I pick from?",
+    "a": "Approved or featured ones from your Testimonials page that the person agreed to share. You can also type one in."
+   }
+  ],
+  "related": [
+   "forms",
+   "events",
+   "offers-packages",
+   "calendars-and-booking-pages",
+   "testimonials",
+   "short-links"
+  ],
+  "who": "Everyone. Team members need the Contacts area.",
+  "keywords": [
+   "landing page",
+   "sales page",
+   "opt in page",
+   "freebie page",
+   "webinar page",
+   "book a call page",
+   "funnel",
+   "meta pixel",
+   "conversion rate",
+   "website page",
+   "publish a page"
+  ],
+  "sections": [
+   {
+    "id": "landing-templates",
+    "title": "The four templates",
+    "body": "Opt-in uses a form, and sign-ups get that form's tags and campaign. Webinar or event registers people for one of your Events. Sales page sends buyers to your payment link. Book a call shows your open times on the page. Paid booking pages show a button instead.",
+    "keywords": [
+     "opt-in",
+     "webinar",
+     "sales page",
+     "book a call",
      "template"
     ]
    },
    {
-    "id": "courses-away-landing-pages",
-    "title": "Courses, away dates and landing pages",
-    "body": "Start a course, membership or group program with lessons drafted, with no members and no email. Report course progress. Set or clear away dates. Draft a landing page, which stays a draft until you publish it, and report its visits and conversions.",
+    "id": "landing-numbers",
+    "title": "Visits and rate",
+    "body": "Each page shows visits, what it counts (sign-ups, registrations, Buy clicks or bookings) and your rate, for the last 30 days and all time.",
     "keywords": [
-     "course",
-     "membership",
-     "group program",
-     "lessons",
-     "out of office",
-     "landing page"
-    ]
-   },
-   {
-    "id": "events-time-portals-care",
-    "title": "Events, time, client portals and Client Care",
-    "body": "Report on events and draft one, which stays closed until you press Open sign-ups. Summarize your time and add time you worked. Check a client's portal and add homework or a goal. Report on Client Care. Add a contact to a course or program with no email sent.",
-    "keywords": [
-     "event",
-     "challenge",
-     "time tracking",
-     "client portal",
-     "homework",
-     "client care",
-     "program member"
-    ]
-   },
-   {
-    "id": "agreements",
-    "title": "Agreements and proposals",
-    "body": "Show who has signed, and draft an agreement or proposal in LC Plume with its signers. You read it and press Send for signature yourself.",
-    "keywords": [
-     "agreement",
-     "proposal",
-     "lc plume",
-     "signature",
-     "draft"
-    ]
-   },
-   {
-    "id": "what-stays-with-you",
-    "title": "What stays with you",
-    "body": "Your assistant cannot publish a page, open an event for sign-ups, email a portal link, switch on Client Care, email course members, send an agreement for signature, or read a receipt photo in the chat.",
-    "keywords": [
-     "can't do",
-     "cannot",
-     "publish",
-     "receipt photo",
-     "limits"
-    ]
-   },
-   {
-    "id": "report-a-problem",
-    "title": "Reporting a problem",
-    "body": "Tell it something is broken and it writes the problem up for LifeCharter support. You approve it first, and you get a confirmation email.",
-    "keywords": [
-     "bug",
-     "broken",
-     "report problem",
-     "support"
+     "visits",
+     "conversions",
+     "rate",
+     "stats"
     ]
    }
   ]
  },
  {
-  "id": "pop-out-assistant",
-  "name": "Pop-out assistant",
-  "area": "Settings",
-  "where": "Executive Home > AI Assistant card > Pop out",
-  "href": "/",
-  "what": "Floats your assistant over any page, so you can work and ask for help side by side. It knows which page you are on, and it is the same conversation as the card.",
-  "ai": "AI-powered",
-  "aiNote": "This is the same assistant on your own AI key. Anything that changes your account still waits behind Approve.",
+  "id": "testimonials",
+  "name": "Testimonials",
+  "area": "Marketing",
+  "where": "Marketing > Testimonials",
+  "href": "/reviews",
+  "what": "Ask your clients for a few words, approve what comes in, and reuse it in your marketing. Each client gets a personal link. Their review lands here as Pending until you act on it.",
+  "ai": "Has an AI button",
+  "aiNote": "Draft with my assistant writes your request note, and Read my testimonials shows what clients value and what proof is missing. Both use your own AI key. The note stays in the box for you to edit, and nothing is sent.",
   "steps": [
-   "Open Executive Home and press Pop out on the AI Assistant card.",
-   "Move to any page. The window stays with you.",
-   "Drag it by its title bar, and resize it from the corner.",
-   "Press the minimize button to shrink it to a small button with your assistant's name. Press that button to open it again.",
-   "Press Bring back to Executive Home when you are done."
+   "Press Request a review and type their name. Add what you worked on if you like.",
+   "Write your note, or press Draft with my assistant, then press Create link.",
+   "Under Requests you've sent, press Copy message + link and send it yourself.",
+   "When a review comes in, press Approve, Feature or Hide.",
+   "On an approved review, press Copy or Make a post to reuse it."
   ],
-  "health": "This does not change your scores. It keeps help beside the work you are doing.",
+  "health": "The number of testimonials you have feeds your Referral Process pillar. That part reaches full marks at five.",
   "tips": [
-   "Ask about the page you are on. The box says which page your assistant is looking at.",
-   "Your assistant stays popped out and in the same spot on this device, even after you close the page."
+   "Add one I received saves praise you already have. Tick the box if they said you can share it.",
+   "Only reviews you approve or feature are used in your marketing or shared with your assistant.",
+   "Add their email on the request and you get a one-click way to email the link yourself."
   ],
   "questions": [
    {
-    "q": "Is this a different conversation?",
-    "a": "No. It reads the same saved conversation as the card, and it has the same Approve cards, New conversation and Past conversations."
+    "q": "Does the Suite email the request for me?",
+    "a": "No. Nothing is sent from here. You get a personal link and a message to send yourself, by email or however you talk to them."
    },
    {
-    "q": "Where did the card on Executive Home go?",
-    "a": "While your assistant is popped out, the card offers a button to bring it back."
+    "q": "What does my client have to do?",
+    "a": "They open the link, leave a rating and their story, and can add a video or audio link. They must tick the box saying you may share it."
+   },
+   {
+    "q": "What does Make a post do?",
+    "a": "It opens Create content on your Content Calendar with the quote and their name already in the caption."
    }
   ],
   "related": [
-   "ai-assistant",
-   "have-my-assistant-work-on-this",
-   "what-your-assistant-can-do-for-you"
+   "content-calendar",
+   "landing-pages",
+   "client-care",
+   "marketing-plan",
+   "contacts"
   ],
-  "who": "Everyone once the three assessments are finished. Team members need the assistant in their areas.",
+  "who": "Everyone. Team members need the Testimonials area.",
   "keywords": [
-   "pop out",
-   "floating assistant",
-   "float",
-   "side by side",
-   "minimize",
-   "resize",
-   "move assistant",
-   "bring back"
-  ]
- },
- {
-  "id": "have-my-assistant-work-on-this",
-  "name": "Have my assistant work on this",
-  "area": "Settings",
-  "where": "Daily Operations > Tasks and Reminders, on each open task or reminder",
-  "href": "/tasks",
-  "what": "One button that hands a task or reminder to your assistant. It reads the whole item, checks what it can, prepares what it can, and reports back.",
-  "ai": "AI-powered",
-  "aiNote": "This uses your own AI key. Anything it prepares waits for your Approve. Only its report saves on its own, as a note on the item, and you can Undo that. It never sends anything without you. The one time email goes out is if you approve starting named people on a campaign.",
-  "steps": [
-   "Open Tasks or Reminders from the left menu.",
-   "Press Have my assistant work on this on the item.",
-   "Your assistant opens in its floating window and starts work. You can keep working.",
-   "Review each card it prepares, and press Approve, Edit or Cancel.",
-   "Read the report. Press See report on a task, or See the assistant's report on a reminder.",
-   "Open Waiting for my approval to work through your next steps."
-  ],
-  "health": "The button itself does not change your scores. A task you finish still counts toward task follow-through in the usual way.",
-  "tips": [
-   "Put the details in the task's notes or the reminder's note first. Your assistant reads all of it.",
-   "When an item is finished, it prepares one to three follow-ups as separate cards, or asks one short question."
-  ],
-  "questions": [
-   {
-    "q": "Can it tell who replied to my DMs?",
-    "a": "Only from your Outreach Pipelines. It cannot read LinkedIn, Instagram, Facebook or WhatsApp, so a reply only shows once you have moved that person to a reply stage."
-   },
-   {
-    "q": "Can it check replies to my email campaign?",
-    "a": "Yes, if a Microsoft 365 inbox is connected. It cannot read a Gmail account."
-   },
-   {
-    "q": "Do I have to approve the report?",
-    "a": "No. The report saves itself as a note on the item. What needs you is the checklist inside it and any cards it prepared."
-   }
-  ],
-  "related": [
-   "what-your-assistant-can-do-for-you",
-   "pop-out-assistant",
-   "ai-assistant",
-   "ai-assistant-setup-and-your-key"
-  ],
-  "who": "Everyone once the three assessments are finished. Team members need the assistant in their areas, and a team member in the Sales role does not get the button on tasks.",
-  "keywords": [
-   "work on this",
-   "assistant report",
-   "see report",
-   "task help",
-   "reminder help",
-   "delegate to assistant",
-   "follow up tasks",
-   "check outreach",
-   "check campaign",
-   "next steps"
+   "testimonial",
+   "review",
+   "request a review",
+   "ask for a review",
+   "client feedback",
+   "social proof",
+   "star rating",
+   "feature a review",
+   "approve a review",
+   "review link"
   ],
   "sections": [
    {
-    "id": "the-report",
-    "title": "The report",
-    "body": "The report is saved on the task or reminder. It sums up where things stand, shows the key numbers, what was done, and any cards still waiting. Each next step is marked Suite, Assistant, You, or You + assistant.",
+    "id": "review-collection-page",
+    "title": "Your review link",
+    "body": "Each request gets its own personal link. Your client sees a simple form for a star rating, a headline, their experience and an optional video or audio link, with a box to agree to sharing.",
     "keywords": [
-     "report card",
-     "summary",
-     "key numbers",
-     "next steps",
-     "checklist"
+     "review link",
+     "collection page",
+     "personal link",
+     "rating",
+     "consent"
     ]
    },
    {
-    "id": "outreach-check",
-    "title": "Checking your outreach",
-    "body": "It can report messages logged as sent, first messages and follow-ups, how many people are in each stage, and who is waiting for a follow-up. Name a date range to look at one batch.",
+    "id": "request-tracking",
+    "title": "Requests you've sent",
+    "body": "Each request shows whether it was sent, opened or completed. The cards at the top show your response rate and average rating.",
     "keywords": [
-     "dms",
-     "outreach pipelines",
-     "batch",
-     "follow-up",
-     "messages sent"
+     "requests",
+     "opened",
+     "completed",
+     "response rate"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "links-forms",
+  "name": "Links & Forms",
+  "area": "Marketing",
+  "where": "Marketing > Links & Forms",
+  "href": "/links-directory",
+  "what": "Every link and form in your account in one place: your offers' checkout links, booking pages, forms and short links. It fills in as you create them. Search it, copy a link or open it.",
+  "ai": "No AI",
+  "aiNote": "This page does not use AI.",
+  "steps": [
+   "Open Links & Forms from the left menu.",
+   "Type in the search box to find a link.",
+   "Press Copy beside it to share it, or Open to see the page.",
+   "If a section is empty, press its link to create your first one."
+  ],
+  "health": "This page does not change your scores. It saves you hunting for the right link.",
+  "tips": [
+   "A form's row shows its tags and which campaign it starts.",
+   "A short link's row shows where it goes and how many clicks it has.",
+   "Offers with no link yet are named under the offers list, so you can see what to fix."
+  ],
+  "questions": [
+   {
+    "q": "Why is one of my offers missing from the list?",
+    "a": "Only offers with a saved checkout link are listed. Add the link on the offer in Offers & Packages."
+   },
+   {
+    "q": "Can I edit a link here?",
+    "a": "No. This page only lists them. Change a link where it lives: Offers & Packages, Calendars, Forms or Short Links."
+   },
+   {
+    "q": "What does off beside a form or booking page mean?",
+    "a": "That form or booking page is turned off in your account."
+   }
+  ],
+  "related": [
+   "short-links",
+   "forms",
+   "offers-packages",
+   "calendars-and-booking-pages",
+   "landing-pages"
+  ],
+  "who": "Everyone. Team members need the Contacts area.",
+  "keywords": [
+   "links",
+   "forms",
+   "my links",
+   "all my links",
+   "checkout link",
+   "booking link",
+   "form link",
+   "copy link",
+   "where is my link"
+  ]
+ },
+ {
+  "id": "short-links",
+  "name": "Short Links",
+  "area": "Marketing",
+  "where": "Marketing > Short Links",
+  "href": "/short-links",
+  "what": "Turn a long web address into a short link for a bio, a slide or a text message. Every click is counted, each link has a QR code, and you can repoint or turn off a link any time without changing it where you shared it.",
+  "ai": "No AI",
+  "aiNote": "This page does not use AI.",
+  "steps": [
+   "Press New short link.",
+   "Paste the address under Where it should go.",
+   "Add What it's for, and a Custom code if you want one.",
+   "Press Create link.",
+   "Copy the link and share it. Use the QR code button for a code you can download."
+  ],
+  "health": "Short Links do not change your scores. They show you which places bring people in.",
+  "tips": [
+   "Set up Your short-link domain so people see your address instead of lccommandsuite.com.",
+   "Leave Custom code blank and one is made for you.",
+   "If you delete a link, anyone who has it lands on a not found page. Turn it off instead if you may want it back."
+  ],
+  "questions": [
+   {
+    "q": "How do I see my clicks?",
+    "a": "Press View clicks on a link. It shows the last 30 days and where clicks came from. The total on the card is always exact."
+   },
+   {
+    "q": "How do I use my own domain?",
+    "a": "Open Your short-link domain, type a domain like go.yourbusiness.com, and add the record it shows at your domain provider. DNS changes can take a few minutes to a few hours."
+   },
+   {
+    "q": "Can I change where a link goes?",
+    "a": "Yes. Press Edit and change Where it should go. The short link stays the same."
+   }
+  ],
+  "related": [
+   "links-forms",
+   "landing-pages",
+   "offers-packages"
+  ],
+  "who": "Everyone. Team members need the Contacts area.",
+  "keywords": [
+   "short link",
+   "link shortener",
+   "qr code",
+   "branded link",
+   "click tracking",
+   "custom domain",
+   "shorten a url",
+   "link in bio"
+  ],
+  "sections": [
+   {
+    "id": "short-link-domain",
+    "title": "Your short-link domain",
+    "body": "Point your own domain or subdomain at your short links. Until then your links use lccommandsuite.com/l/.",
+    "keywords": [
+     "domain",
+     "subdomain",
+     "dns",
+     "own domain"
     ]
    },
    {
-    "id": "email-campaign-check",
-    "title": "Checking your email campaigns",
-    "body": "It can show who was sent which email and when each person's next email is due. If you ask it to start named people on a campaign, the card lists who and what. On Approve, email 1 goes right away and cannot be unsent.",
+    "id": "qr-codes",
+    "title": "QR codes",
+    "body": "Press the QR code button on a link and press Download PNG.",
+    "keywords": [
+     "qr",
+     "qr code",
+     "download png"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "invite-tracker",
+  "name": "Invite Tracker",
+  "area": "Marketing",
+  "where": "Marketing > Invite Tracker",
+  "href": "/invites",
+  "what": "See who you invited, whether the invite went out, and who registered and when. Each list is built from a tag, so anyone in Contacts with that tag shows up.",
+  "ai": "No AI",
+  "aiNote": "This page does not use AI.",
+  "steps": [
+   "Press New invite list.",
+   "Fill in the event name and invite tag, then choose your Sign-up form and Invite campaign. Press Create.",
+   "Under Invite people, choose Send them the invite email or I already invited them myself.",
+   "Add a name and email, or press Or paste a list of people.",
+   "Watch the Invited, Invite sent and Registered counts, and press Download CSV for a copy."
+  ],
+  "health": "A new person you add counts as a new contact in your Customer Acquisition pillar for 30 days. The list itself does not change your scores.",
+  "tips": [
+   "Build the invite first in Campaigns & Broadcasts: one email with a button to your sign-up form.",
+   "Link a sign-up form, or registrations cannot be tracked.",
+   "Registered without an invite shows people who signed up but were not on your list."
+  ],
+  "questions": [
+   {
+    "q": "Why haven't my invites gone out?",
+    "a": "If your invite campaign is off, invites wait until you turn it on in Campaigns & Broadcasts. A note on the page tells you."
+   },
+   {
+    "q": "What does I already invited them myself do?",
+    "a": "No email is sent. They are added to the list and marked Invite sent right away."
+   },
+   {
+    "q": "Does removing someone delete them?",
+    "a": "No. It takes off the invite tag. They stay in Contacts."
+   }
+  ],
+  "related": [
+   "campaigns",
+   "forms",
+   "tag-library",
+   "events",
+   "contacts"
+  ],
+  "who": "Everyone. Team members need the Contacts area. Sending invites needs email sending set up.",
+  "keywords": [
+   "invite",
+   "invite list",
+   "invite tracker",
+   "who registered",
+   "guest list",
+   "rsvp",
+   "track invites",
+   "download csv"
+  ],
+  "sections": [
+   {
+    "id": "invite-list-settings",
+    "title": "List settings",
+    "body": "Press List settings to change the invite campaign or which tags make up the list. Anyone in Contacts with a highlighted tag shows on it. Changing this sends no email.",
+    "keywords": [
+     "list settings",
+     "invite tag",
+     "change tags"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "meta-lead-ads",
+  "name": "Meta Lead Ads",
+  "area": "Marketing",
+  "where": "Marketing > Meta Lead Ads",
+  "href": "/meta-leads",
+  "what": "Send every Facebook or Instagram lead form straight into your Suite. Your own private address and your own free Make account pass each lead along. Each lead becomes a tagged contact, and can get a card in the pipeline you pick.",
+  "ai": "No AI",
+  "aiNote": "This page does not use AI.",
+  "steps": [
+   "Scroll to Lead capture and copy your private address under Your address.",
+   "Under Add new leads to this pipeline, choose a pipeline, or Contacts only.",
+   "Follow Set it up in Make on the page, using your own free Make account.",
+   "Test it with Meta's Lead Ads Testing Tool, as the steps show.",
+   "Turn your Make scenario on so it reads Active.",
+   "Check Latest leads to see each lead arrive."
+  ],
+  "health": "Each lead who is new to your contacts counts as a new contact in your Customer Acquisition pillar for 30 days. Nothing else on this page changes your scores.",
+  "tips": [
+   "Keep your address private. Anyone who has it can add contacts to your account.",
+   "If Make is ever down, download your leads from Meta's Leads Center and use Upload leads from a file.",
+   "You need to be an admin of the Facebook Page your ads run from."
+  ],
+  "questions": [
+   {
+    "q": "What tags does a lead get?",
+    "a": "The tag lead-meta-ad, plus a tag with that ad's own name."
+   },
+   {
+    "q": "Why does my test lead say test?",
+    "a": "Meta's test leads show in Latest leads with the status test. They never become contacts."
+   },
+   {
+    "q": "Can I use Zapier instead of Make?",
+    "a": "Yes. It works the same way: a Facebook Lead Ads trigger, then Webhooks by Zapier, POST, to the same address."
+   }
+  ],
+  "related": [
+   "meta-ads-weekly-report",
+   "outreach-pipelines",
+   "contacts",
+   "tag-library",
+   "landing-pages"
+  ],
+  "who": "Everyone. Team members need the Outreach area. You need your own free Make account.",
+  "keywords": [
+   "meta",
+   "facebook ads",
+   "instagram ads",
+   "lead ads",
+   "lead form",
+   "make.com",
+   "zapier",
+   "leads center",
+   "linkedin lead form",
+   "upload leads"
+  ],
+  "sections": [
+   {
+    "id": "linkedin-lead-forms",
+    "title": "LinkedIn lead forms",
+    "body": "People who fill in a LinkedIn Lead Gen Form can arrive the same way. Use the separate address on the page and your own Make account. They are tagged lead-linkedin-form plus the form's own tag.",
+    "keywords": [
+     "linkedin",
+     "lead gen form",
+     "lead-linkedin-form"
+    ]
+   },
+   {
+    "id": "upload-leads-from-a-file",
+    "title": "Upload leads from a file",
+    "body": "A backup for when Make is down. Download your leads from Meta's Leads Center and add the file here.",
+    "keywords": [
+     "upload leads",
+     "csv",
+     "leads center",
+     "file"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "client-portals",
+  "name": "Client Portals",
+  "area": "Client Delivery",
+  "where": "Client Delivery > Client Portals",
+  "href": "/client-portals",
+  "what": "Give each client a private page in your own name and logo. It shows their sessions left, upcoming bookings, invoices to pay, session notes you share, homework, goals, files and messages. There is no password. The private link is the key.",
+  "ai": "No AI",
+  "aiNote": "This page has no AI button. Your chat assistant can tell you how a portal stands, and can add homework or a goal behind Approve. Nothing is emailed when it does.",
+  "steps": [
+   "Under Add a client, type a name or email and press Open.",
+   "Press the Create button for their portal.",
+   "Add a package, homework, goals or files in the sections below.",
+   "Press See what they see to check it.",
+   "Press Email them the link, or Copy link and send it yourself."
+  ],
+  "health": "Client Portals do not change your scores. They give each client one place for everything you are doing together.",
+  "tips": [
+   "Add a note in Note at the top of their portal to make it feel personal.",
+   "Press Use as my default for new portals once you love a look.",
+   "Sections with nothing in them stay out of sight on their own."
+  ],
+  "questions": [
+   {
+    "q": "How does a session get used?",
+    "a": "One is used when you mark their booking Attended in Calendars. Use the minus and plus buttons to adjust it by hand."
+   },
+   {
+    "q": "What if a client loses their link?",
+    "a": "They can go to lccommandsuite.com/portal, enter their email and get their private link. You can also press New link. The old one then stops working, so email them the new one."
+   },
+   {
+    "q": "Which session notes do they see?",
+    "a": "Only LC Volant notes you choose to share. Private notes and drafts never show."
+   }
+  ],
+  "related": [
+   "lc-volant",
+   "calendars-and-booking-pages",
+   "payments-invoices",
+   "courses-memberships",
+   "contact-record",
+   "email-sending-setup"
+  ],
+  "who": "Everyone. Team members need the Contacts area. Emailing links and messages needs email sending set up.",
+  "keywords": [
+   "client portal",
+   "portal",
+   "private page",
+   "client page",
+   "homework",
+   "client goals",
+   "sessions left",
+   "package",
+   "share files",
+   "client messages",
+   "lost link"
+  ],
+  "sections": [
+   {
+    "id": "packages-and-sessions",
+    "title": "Packages and sessions",
+    "body": "Add a package with its number of sessions and an optional Use by date. Choose which calendars count, or leave them all unticked for any.",
+    "keywords": [
+     "package",
+     "sessions",
+     "use by",
+     "sessions left"
+    ]
+   },
+   {
+    "id": "portal-messages-and-files",
+    "title": "Messages and files",
+    "body": "You and your client can write to each other here, and each side gets an email. Both of you can share files and links.",
+    "keywords": [
+     "messages",
+     "files",
+     "links",
+     "share a file"
+    ]
+   },
+   {
+    "id": "portal-look",
+    "title": "How their portal looks",
+    "body": "Press Customize to set the colors, font style, heading, logo, banner and which sections show, with their names and order.",
+    "keywords": [
+     "customize",
+     "colors",
+     "logo",
+     "banner",
+     "sections"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "courses-memberships",
+  "name": "Courses & Memberships",
+  "area": "Client Delivery",
+  "where": "Client Delivery > Courses & Memberships",
+  "href": "/programs",
+  "what": "Build courses, memberships and group programs right here. Lessons sit in modules and open on a schedule, and members use them inside their own client portal. You see each member's progress.",
+  "ai": "No AI",
+  "aiNote": "This page has no AI button. Your chat assistant can draft a course with its modules and lessons, add lessons and add a member, all behind Approve. It never emails your members.",
+  "steps": [
+   "Under Make a new, choose Self-paced course, Membership or Group program.",
+   "Type a Name and press Create.",
+   "Fill in the details, choose an offer under Sold as if you sell it, and press Save details.",
+   "Add your lessons under Lessons, with a module, text, video, link or file.",
+   "Under Members, find a person, tick the email box if you want, and press Add."
+  ],
+  "health": "Courses and memberships do not change your scores. They help you deliver your work to many people at once.",
+  "tips": [
+   "Choose an offer under Sold as and buyers join on their own.",
+   "On a self-paced course, set Opens after to release a lesson that many days after someone joins.",
+   "Moving from another platform? Press Bring your buyers over at the top of the page."
+  ],
+  "questions": [
+   {
+    "q": "Where do my members see it?",
+    "a": "In their own client portal. A member needs their portal link, so use Email link beside their name."
+   },
+   {
+    "q": "What happens when a membership payment is cancelled?",
+    "a": "Access ends on its own."
+   },
+   {
+    "q": "What does Archive do?",
+    "a": "Members no longer see it. You can turn it back on later."
+   }
+  ],
+  "related": [
+   "client-portals",
+   "bring-your-buyers-over",
+   "offers-packages",
+   "lc-volant",
+   "payment-links-on-offers"
+  ],
+  "who": "Everyone. Team members need the Contacts area.",
+  "keywords": [
+   "course",
+   "membership",
+   "group program",
+   "cohort",
+   "lessons",
+   "modules",
+   "drip",
+   "online course",
+   "students",
+   "members",
+   "progress"
+  ],
+  "sections": [
+   {
+    "id": "self-paced-courses",
+    "title": "Self-paced courses",
+    "body": "People start any time, and each lesson can open a set number of days after they join. You can add a Not before date and an access length in days. Members press Mark complete, see a progress bar and get your finish message.",
+    "keywords": [
+     "self-paced",
+     "drip",
+     "access length",
+     "progress bar",
+     "mark complete"
+    ]
+   },
+   {
+    "id": "memberships",
+    "title": "Memberships",
+    "body": "Ongoing access to a growing library for as long as they are a member. A finished payment plan does not end access.",
+    "keywords": [
+     "membership",
+     "subscription",
+     "ongoing",
+     "library"
+    ]
+   },
+   {
+    "id": "group-programs",
+    "title": "Group programs",
+    "body": "Run a group with dated lessons, Sessions with join links, Group homework each member ticks off, and shared LC Volant group notes. Private notes and drafts never show.",
+    "keywords": [
+     "group program",
+     "cohort",
+     "sessions",
+     "group homework"
+    ]
+   },
+   {
+    "id": "group-conversation",
+    "title": "Group conversation",
+    "body": "Members can post and reply, showing first names only. As host you can post, reply, pin or delete, or turn the conversation off.",
+    "keywords": [
+     "group conversation",
+     "community",
+     "feed",
+     "posts"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "bring-your-buyers-over",
+  "name": "Bring your buyers over",
+  "area": "Client Delivery",
+  "where": "Client Delivery > Courses & Memberships > Bring your buyers over",
+  "href": "/course-bridge",
+  "what": "Still selling on another platform while you move your courses into the Suite? Connect it here and every sale lands in your Suite: the buyer in Contacts with tags, the money in Finance, a follow-up campaign, and a seat in the matching Suite course.",
+  "ai": "No AI",
+  "aiNote": "This page does not use AI.",
+  "steps": [
+   "Open Courses & Memberships and press Bring your buyers over.",
+   "Under Connect a platform, choose yours and press Connect.",
+   "Press Copy and paste your address into the platform, using the steps shown on the card.",
+   "Press Send a test sale to check it. It uses a test buyer named Eloise, and no money moves.",
+   "Under Products, choose what happens for each product and press Save."
+  ],
+  "health": "A sale you record as income counts as income in your Finance dimension. A buyer who is new to your contacts counts as a new contact in your Customer Acquisition pillar for 30 days.",
+  "tips": [
+   "A product shows under Products after its first sale or test sale.",
+   "Keep your address private. Anyone with it can send sales to your account.",
+   "On Payhip, add your Payhip API key so unsigned messages are refused."
+  ],
+  "questions": [
+   {
+    "q": "Which platforms can I connect?",
+    "a": "Payhip, Kajabi, Teachable and Thinkific, or any platform through Zapier or Make. Kajabi needs its Growth or Pro plan, and Teachable its Growth plan or higher."
+   },
+   {
+    "q": "What happens when a buyer gets a refund?",
+    "a": "The income comes back out, they get a refunded tag, and they lose the seat in the Suite course."
+   },
+   {
+    "q": "What happens when a subscription is cancelled?",
+    "a": "They get a cancelled tag and the matching Suite membership ends."
+   }
+  ],
+  "related": [
+   "courses-memberships",
+   "contacts",
+   "income",
+   "campaigns",
+   "tag-library"
+  ],
+  "who": "Everyone. Team members need the Contacts area.",
+  "keywords": [
+   "kajabi",
+   "teachable",
+   "thinkific",
+   "payhip",
+   "zapier",
+   "make",
+   "course platform",
+   "move my courses",
+   "import buyers",
+   "bridge",
+   "webhook"
+  ],
+  "sections": [
+   {
+    "id": "bridge-products",
+    "title": "Products",
+    "body": "Every buyer is tagged customer, with tags for the platform and the product. For each product you can add extra tags, start a campaign, give a seat in a Suite course and record the sale as income.",
+    "keywords": [
+     "products",
+     "tags",
+     "start a campaign",
+     "seat",
+     "record income"
+    ]
+   },
+   {
+    "id": "recent-sales",
+    "title": "Recent sales",
+    "body": "A list of what has come in. Each message is handled once, so a repeat from the platform is ignored.",
+    "keywords": [
+     "recent sales",
+     "repeat",
+     "history"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "client-care",
+  "name": "Client Care",
+  "area": "Client Delivery",
+  "where": "Client Delivery > Client Care",
+  "href": "/client-care",
+  "what": "Stay close to your clients without having to remember to. A 30-day check-in, a quarterly pulse, an exit survey, and a task for you when a client goes quiet. Everything is written and switched off until you turn it on.",
+  "ai": "No AI",
+  "aiNote": "This page does not use AI. Your chat assistant can tell you which pieces are on and which clients have gone quiet. It cannot switch them on or off.",
+  "steps": [
+   "Open Client Care. If a note says email sending is not set up, press Set up email sending.",
+   "Tag your clients client or customer in Contacts. Payments through the Suite add customer on their own.",
+   "Press Read or edit the email on a piece and make it sound like you.",
+   "Turn on the switch for each piece you want.",
+   "When someone stops working with you, tag them former-client to send the exit survey."
+  ],
+  "health": "Each email piece you switch on is a campaign that is turned on, so it counts toward your Communication pillar. The quiet-client tasks do not change your scores.",
+  "tips": [
+   "Preview the form opens each check-in form as your client sees it.",
+   "Choose a booking page for the third quiet-client note, or leave it off and they reply instead.",
+   "You can switch pieces on before email sending is ready. The emails wait until it is."
+  ],
+  "questions": [
+   {
+    "q": "What counts as going quiet?",
+    "a": "No bookings, payments, emails or notes for 2 weeks. You get a task to reach out personally. Nothing is emailed on its own, but you can start the 3 quiet-client notes yourself."
+   },
+   {
+    "q": "Who are these emails from?",
+    "a": "From your own address, through your own Resend account, with your own sign-off."
+   },
+   {
+    "q": "Can a client get these twice?",
+    "a": "Someone gets each email once, and the quarterly pulse once a quarter. Unsubscribed contacts are always skipped, and former clients never get the check-ins."
+   }
+  ],
+  "related": [
+   "contacts",
+   "tag-library",
+   "campaigns",
+   "forms",
+   "email-sending-setup",
+   "testimonials"
+  ],
+  "who": "Everyone. Team members need the Contacts area. Email sending must be set up for the emails to go out.",
+  "keywords": [
+   "client care",
+   "check-in",
+   "30 day check in",
+   "quarterly pulse",
+   "exit survey",
+   "quiet client",
+   "client retention",
+   "former client",
+   "stay in touch"
+  ],
+  "sections": [
+   {
+    "id": "thirty-day-check-in",
+    "title": "30-day check-in",
+    "body": "30 days after someone becomes a client, one email with a short form on what's working, what's hard, whether a call would help, and a testimonial ask.",
+    "keywords": [
+     "30 day",
+     "check-in"
+    ]
+   },
+   {
+    "id": "quarterly-pulse",
+    "title": "Quarterly pulse",
+    "body": "Every 90 days while they are a client, one email with three quick questions.",
+    "keywords": [
+     "quarterly",
+     "pulse",
+     "90 days"
+    ]
+   },
+   {
+    "id": "exit-survey",
+    "title": "Exit survey",
+    "body": "When you tag someone former-client, they get a warm thank-you with a short survey.",
+    "keywords": [
+     "exit survey",
+     "former-client",
+     "offboarding"
+    ]
+   },
+   {
+    "id": "quiet-clients",
+    "title": "Quiet clients",
+    "body": "A task for you when a client has gone quiet for 2 weeks, plus 3 ready notes you can start yourself.",
+    "keywords": [
+     "quiet",
+     "gone quiet",
+     "task",
+     "reach out"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "resend-a-single-email",
+  "name": "Resend a single email",
+  "area": "Marketing",
+  "where": "Marketing > Campaigns & Broadcasts",
+  "href": "/sequences-manager",
+  "what": "Send one email again, right now, to one person, without changing anyone's schedule. You can do this from a campaign or from a broadcast that has gone out.",
+  "ai": "No AI",
+  "aiNote": "This does not use AI.",
+  "steps": [
+   "Open Campaigns & Broadcasts and open your campaign or broadcast.",
+   "In a campaign, open the People tab and press the resend icon beside the person.",
+   "Choose the email and press Send now.",
+   "Or on the campaign's Emails tab, open Who got this email and press Resend.",
+   "In a broadcast that has gone out, type a name under Resend to one person."
+  ],
+  "health": "Resending an email does not change your scores. It helps when someone missed one or joined late.",
+  "tips": [
+   "On a campaign's Emails tab, the person-plus icon sends an email to any address. They are not added to the campaign.",
+   "A broadcast's failed list has a Resend button beside each address that failed.",
+   "Use this for someone who joined after a broadcast went out."
+  ],
+  "questions": [
+   {
+    "q": "Will this move them along in the campaign?",
+    "a": "No. Nobody's schedule changes."
+   },
+   {
+    "q": "Why was my resend refused?",
+    "a": "That person has unsubscribed, so they cannot be emailed."
+   }
+  ],
+  "related": [
+   "campaigns",
+   "broadcasts",
+   "email-sending-setup",
+   "contact-record"
+  ],
+  "who": "Everyone. Team members need the Campaigns area. Email sending must be set up.",
+  "keywords": [
+   "resend",
+   "send again",
+   "resend email",
+   "missed email",
+   "didn't get my email",
+   "send to one person",
+   "email one person"
+  ],
+  "sections": [
+   {
+    "id": "resend-from-a-campaign",
+    "title": "From a campaign",
+    "body": "Resend to someone in it from the People tab, send to anyone by address with the person-plus icon, or use each email's Who got this email list.",
     "keywords": [
      "campaign",
-     "who was sent",
-     "next email",
-     "replies",
-     "microsoft 365",
-     "enroll"
+     "people tab",
+     "who got this email",
+     "send to someone"
+    ]
+   },
+   {
+    "id": "resend-from-a-broadcast",
+    "title": "From a broadcast",
+    "body": "Once it has gone out, send it to any contact with Resend to one person, or to anyone who failed.",
+    "keywords": [
+     "broadcast",
+     "resend to one person",
+     "failed"
     ]
    }
   ]
  },
  {
-  "id": "what-your-assistant-will-and-will-not-do",
-  "name": "What your assistant will and will not do",
-  "area": "Settings",
-  "where": "Behind every assistant answer",
-  "href": "/",
-  "what": "The rules every client's assistant follows, whatever your own instructions say. Your instructions can change its tone and length, but never these rules.",
-  "ai": "AI-powered",
-  "aiNote": "These rules sit behind your assistant on your own AI key. If a message suggests serious distress, the caring reply below comes straight away, even with no AI key.",
+  "id": "meta-ads-weekly-report",
+  "name": "Meta Ads weekly report",
+  "area": "Marketing",
+  "where": "Marketing > Meta Lead Ads, at the top of the page",
+  "href": "/meta-leads",
+  "what": "Upload the file you export from Ads Manager and see how each ad is doing: what to keep, pause or stop and why, what each lead costs, and what the same spending would bring in a week, a month and a quarter.",
+  "ai": "No AI",
+  "aiNote": "This report does not use AI. The verdicts come from fixed rules and your own answers.",
   "steps": [
-   "Ask your assistant as you normally would. The rules are always on, so there is nothing to switch on.",
-   "To change its tone, length or focus, open Settings > AI Assistant and fill in How should it reply.",
-   "If it cannot do something, it will say so and point you to Help, then Contact Support.",
-   "If an answer is off, press thumbs down under it and add a note."
+   "In Ads Manager, open the Ads tab and set your dates, for example Last 7 days.",
+   "Next to Columns, choose Performance and clicks. Use the download arrow, then Export table data, as .csv.",
+   "On Meta Lead Ads, under Add this week's numbers, choose that file.",
+   "Answer Guided questions: decide your next step and save.",
+   "Read your verdicts under Each ad and What to do with each ad, and why."
   ],
-  "health": "This does not change your scores. It keeps your assistant honest, private and careful with you.",
+  "health": "This report does not change your scores. It helps you decide where your ad money goes.",
   "tips": [
-   "Your assistant uses only your own information and never mentions other clients.",
-   "If it says it did something, a tool really did it. Anything that sends, publishes or changes data waits for your Approve."
+   "Judge trends over a week or more. Meta can still adjust the last few days.",
+   "The report rebuilds every time you add an export.",
+   "Mondays you get a reminder that says your report is ready or asks for a new export."
   ],
   "questions": [
    {
-    "q": "Will it give me legal, tax or medical advice?",
-    "a": "It shares general information only, says it is not professional advice, and suggests you check with a qualified professional."
+    "q": "What do the verdicts mean?",
+    "a": "Give it more, Keep going, Watch, Pause or Stop. Each ad's reason is written in plain words beside it, and is judged against your yardstick."
    },
    {
-    "q": "Does the LifeCharter team read what I wrote?",
-    "a": "The alert the team gets never includes what you wrote. It only says someone should reach out."
+    "q": "What is my yardstick?",
+    "a": "The cost per lead each ad is measured against. It comes from your target, your break-even, or the campaign's own average until you set one."
    },
    {
-    "q": "Can I turn these rules off?",
-    "a": "No. They apply to every assistant, on top of your own instructions."
+    "q": "Where do the numbers after the click come from?",
+    "a": "From your own contacts in the Suite. They show who registered, showed up, booked and became a client, with the ad spend for each step."
    }
   ],
   "related": [
-   "ai-assistant",
-   "what-your-assistant-can-do-for-you",
-   "ai-assistant-setup-and-your-key",
-   "data-privacy"
+   "meta-lead-ads",
+   "events",
+   "budget-planner",
+   "contacts",
+   "reminders"
   ],
-  "who": "Every client's assistant, all the time.",
+  "who": "Everyone. Team members need the Outreach area.",
   "keywords": [
-   "rules",
-   "house rules",
-   "will not do",
-   "refuse",
-   "limits",
-   "privacy",
-   "legal advice",
-   "tax advice",
-   "fake testimonials",
-   "guarantee",
-   "crisis",
-   "988",
-   "safety"
+   "meta ads report",
+   "facebook ads report",
+   "weekly report",
+   "ads manager",
+   "cost per lead",
+   "ad verdict",
+   "which ad is working",
+   "ad spend",
+   "export csv",
+   "guided questions"
   ],
   "sections": [
    {
-    "id": "house-rules",
-    "title": "The house rules",
-    "body": "Your assistant will not quote prices for LifeCharter's own services, promise results, income or timelines, or invent features. It uses only your own information, keeps your private details private, and declines fake testimonials, invented results and fear-based marketing.",
+    "id": "ad-verdicts",
+    "title": "Ad verdicts",
+    "body": "For each ad you see spend, seen, link clicks, click rate, leads, cost per lead, share of leads and a verdict with its reason.",
     "keywords": [
-     "honesty",
-     "no invented features",
-     "own account only",
-     "promises",
-     "testimonials",
-     "pricing question"
+     "verdict",
+     "pause",
+     "stop",
+     "cost per lead"
     ]
    },
    {
-    "id": "if-you-are-struggling",
-    "title": "If you are having a hard time",
-    "body": "If a message suggests serious distress, your assistant stops coaching and replies with care and crisis resources: call or text 988 in the US, call 911 in immediate danger, or visit findahelpline.com. A person on the LifeCharter team is told, so they can check in.",
+    "id": "ad-projections",
+    "title": "If cost per lead stays the same",
+    "body": "What the same daily spending would cost and bring in over a week, a month and a quarter, with a note if you would reach your monthly limit.",
     "keywords": [
-     "distress",
-     "crisis",
-     "988",
-     "911",
-     "help line",
-     "check in"
+     "projection",
+     "monthly limit",
+     "forecast"
     ]
    },
    {
-    "id": "hardship-and-frustration",
-    "title": "Money worries and frustration",
-    "body": "If you mention financial hardship, it never suggests spending or debt, and offers free, low-effort next steps. If you are frustrated with the Suite, it fixes what it can and points you to support. In both cases the LifeCharter team is told, so a real person can follow up.",
+    "id": "guided-questions",
+    "title": "Guided questions",
+    "body": "Thirteen questions set your yardstick, such as your goal, what a client is worth and your budget. Notes appear under What your answers say.",
     "keywords": [
-     "hardship",
-     "can't pay",
-     "frustrated",
-     "support",
-     "real person"
+     "guided questions",
+     "yardstick",
+     "target",
+     "what your answers say"
     ]
    },
    {
-    "id": "quiet-accounts",
-    "title": "If you have been away",
-    "body": "A daily check lets the LifeCharter team know when someone has not signed in for two weeks, so a person can reach out.",
+    "id": "event-sign-up-counts",
+    "title": "Events held on a schedule",
+    "body": "If your event repeats every week, every other week or every four weeks, sign-ups are counted for each event on its own and start again at zero after each one. A table shows every event, with a total for each month.",
     "keywords": [
-     "not signed in",
-     "two weeks",
-     "inactive",
-     "check in"
+     "sign-ups",
+     "recurring event",
+     "count",
+     "each month"
     ]
    }
   ]

@@ -43,6 +43,7 @@ interface OnboardingStep {
   path: string;
   section: "business" | "daily";
   estimatedTime: number;
+  timeLabel?: string; // when minutes would mislead: the assessments take hours
   completed: boolean;
 }
 
@@ -63,9 +64,9 @@ const journeyStages: JourneyStage[] = [
     description: "The same steps as Set up Suite",
     steps: [
       { id: "ai", title: "Connect your AI", description: "Add your AI key (Claude or OpenAI) so your assistant can work from your own answers", icon: <Sparkles className="w-5 h-5" />, path: "/settings?tab=ai", section: "business", estimatedTime: 5, completed: false },
-      { id: "brain", title: "Brain Assessment", description: "Map how your business runs, in your own words", icon: <BarChart3 className="w-5 h-5" />, path: "/assessments/brain", section: "business", estimatedTime: 20, completed: false },
-      { id: "soul", title: "Soul Assessment", description: "Your identity, values, calling and story", icon: <Target className="w-5 h-5" />, path: "/assessments/soul", section: "business", estimatedTime: 15, completed: false },
-      { id: "profit", title: "Profit Assessment", description: "Score your 12 business dimensions for your baseline", icon: <TrendingUp className="w-5 h-5" />, path: "/assessments/profit", section: "business", estimatedTime: 15, completed: false },
+      { id: "brain", title: "Brain Assessment", description: "Map how your business runs, in your own words", icon: <BarChart3 className="w-5 h-5" />, path: "/assessments/brain", section: "business", estimatedTime: 240, timeLabel: "3-5 hours", completed: false },
+      { id: "soul", title: "Soul Assessment", description: "Your identity, values, calling and story", icon: <Target className="w-5 h-5" />, path: "/assessments/soul", section: "business", estimatedTime: 150, timeLabel: "2-3 hours", completed: false },
+      { id: "profit", title: "Profit Assessment", description: "Score your 12 business dimensions for your baseline", icon: <TrendingUp className="w-5 h-5" />, path: "/assessments/profit", section: "business", estimatedTime: 90, timeLabel: "1-2 hours", completed: false },
       { id: "tools", title: "Connect one tool", description: "Calendar and email", icon: <Calendar className="w-5 h-5" />, path: "/settings", section: "business", estimatedTime: 5, completed: false },
       { id: "website", title: "Add your website", description: "For your free Website Alignment Review", icon: <FileText className="w-5 h-5" />, path: "/setup", section: "business", estimatedTime: 1, completed: false },
     ],
@@ -544,7 +545,7 @@ export default function TravelPartnerWidget() {
                     <p className="text-xs text-[#b8a898] mt-1">{currentStep.description}</p>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-xs text-[#4a9b9b]">{currentStep.section === "business" ? "Business" : "Daily"}</span>
-                      <span className="text-xs text-[#b8a898]">• {currentStep.estimatedTime} min</span>
+                      <span className="text-xs text-[#b8a898]">• {currentStep.timeLabel ?? `${currentStep.estimatedTime} min`}</span>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-[#b8a898]" />
@@ -594,7 +595,7 @@ export default function TravelPartnerWidget() {
                               <span className={`text-xs px-2 py-0.5 rounded-full ${step.section === "business" ? "bg-[#1a2b4a]/10 text-[#7b6b8d]" : "bg-[#4a9b9b]/10 text-[#4a9b9b]"}`}>
                                 {step.section === "business" ? "Business" : "Daily"}
                               </span>
-                              <span className="text-xs text-[#b8a898]">{step.estimatedTime} min</span>
+                              <span className="text-xs text-[#b8a898]">{step.timeLabel ?? `${step.estimatedTime} min`}</span>
                             </div>
                           </div>
                         </div>

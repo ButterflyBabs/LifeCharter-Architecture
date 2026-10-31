@@ -1634,12 +1634,16 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
   },
 ];
 
+// LifeCharter's own tools and closed features, kept out of what clients read and search.
+const NOT_FOR_CLIENTS = ["gs-lc-fledge", "in-poststream", "sms-texts"];
+export const CLIENT_KB = KNOWLEDGE_BASE.filter((e) => !NOT_FOR_CLIENTS.includes(e.id));
+
 // Lightweight keyword-overlap retrieval: score each entry against the query and
 // return the best matches. Good enough to ground the AI answer without a vector DB.
 export function searchKb(query: string, limit = 5): KbEntry[] {
   const q = query.toLowerCase();
   const terms = q.split(/[^a-z0-9]+/).filter((t) => t.length > 2);
-  const scored = KNOWLEDGE_BASE.map((e) => {
+  const scored = CLIENT_KB.map((e) => {
     let score = 0;
     const hay = `${e.question} ${e.answer} ${e.keywords.join(" ")} ${e.category}`.toLowerCase();
     for (const kw of e.keywords) {
