@@ -21,6 +21,9 @@ export default function UserGuideEntry({ entry, related }: { entry: GuideEntry; 
   // The assistant is closed during the assessment lock, to the Sales and consultant roles and to a restricted member.
   const [canAsk, setCanAsk] = useState(false);
   useEffect(() => {
+    void fetch("/api/user-guide/opened", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: entry.id }) }).catch(() => {});
+  }, [entry.id]);
+  useEffect(() => {
     fetch("/api/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setCanAsk(Boolean(d) && !d.assessmentsLocked && !["sales", "consultant"].includes(d.teamRole) && !d.extras?.restrict))

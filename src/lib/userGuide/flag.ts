@@ -3,5 +3,7 @@
 export const USER_GUIDE_OPEN_TO_ALL = false;
 const USER_GUIDE_TESTERS = ["msamilynne+eloise-practice@gmail.com"];
 
+export const isGuideTester = (email: string | null | undefined) => USER_GUIDE_TESTERS.includes((email || "").toLowerCase());
+
 export const userGuideOpenFor = (email: string | null | undefined, architect: boolean) =>
-  USER_GUIDE_OPEN_TO_ALL || architect || USER_GUIDE_TESTERS.includes((email || "").toLowerCase());
+  USER_GUIDE_OPEN_TO_ALL || architect || isGuideTester(email);

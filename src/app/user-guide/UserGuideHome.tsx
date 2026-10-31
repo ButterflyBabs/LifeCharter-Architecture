@@ -19,7 +19,7 @@ function EntryCard({ entry }: { entry: EntryCardData }) {
   );
 }
 
-export default function UserGuideHome({ entries }: { entries: EntryCardData[] }) {
+export default function UserGuideHome({ entries, top, topTitle }: { entries: EntryCardData[]; top: EntryCardData[]; topTitle: string }) {
   const router = useRouter();
   const [recent, setRecent] = useState<string[]>([]);
   const [area, setArea] = useState<string | null>(null);
@@ -37,7 +37,6 @@ export default function UserGuideHome({ entries }: { entries: EntryCardData[] })
     void rememberGuideSearch(text);
     router.push(guideHitHref(hit));
   };
-  const starters = entries.filter((e) => e.starter);
   const areas = GUIDE_AREAS.filter((a) => entries.some((e) => e.area === a));
   const heading = "text-sm font-semibold uppercase tracking-[0.12em] text-[#5a6472] dark:text-[#b8c2cf]";
 
@@ -63,9 +62,9 @@ export default function UserGuideHome({ entries }: { entries: EntryCardData[] })
       )}
 
       <section className="mt-8" aria-labelledby="guide-start">
-        <h2 id="guide-start" className={heading}>Good places to start</h2>
+        <h2 id="guide-start" className={heading}>{topTitle}</h2>
         <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {starters.map((e) => <EntryCard key={e.id} entry={e} />)}
+          {top.map((e) => <EntryCard key={e.id} entry={e} />)}
         </div>
       </section>
 

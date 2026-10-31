@@ -271,7 +271,7 @@ const RESTRICTED_OPEN_PAGES = ["/demo", "/settings", "/help", "/user-guide", "/l
 const RESTRICTED_OPEN_APIS = [
   "/api/me", "/api/profile", "/api/auth", "/api/logout", "/api/nav-order", "/api/version", "/api/feedback", "/api/book",
   "/api/account", "/api/setup", "/api/uploads", "/api/followups", "/api/event-emails", "/api/lbd-summit-emails", "/api/scripts",
-  "/api/support", "/api/workspaces", "/api/integrations",
+  "/api/support", "/api/workspaces", "/api/integrations", "/api/user-guide",
 ];
 
 /** Where a restricted member lands: their first open area (Tasks first). */

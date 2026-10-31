@@ -24,7 +24,7 @@ const API_WRITE_ALLOW = [
   "/api/ai-settings", "/api/integrations", "/api/google", "/api/microsoft",
   "/api/profile", "/api/me", "/api/account", "/api/account-access", "/api/auth", "/api/vault",
   "/api/billing", "/api/stripe", "/api/support", "/api/qa", "/api/feedback", "/api/notifications", "/api/nav-order",
-  "/api/uploads", "/api/starter-guide", "/api/website-review", "/api/version", "/api/travel-partner", "/api/workspaces", "/api/export",
+  "/api/uploads", "/api/user-guide", "/api/starter-guide", "/api/website-review", "/api/version", "/api/travel-partner", "/api/workspaces", "/api/export",
 ];
 
 export function gateApiWriteAllowed(path: string): boolean {

@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { GUIDE_ENTRIES } from "../src/lib/userGuide/entries";
-import { GUIDE_RECENT_MAX, cleanGuideRecent, searchGuide, slips } from "../src/lib/userGuide/search";
+import { GUIDE_RECENT_MAX, cleanGuideRecent, guideHomeList, searchGuide, slips } from "../src/lib/userGuide/search";
 
 const top = (q: string) => searchGuide(q, GUIDE_ENTRIES)[0];
 
@@ -57,4 +57,24 @@ test("recent searches drop repeats, blanks and anything past the limit", () => {
   assert.deepEqual(cleanGuideRecent([" tasks ", "TASKS", "", 4, "contacts"]), ["tasks", "contacts"]);
   assert.equal(cleanGuideRecent(Array.from({ length: 20 }, (_, i) => `s${i}`)).length, GUIDE_RECENT_MAX);
   assert.deepEqual(cleanGuideRecent("tasks"), []);
+});
+
+test("Frequently used stays on the starter list until enough opens are in", () => {
+  const starters = GUIDE_ENTRIES.filter((e) => e.starter);
+  const few = guideHomeList(GUIDE_ENTRIES, [{ entry_id: "glossary", opens: 5 }]);
+  assert.equal(few.title, "Good places to start");
+  assert.deepEqual(few.list.map((e) => e.id), starters.map((e) => e.id));
+});
+
+test("Frequently used shows the most opened entries, and skips any that no longer exist", () => {
+  const home = guideHomeList(GUIDE_ENTRIES, [
+    { entry_id: "gone", opens: 90 },
+    { entry_id: "glossary", opens: 40 },
+    { entry_id: "tasks", opens: 30 },
+    { entry_id: "contacts", opens: 20 },
+    { entry_id: "reminders", opens: 10 },
+    { entry_id: "time", opens: 5 },
+  ]);
+  assert.equal(home.title, "Frequently used");
+  assert.deepEqual(home.list.map((e) => e.id), ["glossary", "tasks", "contacts", "reminders"]);
 });

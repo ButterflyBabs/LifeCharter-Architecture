@@ -94,6 +94,17 @@ export function searchGuide(query: string, entries: GuideEntry[], limit = 8): Gu
   return hits.sort((a, b) => b.score - a.score || a.entry.name.length - b.entry.name.length).slice(0, limit);
 }
 
+// The list at the top of the guide: what clients open most, once there is enough to go on, else the starter list.
+export const GUIDE_FREQUENT_MIN_OPENS = 50;
+export function guideHomeList<T extends { id: string; starter?: boolean }>(entries: T[], counts: { entry_id: string; opens: number }[]) {
+  const total = counts.reduce((sum, c) => sum + c.opens, 0);
+  const most = [...counts]
+    .sort((a, b) => b.opens - a.opens)
+    .flatMap((c) => entries.filter((e) => e.id === c.entry_id))
+    .slice(0, 4);
+  return total >= GUIDE_FREQUENT_MIN_OPENS && most.length === 4 ? { title: "Frequently used", list: most } : { title: "Good places to start", list: entries.filter((e) => e.starter) };
+}
+
 // A person's recent searches, newest first, no repeats (saved on their profile through /api/me/preferences).
 export const GUIDE_RECENT_MAX = 8;
 export function cleanGuideRecent(value: unknown): string[] {
