@@ -97,7 +97,7 @@ async function run(request: Request) {
         <tr><td style="font-size:22px;color:#23255C;padding:8px 0 4px;font-family:Georgia,serif">Hi ${esc(first)}, heads up</td></tr>
         <tr><td><table width="100%" cellpadding="0" cellspacing="0" style="font-size:15px">${rows}</table></td></tr>
         <tr><td style="padding-top:20px"><a href="${APP_URL}/tasks${forMember ? "?view=mine" : ""}" style="display:inline-block;background:#23255C;color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none">Open my tasks</a></td></tr>
-        <tr><td style="padding-top:20px;font-size:12px;color:#8A8BA3">${forMember ? "You get this because these tasks are assigned to you." : "You get this because task reminders are on."} Change or turn them off in Settings → Profile.</td></tr>
+        <tr><td style="padding-top:20px;font-size:12px;color:#8A8BA3">${forMember ? "You get this because these tasks are assigned to you." : "You get this because task reminders are on."} Change or turn them off in Settings → Notifications.</td></tr>
       </table></td></tr></table></body></html>`;
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",

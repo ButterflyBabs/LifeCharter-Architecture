@@ -10,7 +10,7 @@ export const maxDuration = 300;
 // about yet (score drops, slipped goals, stalled pipeline, a missed rhythm, bills
 // coming due, a review that's due). Each alert is emailed once; the bell keeps
 // showing it until it's resolved or dismissed. Owners turn it off in
-// Settings → Profile. Same CRON_SECRET convention as the other crons.
+// Settings → Notifications. Same CRON_SECRET convention as the other crons.
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
 const FROM = process.env.ALERT_EMAIL_FROM || "LifeCharter Command Suite <reminders@lccommandsuite.com>";
@@ -78,7 +78,7 @@ async function run(request: Request) {
         <tr><td style="font-size:15px;color:#4A4B6A;padding-bottom:6px">Your Suite noticed ${fresh.length === 1 ? "something" : "a few things"} worth your attention:</td></tr>
         <tr><td><table width="100%" cellpadding="0" cellspacing="0" style="font-size:15px">${items}</table></td></tr>
         <tr><td style="padding-top:20px"><a href="${APP_URL}/" style="display:inline-block;background:#23255C;color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none">Open my Suite</a></td></tr>
-        <tr><td style="padding-top:20px;font-size:12px;color:#8A8BA3">You get this because alert emails are on. Turn them off in Settings → Profile.</td></tr>
+        <tr><td style="padding-top:20px;font-size:12px;color:#8A8BA3">You get this because alert emails are on. Turn them off in Settings → Notifications.</td></tr>
       </table></td></tr></table></body></html>`;
 
     const res = await fetch("https://api.resend.com/emails", {

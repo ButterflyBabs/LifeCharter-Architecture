@@ -262,7 +262,7 @@ export function cleanExtras(v: unknown): AccessExtras | null {
   return Object.keys(out).length ? out : null;
 }
 
-export const NO_DELETE_MESSAGE = "Deleting needs AmiLynne's permission. Ask her and she will remove it for you.";
+export const NO_DELETE_MESSAGE = "Deleting needs the account owner's permission. Ask them and they will remove it for you.";
 
 // Always open to a restricted member: their own profile, Help, sign-in pages.
 const RESTRICTED_OPEN_PAGES = ["/demo", "/settings", "/help", "/user-guide", "/logout", "/login", "/reset-password", "/forgot-password", "/accept-invite", "/legal", "/api"];

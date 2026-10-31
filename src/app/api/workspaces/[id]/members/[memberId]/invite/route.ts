@@ -116,7 +116,7 @@ export async function POST(
   const { data: authUser } = await admin.auth.admin.getUserById(userId);
   const hasLogin = Boolean(authUser?.user?.last_sign_in_at);
   const { data: plan } = await supabase.from("client_master_plans").select("client_name, client_email").eq("id", masterPlanId).maybeSingle();
-  const inviterName = (plan?.client_name as string) && plan?.client_name !== "Primary" ? (plan!.client_name as string) : "AmiLynne Carroll";
+  const inviterName = (plan?.client_name as string) && plan?.client_name !== "Primary" ? (plan!.client_name as string) : "Your team";
   // Replies go to whoever added them: the client's own reply-to (or their account email); on the house
   // account, the owner's own address.
   const profile = await senderProfile(masterPlanId, supabase).catch(() => null);

@@ -708,7 +708,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
           Role Permissions
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-          {Object.entries(roleDescriptions).map(([role, desc]) => (
+          {Object.entries(roleDescriptions).filter(([role]) => canGrantSales || (role !== "sales" && role !== "consultant")).map(([role, desc]) => (
             <div key={role} className="flex items-start gap-2">
               <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0] capitalize min-w-[60px]">
                 {role}:

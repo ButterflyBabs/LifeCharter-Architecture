@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { resolveActor } from "@/lib/authz";
+import { canManageAccount, resolveActor } from "@/lib/authz";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { createServerClient } from "@/lib/supabase/server";
 
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 // (View as client). Dates only: the internal reason stays private. A team member does not see it.
 export async function GET() {
   const actor = await resolveActor();
-  if (actor.kind === "member" || actor.kind === "none") return NextResponse.json({ views: [] });
+  if (actor.kind === "member" || !(await canManageAccount(actor))) return NextResponse.json({ views: [] });
   const planId = await resolveMasterPlanId();
   if (!planId) return NextResponse.json({ views: [] });
   const supabase = createServerClient();

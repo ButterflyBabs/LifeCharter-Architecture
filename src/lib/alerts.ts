@@ -444,7 +444,7 @@ export async function deriveNotifications(
           type: "action",
           title: "Your last payment didn't go through",
           body: "Your card was declined. Update it under Settings > Billing > Manage billing so your plan keeps running without interruption.",
-          href: "/settings",
+          href: "/settings?tab=billing",
         });
       }
     }

@@ -74,7 +74,7 @@ const settingsSections: SettingsSection[] = [
     id: "notifications",
     title: "Notifications",
     icon: <Bell className="w-5 h-5" />,
-    description: "Email, SMS, and in-app notification preferences"
+    description: "Email and in-app notification preferences"
   },
   {
     id: "away",
@@ -920,7 +920,7 @@ export default function SettingsPage() {
               Your Workspaces
             </h4>
             <span className="text-sm text-[#b8a898]">
-              {workspaces.length} of {maxWorkspaces} used
+              {maxWorkspaces === Infinity ? `${workspaces.length} in use` : `${workspaces.length} of ${maxWorkspaces} used`}
             </span>
           </div>
 
@@ -1830,7 +1830,7 @@ export default function SettingsPage() {
           Export Your Data
         </h4>
         <p className="text-sm text-[#b8a898] mb-4">
-          Download your account data. The full backup includes everything you&apos;ve put into the Suite (never your passwords or API keys).
+          Download your account data. The full backup holds your main records, never your passwords or API keys. Export your contacts from the Contacts page.
         </p>
         <div className="space-y-3">
           <a href="/api/export/account" className="block">

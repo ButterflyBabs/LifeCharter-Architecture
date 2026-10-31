@@ -3,2178 +3,1910 @@ import type { GuideEntry } from "./types";
 // The batch waiting for Babs on a review page, written there by /api/user-guide/seed-review. Removed at release.
 export const GUIDE_DRAFTS: GuideEntry[] = [
  {
-  "id": "business-alignment",
-  "name": "Business Alignment",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Business Alignment",
-  "href": "/business-alignment",
-  "what": "Your business health in one view: your overall score and phase, a radar and a score for each of the 12 dimensions, your score trend and your revenue snapshot, in cards you can arrange. Your briefing and Growth Roadmap sit at the top.",
-  "ai": "Has an AI button",
-  "aiNote": "Brief me uses your own AI key. Your assistant explains your score and phase, what is driving your weakest areas, and three moves you can add to your tasks. Your scores are not written by this button. Without a key, the page shows a link to your AI settings.",
-  "steps": [
-   "Open Business Alignment from the left menu.",
-   "Look at your overall score and phase first.",
-   "Find your lowest dimensions on the radar. Primary focus names your three lowest.",
-   "Press Brief me to hear what is driving them.",
-   "Press Add to my tasks on the moves you want.",
-   "Hover over a card and drag its handle to put your cards in the order you like."
-  ],
-  "health": "This is where your health shows. Your overall score is the average of the dimensions that have a score, and it sets your phase: Survival 0-40, Growth 41-60, Expansion 61-80 or Legacy 81-100. It appears once at least three dimensions have a score. Looking at this page does not change your scores.",
-  "tips": [
-   "The goal is progress, not perfection, so watch your trend as well as today's number.",
-   "Your card order is saved in the browser you are using, so another device keeps its own order.",
-   "A small arrow under a dimension score shows how far it has moved since your baseline."
-  ],
-  "questions": [
-   {
-    "q": "Do I need 100 in all 12 dimensions?",
-    "a": "No. The goal is alignment and steady progress."
-   },
-   {
-    "q": "Why does the page say Domain when you say dimension?",
-    "a": "They mean the same thing. The 12-Domain Business Alignment chart and Domain Scores card show your 12 dimensions."
-   },
-   {
-    "q": "Can I see why one dimension has its score?",
-    "a": "Yes. On Executive Home, press that dimension's card under 12 Business Dimensions."
-   }
-  ],
-  "related": [
-   "how-your-scores-work",
-   "growth-roadmap",
-   "next-three-moves",
-   "operating-rhythm",
-   "dimension-detail",
-   "progress",
-   "ai-business-guide",
-   "brain-profile",
-   "tasks"
-  ],
-  "who": "Everyone. Team members need the Assessments & Alignment area. Some cards draw on other areas, so Next 3 Moves and Operating Rhythm need the Tasks area and Revenue Snapshot needs Finance.",
-  "keywords": [
-   "score",
-   "health",
-   "dashboard",
-   "radar",
-   "dimensions",
-   "domains",
-   "domain scores",
-   "phase",
-   "survival",
-   "growth",
-   "expansion",
-   "legacy",
-   "trend",
-   "overall business health",
-   "rearrange cards"
-  ],
-  "sections": [
-   {
-    "id": "health-cards",
-    "title": "Health cards",
-    "body": "Overall Business Health shows your score out of 100, your phase and your Primary focus. The radar and Domain Scores show all 12 dimensions. Business Health Trend draws a line once you have two dated points. Revenue Snapshot shows this month's revenue and net, average deal size, win rate and your last six months of income and expenses.",
-    "keywords": [
-     "overall business health",
-     "primary focus",
-     "radar chart",
-     "domain scores",
-     "business health trend",
-     "revenue snapshot",
-     "win rate",
-     "average deal size"
-    ]
-   },
-   {
-    "id": "briefing",
-    "title": "Alignment briefing",
-    "body": "Brief me at the top of the page explains your score and phase, what is driving your weakest areas, and gives you three moves. Add to my tasks puts a move in Today. Your briefing is saved to your account, and Refresh writes a new one.",
-    "keywords": [
-     "brief me",
-     "explain my score",
-     "weakest",
-     "three moves",
-     "what's driving it",
-     "refresh"
-    ]
-   }
-  ],
-  "starter": true
- },
- {
-  "id": "growth-roadmap",
-  "name": "Growth Roadmap",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Business Alignment, under your briefing",
-  "href": "/business-alignment",
-  "what": "Your 90-day plan, written from your own scores, assessment answers, plans, income, pipeline and tasks. It names three areas to focus on first, then gives you steps for Days 1-30, Days 31-60 and Days 61-90.",
-  "ai": "AI-powered",
-  "aiNote": "Your assistant writes the whole roadmap when you press Build my roadmap, using your own AI key. Without a key, the page shows a link to your AI settings. It is saved to your account under your assistant's name. Nothing goes on your task list until you press Add to my tasks.",
-  "steps": [
-   "Open Business Alignment from the left menu.",
-   "Find your growth roadmap under the briefing and press Build my roadmap.",
-   "Read Where to focus first.",
-   "Look through the steps for Days 1-30, Days 31-60 and Days 61-90.",
-   "Press a step's name to open the right screen for it.",
-   "Press Add to my tasks on each step you want to do."
-  ],
-  "health": "This does not change your scores. It reads them and turns your weakest areas into a plan. Finishing the tasks you add counts toward task follow-through, like any other task.",
-  "tips": [
-   "Press Refresh when your scores change. It writes a new roadmap in place of the old one.",
-   "Each phase has two or three steps, so the plan stays doable."
-  ],
-  "questions": [
-   {
-    "q": "Where do steps go when I add them?",
-    "a": "Into your Backlog list on Tasks, at medium priority with no due date. Give them a date when you are ready."
-   },
-   {
-    "q": "Will Refresh keep my tasks?",
-    "a": "Yes. Tasks you already added stay on your list. Only the roadmap text changes."
-   }
-  ],
-  "related": [
-   "business-alignment",
-   "next-three-moves",
-   "how-your-scores-work",
-   "tasks"
-  ],
-  "who": "Everyone. Team members need the Assessments & Alignment area, with Edit to build one. Adding a step also needs the Tasks area.",
-  "keywords": [
-   "roadmap",
-   "90 day plan",
-   "90-day",
-   "build my roadmap",
-   "next steps",
-   "where to focus first",
-   "days 1-30",
-   "growth plan",
-   "assessment results"
-  ]
- },
- {
-  "id": "next-three-moves",
-  "name": "Next Three Moves",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Business Alignment > Next 3 Moves card",
-  "href": "/business-alignment",
-  "what": "Three things to do next, shown as a card. If you asked for a briefing in the last 30 days, these are its three moves. If not, they come from your three weakest dimensions, your tasks and your year goals.",
+  "id": "profile",
+  "name": "Profile",
+  "area": "Settings",
+  "where": "Settings > Profile",
+  "href": "/settings?tab=profile",
+  "what": "Your own details in the Suite: your photo, name, phone, time zone and a short bio. Your sign-in email shows here too.",
   "ai": "No AI",
-  "aiNote": "This card does not run AI itself. When your moves come from a briefing, your assistant wrote them when you pressed Brief me, which uses your own AI key. Otherwise the moves are worked out from your own data.",
+  "aiNote": "",
   "steps": [
-   "Open Business Alignment from the left menu and find the Next 3 Moves card.",
-   "Read the line at the bottom of the card to see where your moves came from.",
-   "Press a move's name to open the page for it.",
-   "Press Add to tasks on the moves you want to take on."
+   "Open Settings from the left menu. Profile opens first.",
+   "Press Upload Photo and choose a picture. To replace it, press Change Photo.",
+   "Fill in your Full Name, Phone and Bio.",
+   "Choose your Timezone. This one saves as soon as you pick it.",
+   "Press Save Changes to save your name, phone and bio."
   ],
-  "health": "This does not change your scores. It points you to your weakest areas so you know where to start. Finishing the tasks you add counts toward task follow-through.",
+  "health": "This does not change your scores. It keeps your name, photo and time zone right across the Suite.",
   "tips": [
-   "Press Brief me at the top of the page for sharper moves.",
-   "High impact means the score is under 50, or that area has overdue tasks or a slipped goal."
+   "Your photo can be up to 5MB. A square picture of 400 by 400 pixels works best.",
+   "Your time zone sets your greeting, your clock and when tasks are due.",
+   "Your profile photo is separate from your business logo, which lives under Settings > Workspace."
   ],
   "questions": [
    {
-    "q": "Where do moves go when I add them?",
-    "a": "Into your Today list on Tasks, at high priority."
+    "q": "How do I change the email I sign in with?",
+    "a": "You cannot change it here. Write to support@lccommandsuite.com and we will help."
    },
    {
-    "q": "Why does the card say to start an assessment?",
-    "a": "Your moves need scores in at least three dimensions, or a recent briefing. Until then the card asks you to start with your assessments."
+    "q": "Where did my task reminder settings go?",
+    "a": "They are under Settings > Notifications."
+   },
+   {
+    "q": "What happens to my old photo when I add a new one?",
+    "a": "The new picture replaces it and the old file is removed. Press the small X on your photo to remove it altogether."
    }
   ],
   "related": [
-   "business-alignment",
-   "growth-roadmap",
-   "goal-ladder",
-   "tasks"
+   "notifications",
+   "appearance-and-text-size",
+   "security",
+   "workspace-and-team"
   ],
-  "who": "Everyone. Team members need the Assessments & Alignment area for the page and the Tasks area for this card.",
+  "who": "Everyone. Each person has their own profile.",
   "keywords": [
-   "next 3 moves",
-   "next moves",
-   "what should I do next",
-   "priorities",
-   "weakest areas",
-   "add to tasks",
-   "high impact"
-  ]
- },
- {
-  "id": "operating-rhythm",
-  "name": "Operating Rhythm",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Business Alignment > Operating Rhythm card",
-  "href": "/business-alignment",
-  "what": "The routines that keep your business running: daily habits, a weekly review and a monthly check-in. You set them once, and you check them off on the days they are due.",
-  "ai": "Has an AI button",
-  "aiNote": "The Suggest a rhythm button carries your assistant's name and uses your own AI key. Your assistant suggests routines that fit your business and skips ones you already have. Nothing is saved until you untick what you do not want and press the Add to my rhythm button.",
-  "steps": [
-   "Open Business Alignment from the left menu and find the Operating Rhythm card.",
-   "Press Add a routine and type what you want to do.",
-   "Choose Every day, Every week or Every month, then the day if it asks for one, and press Add.",
-   "Or press Suggest a rhythm, untick what you do not want, and add the rest.",
-   "Check off each routine on the days it is due."
-  ],
-  "health": "Having routines set counts toward your Internal Process & Culture pillar, and three routines fills that part. It looks at how many routines you have set up, not how many you tick off.",
-  "tips": [
-   "Start with three to five. A rhythm you keep beats a long list you do not.",
-   "Press What is an Operating Rhythm, and how do I use it? on the card for ideas.",
-   "Your routines also count toward your streak in the Weekly View."
-  ],
-  "questions": [
-   {
-    "q": "Is this different from recurring tasks?",
-    "a": "No. Your routines are your recurring tasks, so one added here shows there too. A routine due today also shows on your Tasks page with a Recurring label."
-   },
-   {
-    "q": "How do I remove a routine?",
-    "a": "Hover over it, press the trash can and confirm. To edit one, use Recurring Tasks on Executive Home."
-   }
-  ],
-  "related": [
-   "business-alignment",
-   "weekly-review",
-   "tasks",
-   "operations"
-  ],
-  "who": "Everyone. Team members need the Tasks area to see and change routines, and the Operations & SOPs area for the suggest button.",
-  "keywords": [
-   "routines",
-   "habits",
-   "recurring",
-   "daily weekly monthly",
-   "suggest a rhythm",
-   "add a routine",
-   "schedule",
-   "monthly check-in"
-  ]
- },
- {
-  "id": "how-your-scores-work",
-  "name": "How your scores work",
-  "area": "Alignment & Systems",
-  "where": "Behind every score in your Command Suite",
-  "href": "/business-alignment",
-  "what": "Every score is worked out from what you answered and what you do in the Suite. You cannot type a score in. Your overall score, each of the 12 dimensions, each of the 8 pillars and your Quick Pulse result all use the same 0 to 100 scale.",
-  "ai": "AI-powered",
-  "aiNote": "The blending is plain math, and AI only does one job. It reads your written Brain and Soul answers and gives that part a 0 to 100 reading, using your own AI key, when you finish Brain or Soul. Soul questions marked sensitive are left out. Without a key, those parts show as AI scoring pending. Add your key and press Score my answers on Alignment Profile. Profit, Quick Pulse, live data and plan completeness use no AI.",
-  "steps": [
-   "Finish your Brain, Soul and Profit assessments.",
-   "Open Business Alignment to see your overall score and phase.",
-   "On Executive Home, press a dimension card to see what makes up that score.",
-   "Press any input on that page to go where you can improve it.",
-   "Take your Quick Pulse Check-in each month to keep your scores and trend current."
-  ],
-  "health": "This is how your health is measured. Each dimension blends its own inputs at set weights. Your overall score averages the dimensions that have a score. The 8 pillars are scored the same way, plus your Go deeper answers, and their average feeds your Operations dimension. Your business plans feed Marketing, Sales and Vision.",
-  "tips": [
-   "One scale everywhere: Survival 0-40, Growth 41-60, Expansion 61-80, Legacy 81-100. A dimension at 72 is in Expansion, just like an overall score of 72.",
-   "A suggested schedule keeps scores current: Quick Pulse monthly, Profit quarterly, Brain twice a year and Soul once a year.",
-   "An input with no data yet is not counted as zero. Its weight spreads across the inputs that have data."
-  ],
-  "questions": [
-   {
-    "q": "Does AI decide my score?",
-    "a": "No. AI only reads your written Brain and Soul answers. Fixed weights blend that reading with your other inputs, and the math does the rest."
-   },
-   {
-    "q": "What does partial mean?",
-    "a": "Some inputs for that dimension are still pending. The score uses what is there, and it firms up as the rest comes in."
-   },
-   {
-    "q": "Does an old answer lower my score?",
-    "a": "No. After 90 days an assessment input is marked getting stale, and after 14 days a Quick Pulse is too. It still counts. The mark is a nudge to refresh it."
-   },
-   {
-    "q": "What does AI scoring pending mean?",
-    "a": "Your written Brain or Soul answers have not been read yet, usually because no AI key was connected when you finished. Add your key, open Alignment Profile and press Score my answers."
-   }
-  ],
-  "related": [
-   "business-alignment",
-   "dimension-detail",
-   "progress",
-   "brain-profile",
-   "soul-profile",
-   "profit-profile",
-   "quick-pulse-check-in",
-   "operations",
-   "tasks"
-  ],
-  "who": "Everyone. This works the same way on every account.",
-  "keywords": [
-   "how is my score calculated",
-   "scoring",
-   "formula",
-   "weights",
-   "survival growth expansion legacy",
-   "phases",
-   "partial",
-   "stale",
-   "ai scoring pending",
-   "12 dimensions",
-   "8 pillars",
-   "task follow-through",
-   "why did my score change"
+   "my profile",
+   "photo",
+   "picture",
+   "headshot",
+   "avatar",
+   "name",
+   "phone",
+   "bio",
+   "time zone",
+   "timezone",
+   "change email",
+   "wrong time"
   ],
   "sections": [
    {
-    "id": "alignment-scoring",
-    "title": "Alignment scoring",
-    "body": "A dimension can draw on your Profit, Brain and Soul assessments, your latest Quick Pulse, live data from the Suite and how complete your plans are. Each dimension uses its own mix. Your overall score appears once at least three dimensions have a score.",
+    "id": "profile-picture",
+    "title": "Profile picture",
+    "body": "Your saved picture stays on the Profile tab after you reload the page. Replacing it removes the old file, and the X on the photo removes it.",
     "keywords": [
-     "inputs",
-     "weights",
-     "profit",
-     "brain",
-     "soul",
-     "quick pulse",
-     "live data",
-     "plan completeness"
-    ]
-   },
-   {
-    "id": "task-follow-through",
-    "title": "Task follow-through",
-    "body": "Finished tasks lift your Internal Process & Culture pillar, and that pillar feeds your Operations dimension. It looks at work finished in the last 60 days, open tasks past their due date and tasks due in the next 14 days. It needs at least three of those to count, and tasks with no date never count against you.",
-    "keywords": [
-     "tasks",
-     "follow through",
-     "overdue",
-     "due dates",
-     "internal process and culture",
-     "operations score",
-     "60 days"
+     "profile picture",
+     "photo",
+     "avatar",
+     "remove photo",
+     "change photo"
     ]
    }
   ]
  },
  {
-  "id": "dimension-detail",
-  "name": "Dimension detail",
-  "area": "Alignment & Systems",
-  "where": "Executive Home > 12 Business Dimensions > press any dimension card",
-  "href": "/dimensions/marketing",
-  "what": "One page for one of your 12 dimensions. It shows the score and phase, every input behind it with its share of the score, which inputs are fresh, and how to lift it with lessons and quarterly milestones.",
-  "ai": "Has an AI button",
-  "aiNote": "Show me how writes a personal lesson from your own answers and numbers. Propose my milestones suggests 3 to 5 milestones for this quarter. Both use your own AI key. Milestones are not added until you choose them and press the Add button. The score on this page is not written by these buttons.",
-  "steps": [
-   "Open Executive Home and find 12 Business Dimensions.",
-   "Press a dimension card.",
-   "Read each input and how much of the score it carries.",
-   "Press an input to go where you can improve it.",
-   "Scroll down to the lessons and press Show me how for one written for your business.",
-   "Press Start the assessment to set milestones for this quarter."
-  ],
-  "health": "This shows how one dimension's score is built. Improve any input and the score follows. Reading lessons and setting milestones do not change the score themselves.",
-  "tips": [
-   "A check mark means an input is current, a clock means it is getting stale, and an empty circle means it has no data yet.",
-   "A score under 60 shows Learn how to lift this on Executive Home and takes you straight to the lessons."
-  ],
-  "questions": [
-   {
-    "q": "Why does an input show a dash?",
-    "a": "It has no data yet. Its weight spreads across the other inputs until it does. The line tells you why, such as not answered yet."
-   },
-   {
-    "q": "Where do my milestones go?",
-    "a": "They become quarter goals on your Goal Ladder. You can also tick a box to put each first step on your Tasks."
-   }
-  ],
-  "related": [
-   "how-your-scores-work",
-   "business-alignment",
-   "goal-ladder",
-   "tasks"
-  ],
-  "who": "Everyone. Team members need the Assessments & Alignment area. Milestones also need the Planning & Goals area.",
-  "keywords": [
-   "why this score",
-   "why is my score low",
-   "learn how to lift this",
-   "inputs",
-   "weights",
-   "lessons",
-   "how to run",
-   "show me how",
-   "milestones",
-   "marketing score",
-   "finance score"
-  ],
-  "sections": [
-   {
-    "id": "dimension-lessons",
-    "title": "How to run this area well",
-    "body": "Short lessons for this part of your business appear here when there are some for it, and they can include a video or a handout. Show me how writes a personal lesson with a first action for this week. Write a fresh one replaces it.",
-    "keywords": [
-     "lessons",
-     "personal lesson",
-     "show me how",
-     "write a fresh one",
-     "video",
-     "handout"
-    ]
-   },
-   {
-    "id": "dimension-milestones",
-    "title": "Milestones for this quarter",
-    "body": "Answer four short questions and press Propose my milestones. Edit what comes back, choose the quarter and the year goal it supports, then add them. Milestones are saved under your plan, so build your Business Plan first. Retake the assessment any time.",
-    "keywords": [
-     "milestone assessment",
-     "propose my milestones",
-     "quarter goals",
-     "retake the assessment"
-    ]
-   }
-  ]
- },
- {
-  "id": "goal-ladder",
-  "name": "Goal Ladder",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Goal Ladder",
-  "href": "/planning/goals",
-  "what": "Your year goals from your Business, Marketing and Sales Plans, broken down into quarter, month and week goals. Each goal has a status, and a count shows how many steps under it are met.",
-  "ai": "Has an AI button",
-  "aiNote": "On any goal, the sparkle button suggests three smaller goals. Propose my milestones suggests milestones for one of your 12 dimensions. Both use your own AI key. Suggestions are not saved until you press Add.",
-  "steps": [
-   "Open Goal Ladder from the left menu.",
-   "Find a year goal under its plan.",
-   "Press Quarter goal, type the goal, add a target if you want one, choose when it is for and press Add.",
-   "Do the same on that goal to add month goals, then week goals.",
-   "Change the status beside each goal as the work moves: Not started, In progress, Met or Slipped."
-  ],
-  "health": "Goals do not change your 12 dimension scores or your 8 pillars. Your year goals show on Progress, and a year goal marked Slipped can shape your Next 3 Moves.",
-  "tips": [
-   "Tick Show only what's current to see this quarter, this month and this week.",
-   "Weeks start on Monday, and a week goal is the smallest step.",
-   "The sparkle button is the quickest way to break a big goal down."
-  ],
-  "questions": [
-   {
-    "q": "Why is my ladder empty?",
-    "a": "Your year goals come from your plans. Build your Business, Marketing or Sales Plan and its goals appear here."
-   },
-   {
-    "q": "Can I remove a goal?",
-    "a": "You can remove quarter, month and week goals with the trash can, and anything under them goes too. Year goals belong to your plan, so they stay."
-   }
-  ],
-  "related": [
-   "business-plan",
-   "marketing-plan",
-   "sales-plan",
-   "planning-hub",
-   "progress",
-   "next-three-moves"
-  ],
-  "who": "Everyone. Team members need the Planning & Goals area.",
-  "keywords": [
-   "goals",
-   "yearly goals",
-   "quarterly goals",
-   "monthly goals",
-   "weekly goals",
-   "break down a goal",
-   "cascade",
-   "okr",
-   "milestones",
-   "goal status",
-   "slipped"
-  ],
-  "sections": [
-   {
-    "id": "milestone-assessment",
-    "title": "Milestone assessment",
-    "body": "Choose one of your 12 dimensions at the top of the page. Answer four short questions and your assistant proposes 3 to 5 milestones for this quarter. Edit them, choose the year goal they support, and add them as quarter goals. A milestone can stand on its own without a year goal.",
-    "keywords": [
-     "milestone assessment",
-     "propose my milestones",
-     "quarter milestones",
-     "not tied to a year goal"
-    ]
-   }
-  ]
- },
- {
-  "id": "weekly-review",
-  "name": "Weekly Review",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Weekly Review",
-  "href": "/planning/review",
-  "what": "A guided review of about 10 minutes, weekly or monthly. You see your numbers, your assistant briefs you, you answer three questions, and you leave with three tasks for next week or next month.",
-  "ai": "AI-powered",
-  "aiNote": "Your assistant writes the briefing when you start and proposes your three tasks from your answers, using your own AI key. Without a key, you still get your numbers and questions, and you type your own tasks. Nothing goes on your task list until you press Finish my review.",
-  "steps": [
-   "Open Weekly Review from the left menu and choose Weekly or Monthly.",
-   "Press the start button to see your numbers and your briefing.",
-   "Answer the three questions, then press Next: my three tasks.",
-   "Edit the tasks and due dates, and untick any you do not want.",
-   "Press Finish my review."
-  ],
-  "health": "Finished reviews count toward your Internal Process & Culture pillar. It looks at reviews finished in the last 90 days, and three fills that part. The tasks you take on count toward task follow-through.",
-  "tips": [
-   "A weekly review covers Monday to Sunday. On a Monday it looks back at last week.",
-   "In the first 7 days of a month, a monthly review looks back at last month.",
-   "Your past reviews stay at the bottom of the page."
-  ],
-  "questions": [
-   {
-    "q": "Where do my three tasks go?",
-    "a": "Into your Backlog list on Tasks at high priority, with the due dates you chose."
-   },
-   {
-    "q": "What numbers does it show?",
-    "a": "Income against your goal, tasks finished and overdue, new and closed deals in your pipeline, and bills due next period."
-   },
-   {
-    "q": "Can I run a scheduled planning session this way?",
-    "a": "Yes. Press Start session on the Planning Hub. When you finish the review, the session is marked complete with the review as its notes."
-   }
-  ],
-  "related": [
-   "planning-hub",
-   "operating-rhythm",
-   "tasks",
-   "progress"
-  ],
-  "who": "Everyone. Team members need the Planning & Goals area.",
-  "keywords": [
-   "review",
-   "weekly review",
-   "monthly review",
-   "reflection",
-   "what moved forward",
-   "three tasks",
-   "past reviews",
-   "finish my review"
-  ]
- },
- {
-  "id": "progress",
-  "name": "Progress",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Progress",
-  "href": "/progress",
-  "what": "How far you have come since your baseline. It shows your overall score and each dimension then and now, a trend line, and how your plan goals are tracking.",
-  "ai": "Has an AI button",
-  "aiNote": "Read my progress uses your own AI key. Your assistant says what has moved since your baseline and why, what has stalled, and what to do to keep it going. Your read is saved to your account.",
-  "steps": [
-   "Open Progress from the left menu.",
-   "Press Read my progress for your assistant's read.",
-   "Check your overall score against your baseline.",
-   "Use the menu on the trend chart to switch between Overall and one dimension.",
-   "Look at By dimension to see what moved up or down.",
-   "Look at Plan execution to see how your goals are tracking."
-  ],
-  "health": "This does not change your scores. It shows how they have moved since your baseline. Plan execution shows your year goals as met, in progress, not started or slipped.",
-  "tips": [
-   "Your trend line grows when you complete a Quick Pulse Check-in, so a monthly check-in keeps it moving.",
-   "Your baseline stays fixed, so you always measure against where you started."
-  ],
-  "questions": [
-   {
-    "q": "Why does a dimension say new?",
-    "a": "It had no score when your baseline was set, so there is nothing to compare it with yet."
-   },
-   {
-    "q": "Do my quarter and week goals count in Plan execution?",
-    "a": "No. Plan execution counts your year goals. The Goal Ladder shows the steps under them."
-   }
-  ],
-  "related": [
-   "business-alignment",
-   "how-your-scores-work",
-   "quick-pulse-check-in",
-   "goal-ladder",
-   "year-in-review"
-  ],
-  "who": "Everyone. Team members need the Assessments & Alignment area.",
-  "keywords": [
-   "progress",
-   "trajectory",
-   "baseline",
-   "movement",
-   "trend line",
-   "read my progress",
-   "plan execution",
-   "score history",
-   "health by business",
-   "by dimension"
-  ],
-  "sections": [
-   {
-    "id": "health-by-business",
-    "title": "Health by business",
-    "body": "With more than one business, Progress shows each business's own score. It starts from your assessment scores and moves with that business's tasks and its compliance checklist. Choose a business at the top of the page to see its dimensions.",
-    "keywords": [
-     "health by business",
-     "more than one business",
-     "business switcher",
-     "compliance checklist"
-    ]
-   }
-  ]
- },
- {
-  "id": "planning-hub",
-  "name": "Planning Hub",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Planning Hub",
-  "href": "/planning",
-  "what": "All your planning in one place. Cards show where your Business, Marketing and Sales Plans, Financial Forecasting, reviews and Finance stand. You can also schedule planning sessions, write a proposal and export your plans.",
-  "ai": "Has an AI button",
-  "aiNote": "Brief me says where your plans stand, what is going well, what needs attention and your next three moves. Create Proposal drafts a proposal from your plans and numbers. Both use your own AI key. You choose whether to use or send anything a proposal says.",
-  "steps": [
-   "Open Planning Hub from the left menu.",
-   "Press Brief me for your planning briefing.",
-   "Press a card to open that plan or area.",
-   "Press New Planning Session, fill it in and press Schedule.",
-   "When the day comes, press Start session to run it as a guided review, or Done to close it."
-  ],
-  "health": "The Hub itself does not change your scores. Completing your plans does: your Business Plan feeds Vision, your Marketing Plan feeds Marketing and your Sales Plan feeds Sales. A session run with Start session counts as a finished review. One closed with Done does not.",
-  "tips": [
-   "Add a date to a session and it goes on your connected calendar, marked On calendar.",
-   "Planning Session History shows the sessions you have finished."
-  ],
-  "questions": [
-   {
-    "q": "What does Export All Plans give me?",
-    "a": "One Markdown file with your plans and goals, your finance snapshot for the year, your forecast and your review schedule."
-   },
-   {
-    "q": "What kinds of proposal can it write?",
-    "a": "A grant application, investor or funding request, partnership proposal, business loan narrative or sponsorship proposal. The more of your plans you have written, the richer it is."
-   }
-  ],
-  "related": [
-   "business-plan",
-   "marketing-plan",
-   "sales-plan",
-   "forecasting",
-   "weekly-review",
-   "goal-ladder",
-   "print-or-share-a-plan"
-  ],
-  "who": "Everyone. Team members need the Planning & Goals area.",
-  "keywords": [
-   "planning",
-   "plans overview",
-   "planning session",
-   "schedule a session",
-   "export all plans",
-   "create proposal",
-   "grant",
-   "investor",
-   "loan",
-   "sponsorship",
-   "brief me",
-   "download plans"
-  ],
-  "sections": [
-   {
-    "id": "planning-sessions",
-    "title": "Planning sessions",
-    "body": "New Planning Session sets a title, area, date, time and notes. Upcoming Planning Sessions lists what is ahead, each with Start session and Done. Planning Session History keeps the ones you finished.",
-    "keywords": [
-     "new planning session",
-     "schedule",
-     "calendar",
-     "upcoming planning sessions",
-     "planning session history",
-     "start session"
-    ]
-   },
-   {
-    "id": "create-proposal",
-    "title": "Create Proposal",
-    "body": "Press Create Proposal, pick a type, add a funder or recipient if you have one, and press Generate proposal. Download .md saves a copy, and your recent proposals stay listed in the same window.",
-    "keywords": [
-     "proposal",
-     "generate proposal",
-     "grant application",
-     "funding request",
-     "download"
-    ]
-   }
-  ]
- },
- {
-  "id": "business-plan",
-  "name": "Business Plan",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Business Plan",
-  "href": "/business-plan",
-  "what": "Your business written down in nine sections: vision, offers, market, revenue model, 12-month goals, positioning, operations, team and risks. Five are Foundational and four are Optional. Tabs let you build it, track goals, run check-ins and print it.",
-  "ai": "AI-powered",
-  "aiNote": "Draft with AI writes a section from your assessments, your answers and your other sections. Generate Business Plan writes your goals, and Generate review writes a check-in. All three use your own AI key. Draft with AI saves straight into the section, so read it and edit it. Your assistant can also write or change a section from the chat, and that waits behind Approve.",
-  "steps": [
-   "Open Business Plan from the left menu. You start on the Build tab.",
-   "Open a section and answer its questions.",
-   "Press Draft with AI, or type the section yourself in Section content.",
-   "Read it, change anything you like, then press Mark section complete.",
-   "Fill the five Foundational sections first, then go deeper wherever you like.",
-   "On the Goals tab, press Generate Business Plan, then set each goal's status as you go."
-  ],
-  "health": "This plan feeds your Vision dimension. What counts is how many of the five Foundational sections have text in them, so Optional sections do not change it, and neither does marking a section complete. Goal statuses do not change your 12 dimensions. A goal you assign to a business segment counts toward that segment's own score.",
-  "tips": [
-   "Press Save or click away and your text is saved.",
-   "Changing the text of a finished section takes off its Complete mark, so mark it again when you are happy.",
-   "Your Business Plan feeds every other plan, because your assistant reads it when it drafts them."
-  ],
-  "questions": [
-   {
-    "q": "What is the difference between Foundational and Optional?",
-    "a": "Foundational sections are the practical minimum for a useful plan. Optional sections add depth. Nothing stops you moving around, but printing needs every section, Optional ones too."
-   },
-   {
-    "q": "What does Redraft with AI do to my text?",
-    "a": "It replaces what is in the section with a new draft and saves it. If you want to keep your wording, copy it somewhere first."
-   },
-   {
-    "q": "What happens when I press Regenerate on the Goals tab?",
-    "a": "It builds a new version of the plan's goals, and every goal starts again at Not started."
-   }
-  ],
-  "related": [
-   "planning-hub",
-   "marketing-plan",
-   "sales-plan",
-   "forecasting",
-   "print-or-share-a-plan"
-  ],
-  "who": "Everyone. Team members need the Planning & Goals area.",
-  "keywords": [
-   "business plan",
-   "vision",
-   "mission",
-   "values",
-   "offers",
-   "target market",
-   "revenue model",
-   "pricing",
-   "12 month goals",
-   "milestones",
-   "positioning",
-   "risks",
-   "draft with ai",
-   "mark section complete"
-  ],
-  "sections": [
-   {
-    "id": "business-plan-build",
-    "title": "Build tab",
-    "body": "Your sections, each marked Foundational or Optional. Two meters at the top show your Foundational baseline and your Overall depth. The Foundational sections are Vision, Mission & Values, What You Offer, Target Market & Ideal Client, Revenue Model & Pricing, and 12-Month Goals & Milestones.",
-    "keywords": [
-     "build",
-     "sections",
-     "foundational baseline",
-     "overall depth",
-     "meters"
-    ]
-   },
-   {
-    "id": "business-plan-goals",
-    "title": "Goals tab",
-    "body": "Press Generate Business Plan and your assistant writes goals from your Brain and Soul answers and your scores. Each goal shows its dimension and target, and you set its status: Not started, In progress, Met or Slipped.",
-    "keywords": [
-     "goals",
-     "generate business plan",
-     "regenerate",
-     "goal status",
-     "slipped"
-    ]
-   },
-   {
-    "id": "business-plan-check-ins",
-    "title": "Check-ins tab",
-    "body": "Choose Monthly, Quarterly, Semi-annual or Annual review and press Generate review. You get what to celebrate, what needs attention with what to do about it, and your highest-leverage next move. Earlier ones stay under Past check-ins.",
-    "keywords": [
-     "check-in",
-     "review",
-     "generate review",
-     "past check-ins",
-     "quarterly review"
-    ]
-   }
-  ]
- },
- {
-  "id": "marketing-plan",
-  "name": "Marketing Plan",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Marketing Plan",
-  "href": "/marketing-plan",
-  "what": "How the right people find, trust and choose you, in seven sections: ideal client, positioning, core offer, channels, content strategy, brand voice and metrics. Four are Foundational and three are Optional.",
-  "ai": "AI-powered",
-  "aiNote": "Draft with AI writes a section from your assessments, your answers and your other sections. Generate Marketing Plan writes your goals, and Generate review writes a check-in. All three use your own AI key. Draft with AI saves straight into the section, so read it and edit it. Your assistant can also write or change a section from the chat, and that waits behind Approve.",
-  "steps": [
-   "Open Marketing Plan from the left menu. You start on the Build tab.",
-   "Open a section and answer its questions. Answers save when you click away.",
-   "Press Draft with AI, or type the section yourself in Section content.",
-   "Read it, change anything you like, then press Mark section complete.",
-   "On the Goals tab, press Generate Marketing Plan, then set each goal's status as you go.",
-   "On the Check-ins tab, choose how often and press Generate review."
-  ],
-  "health": "This plan feeds your Marketing dimension and your Customer Acquisition pillar. What counts is how many of the four Foundational sections have text in them, so Optional sections do not change it. Goal statuses do not change your 12 dimensions.",
-  "tips": [
-   "Your assistant reads the sections you have already written, so each draft fits the last.",
-   "Changing the text of a finished section takes off its Complete mark, so mark it again when you are happy.",
-   "Your Customer Acquisition pillar on Operations links back to Channels & Cadence here."
-  ],
-  "questions": [
-   {
-    "q": "What does Redraft with AI do to my text?",
-    "a": "It replaces what is in the section with a new draft and saves it. If you want to keep your wording, copy it somewhere first."
-   },
-   {
-    "q": "Which sections count as Foundational?",
-    "a": "Ideal Client Profile, Positioning & Core Message, Core Offer & Promise, and Channels & Cadence."
-   }
-  ],
-  "related": [
-   "business-plan",
-   "sales-plan",
-   "planning-hub",
-   "print-or-share-a-plan",
-   "operations"
-  ],
-  "who": "Everyone. Team members need the Planning & Goals area.",
-  "keywords": [
-   "marketing plan",
-   "ideal client",
-   "icp",
-   "positioning",
-   "core message",
-   "channels",
-   "content strategy",
-   "brand voice",
-   "story",
-   "marketing metrics",
-   "core offer"
-  ],
-  "sections": [
-   {
-    "id": "marketing-plan-sections",
-    "title": "The seven sections",
-    "body": "Foundational: Ideal Client Profile, Positioning & Core Message, Core Offer & Promise, and Channels & Cadence. Optional: Content Strategy, Brand Voice & Story, and Marketing Metrics & Targets.",
-    "keywords": [
-     "ideal client profile",
-     "positioning",
-     "channels and cadence",
-     "content strategy",
-     "brand voice",
-     "marketing metrics"
-    ]
-   }
-  ]
- },
- {
-  "id": "sales-plan",
-  "name": "Sales Plan",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Sales Plan",
-  "href": "/sales",
-  "what": "How you turn interest into committed clients, in seven sections: offers and pricing, who you sell to, your sales process, revenue targets, conversion, follow-up and referrals. Four are Foundational and three are Optional. It also suggests weekly activity targets.",
-  "ai": "AI-powered",
-  "aiNote": "Draft with AI writes a section from your assessments, your answers and your other sections. Suggest my targets works out weekly activity targets, Generate Sales Plan writes your goals, and Generate review writes a check-in. All of these use your own AI key. Draft with AI saves straight into the section. Suggested targets are not saved until you press Use as my weekly goals. Your assistant can also write or change a section from the chat, and that waits behind Approve.",
-  "steps": [
-   "Open Sales Plan from the left menu. You start on the Build tab.",
-   "Open a section and answer its questions.",
-   "Press Draft with AI, or type the section yourself in Section content.",
-   "Read it, change anything you like, then press Mark section complete.",
-   "At the top, press Suggest my targets, then Use as my weekly goals if they look right.",
-   "On the Goals tab, press Generate Sales Plan, then set each goal's status as you go."
-  ],
-  "health": "This plan feeds your Sales dimension and your Sales Journey pillar. What counts is how many of the four Foundational sections have text in them, so Optional sections do not change it. Your weekly targets and goal statuses do not change your 12 dimensions.",
-  "tips": [
-   "The Sales row at the top takes you to Pipeline, Sales Activities, Scripts & Templates and Offers & Packages.",
-   "Changing the text of a finished section takes off its Complete mark, so mark it again when you are happy.",
-   "Your Sales Journey and Referral Process pillars on Operations link back here."
-  ],
-  "questions": [
-   {
-    "q": "Where do my weekly targets go?",
-    "a": "They become your weekly goals in Sales Activities and show in your Weekly View and Today's Activity."
-   },
-   {
-    "q": "What are the targets based on?",
-    "a": "Your assistant works backwards from your Sales Plan, your income goals and your pipeline. You see the reason, along with your current number for each activity."
-   }
-  ],
-  "related": [
-   "business-plan",
-   "marketing-plan",
-   "forecasting",
-   "print-or-share-a-plan",
-   "planning-hub"
-  ],
-  "who": "Everyone. Team members need the Pipeline, Offers & Sales Plan area.",
-  "keywords": [
-   "sales plan",
-   "sales targets",
-   "quotas",
-   "weekly goals",
-   "pricing ladder",
-   "follow-up cadence",
-   "objections",
-   "referral strategy",
-   "sales process",
-   "suggest my targets"
-  ],
-  "sections": [
-   {
-    "id": "sales-plan-sections",
-    "title": "The seven sections",
-    "body": "Foundational: Offers & Pricing Ladder, Who You Sell To, Pipeline & Sales Process, and Revenue Targets & Quotas. Optional: Conversion & Objections, Follow-up Cadence, and Referral Strategy. Two meters show your Foundational baseline and your Overall depth.",
-    "keywords": [
-     "section depth",
-     "meters",
-     "offers and pricing ladder",
-     "conversion",
-     "referral strategy"
-    ]
-   },
-   {
-    "id": "weekly-sales-targets",
-    "title": "Weekly sales targets",
-    "body": "Press Suggest my targets for weekly numbers of calls, follow-ups, emails, DMs, meetings, demos and proposals. Press Use as my weekly goals to save them.",
-    "keywords": [
-     "weekly sales targets",
-     "activity targets",
-     "use as my weekly goals",
-     "calls",
-     "follow-ups"
-    ]
-   }
-  ]
- },
- {
-  "id": "forecasting",
-  "name": "Forecasting",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Forecasting",
-  "href": "/planning/forecast",
-  "what": "Revenue, expenses and net projected 1 to 24 months ahead in three scenarios: Conservative, Expected and Optimistic. They come from your recent income and open pipeline. Below the numbers is the Forecast Plan, where you write the reasoning behind them.",
-  "ai": "Has an AI button",
-  "aiNote": "Read my forecast has your assistant explain what the numbers mean and suggest an income goal. Draft with AI writes a Forecast Plan section, and Generate review writes a check-in. All three use your own AI key. The numbers are calculated and do not need AI. A suggested goal is not saved until you press Use as my income goals. Draft with AI saves straight into the section.",
-  "steps": [
-   "Open Forecasting from the left menu.",
-   "Under Assumptions, set your Horizon (months), Growth %/mo, Pipeline close % and Expense %.",
-   "Press Recalculate.",
-   "Press a scenario to see it month by month.",
-   "Press Read my forecast, then Use as my income goals if the suggestion looks right.",
-   "Scroll to Forecast Plan and fill in its sections the same way as your other plans."
-  ],
-  "health": "Your forecast and Forecast Plan do not change your scores. They help you plan ahead and test your numbers. If you press Use as my income goals, the monthly goal becomes the target your Finance dimension measures income against.",
-  "tips": [
-   "Leave Expense % at 0 and it is worked out from your own income and expenses.",
-   "Add your deals to the Pipeline and the forecast uses each deal's own value and probability.",
-   "Conservative and Optimistic sit a little below and above your Expected case."
-  ],
-  "questions": [
-   {
-    "q": "Why does it say Showing your revenue plan?",
-    "a": "No income is recorded yet, so it shows your own income goals as a plan, revenue only. Expected is the plan as written, Conservative is 80% of it and Optimistic is 120%. Once you record income, it switches to projections."
-   },
-   {
-    "q": "Where do the numbers come from?",
-    "a": "Your starting point is your average monthly income, using your three most recent months. Growth is applied each month, your expected pipeline closings are added, and your expense ratio is taken off."
-   },
-   {
-    "q": "Why can't I change Pipeline close %?",
-    "a": "When your Pipeline has open deals, the rate comes from each deal's own probability, so there is nothing to type."
-   }
-  ],
-  "related": [
-   "budget-planner",
-   "sales-plan",
-   "planning-hub",
-   "print-or-share-a-plan",
-   "business-plan"
-  ],
-  "who": "Everyone. Team members need the Planning & Goals area.",
-  "keywords": [
-   "forecast",
-   "forecasting",
-   "projections",
-   "scenarios",
-   "conservative",
-   "expected",
-   "optimistic",
-   "revenue plan",
-   "assumptions",
-   "income goals",
-   "recalculate",
-   "forecast plan",
-   "growth rate"
-  ],
-  "sections": [
-   {
-    "id": "forecast-assumptions",
-    "title": "Assumptions",
-    "body": "Four numbers drive the forecast: Horizon (months), Growth %/mo, Pipeline close % and Expense % (0=auto). Change them and press Recalculate. Your choices are kept for next time.",
-    "keywords": [
-     "assumptions",
-     "horizon",
-     "growth",
-     "pipeline close",
-     "expense ratio",
-     "recalculate"
-    ]
-   },
-   {
-    "id": "forecast-plan",
-    "title": "Forecast Plan",
-    "body": "The written reasoning behind your numbers. Revenue Streams & Drivers, Key Growth Assumptions and Financial Targets are Foundational. Risks & Levers is Optional. Print / Share and your check-ins sit below it on the same page.",
-    "keywords": [
-     "forecast plan",
-     "revenue streams",
-     "drivers",
-     "financial targets",
-     "risks and levers"
-    ]
-   }
-  ]
- },
- {
-  "id": "print-or-share-a-plan",
-  "name": "Print or share a plan",
-  "area": "Alignment & Systems",
-  "where": "Each plan > Print / Share",
-  "href": "/business-plan",
-  "what": "Turn a finished plan into a branded PDF or Word document to send to a funder, partner or advisor. It works for your Business, Marketing, Sales and Forecast Plans. It is built from what is in your plan right now.",
-  "ai": "Has an AI button",
-  "aiNote": "Write the cover letter has your assistant draft the letter from your plan, using your own AI key, and you can edit every word. Without a key you get a simple letter from a template instead. Downloading does not use AI.",
-  "steps": [
-   "Open the plan and press the Print / Share tab. For the Forecast Plan, open Forecasting and scroll to Print / Share at the bottom.",
-   "If it is locked, it lists what is left. Press Mark section complete on each section, Optional ones too.",
-   "Under Who is it for?, choose Funding request, Partnership proposal or General copy, and check the names.",
-   "Under Cover letter, say what you are asking for, then press Write the cover letter or write your own.",
-   "Under What goes in, choose your extras. This shows on the Business Plan and Forecast Plan only.",
-   "Press Download PDF to send it, or Download Word (to edit) to keep working on it."
-  ],
-  "health": "Printing or sharing a plan does not change your scores. It gives you a finished document to use with other people.",
-  "tips": [
-   "Download a fresh copy after you change your plan. Files do not update on their own.",
-   "Changing a section's text takes off its Complete mark, which locks Print / Share until you mark it again.",
-   "Leave the letter blank on a funding request or partnership proposal and a simple one is made for you. A General copy has no letter unless you write one."
-  ],
-  "questions": [
-   {
-    "q": "Why is Print / Share locked?",
-    "a": "Every section of that plan has to have text and be marked Complete. Each plan unlocks on its own, so your Marketing Plan does not need your Business Plan finished."
-   },
-   {
-    "q": "Can I put my other plans in my Business Plan document?",
-    "a": "Yes. On the Business Plan, your Marketing, Sales and Forecast Plans can each go in as an appendix once all of that plan's sections are complete. You can also add a Financial overview."
-   },
-   {
-    "q": "Why can't I press Download?",
-    "a": "Add your business name under Who is it for? first."
-   }
-  ],
-  "related": [
-   "business-plan",
-   "marketing-plan",
-   "sales-plan",
-   "forecasting"
-  ],
-  "who": "Everyone, once every section of that plan is marked Complete. Team members need Planning & Goals, or Pipeline, Offers & Sales Plan for the Sales Plan.",
-  "keywords": [
-   "print",
-   "share",
-   "pdf",
-   "word",
-   "download plan",
-   "export plan",
-   "funding request",
-   "grant",
-   "investor",
-   "partnership proposal",
-   "cover letter",
-   "appendix",
-   "financial overview"
-  ],
-  "sections": [
-   {
-    "id": "print-financial-overview",
-    "title": "Financial overview and forecast figures",
-    "body": "On the Business Plan, Financial overview adds your year-to-date income and expenses, your income goals and your forecast scenarios. On the Forecast Plan, Forecast figures adds your revenue plan or projections. Year-to-date results only appear once you have some.",
-    "keywords": [
-     "financial overview",
-     "forecast figures",
-     "year to date",
-     "revenue targets"
-    ]
-   }
-  ]
- },
- {
-  "id": "playbook-sops",
-  "name": "Playbook & SOPs",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Playbook & SOPs",
-  "href": "/operations/sops",
-  "what": "How your business runs, written down once. Each SOP is a tick-box checklist with an owner and tools. Your library starts with 50 ready-made templates as drafts, grouped by your 8 pillars, for you to fit to your business and approve.",
-  "ai": "Has an AI button",
-  "aiNote": "Draft it for me turns your notes into a new SOP. The buttons under Have your assistant work on this SOP rework the one you are editing. Both use your own AI key, and nothing is saved until you press Save SOP. In the chat, your assistant can add a template, add a step or rewrite an SOP, and that waits behind Approve. The rest of the page works without AI.",
-  "steps": [
-   "Open Playbook & SOPs from the left menu.",
-   "Press an SOP to read it, or press New SOP to start one.",
-   "Press Edit to change it. Fill in any [bracketed placeholders] with your own details, then press Save SOP.",
-   "Press Approve to put it in use.",
-   "When you run the process, tick the steps. Press Start a fresh run to clear the ticks."
-  ],
-  "health": "SOPs in use feed your Systems dimension and your Internal Process & Culture pillar. An SOP in the Onboarding, Support, Communication or Fulfillment area also feeds that pillar, and through your pillars, your Operations score. Drafts and archived SOPs do not count.",
-  "tips": [
-   "Start with the process you explain most often.",
-   "A line that starts with ## becomes a section header. Start each step with the action, because its first sentence shows in bold.",
-   "Choose the right area when you write an SOP, so it counts toward the matching pillar."
-  ],
-  "questions": [
-   {
-    "q": "What does Edited since approved mean?",
-    "a": "The wording changed after you approved it. Press Approve again to sign off the new version."
-   },
-   {
-    "q": "Can I bring back a template I deleted?",
-    "a": "Yes. Press Template library, then Add to my SOPs, or Add all that are not in my SOPs yet."
-   },
-   {
-    "q": "What is the difference between Archive and delete?",
-    "a": "Archive keeps the SOP but stops it counting, and Restore brings it back as a draft. Delete removes it for good."
-   }
-  ],
-  "related": [
-   "operations",
-   "sop-template-library",
-   "tasks"
-  ],
-  "who": "Everyone. Team members need the Operations & SOPs area.",
-  "keywords": [
-   "sop",
-   "sops",
-   "playbook",
-   "standard operating procedure",
-   "process",
-   "procedure",
-   "checklist",
-   "template",
-   "approve",
-   "draft",
-   "archive",
-   "print sop"
-  ],
-  "sections": [
-   {
-    "id": "sop-approval",
-    "title": "Approve and Withdraw approval",
-    "body": "Each card shows Needs approval, Approved or Edited since approved. Approve puts the SOP in use and counts it as reviewed today. Withdraw approval sends it back to a draft.",
-    "keywords": [
-     "approve",
-     "withdraw approval",
-     "needs approval",
-     "edited since approved",
-     "in use"
-    ]
-   },
-   {
-    "id": "sop-archive",
-    "title": "Archive and Restore",
-    "body": "Open an SOP and press Archive to keep it without counting it. Press Show archived to see those SOPs again, open one and press Restore to bring it back as a draft.",
-    "keywords": [
-     "archive",
-     "restore",
-     "show archived",
-     "hide archived"
-    ]
-   },
-   {
-    "id": "sop-reading-tools",
-    "title": "Reading and running an SOP",
-    "body": "Open any SOP to tick steps, Print it, press Mark reviewed today, or press Make a copy for a draft you can adapt. Ticks are saved on the SOP, so everyone running it sees the same list.",
-    "keywords": [
-     "tick box",
-     "print",
-     "mark reviewed today",
-     "make a copy",
-     "start a fresh run"
-    ]
-   }
-  ]
- },
- {
-  "id": "operations",
-  "name": "Operations",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Operations",
-  "href": "/operations",
-  "what": "Your 8 operational pillars, each scored 0 to 100 by the Suite, not by you. Each card shows what its score is built from, so you can see what is lifting it and what is holding it back.",
-  "ai": "Has an AI button",
-  "aiNote": "Generate insights has your assistant read your pillars and tell you where to focus next, using your own AI key. Press Refresh for a new read. The pillar scores work without pressing it.",
-  "steps": [
-   "Open Operations from the left menu.",
-   "Read the top row for your Operations score and how many pillars sit in each phase.",
-   "On a pillar card, read What your score is built from.",
-   "Press Go deeper, answer what you can, then press Save answers.",
-   "Back on Operations, press Generate insights to see where to focus next."
-  ],
-  "health": "Each pillar is scored from your Brain and Profit answers, your Quick Pulse check-ins, your activity in the Suite and that pillar's Go deeper answers. The average of the eight is one part of your Operations dimension. The Operations score at the top of this page is that dimension. Notes do not change a score.",
-  "tips": [
-   "A pillar showing Not scored yet needs some data. Its Go deeper questions are the fastest way in.",
-   "A pillar scoring 40 or below raises an alert on your bell.",
-   "For Onboarding, Support, Communication and Fulfillment, an SOP in that area in Playbook & SOPs helps the score."
-  ],
-  "questions": [
-   {
-    "q": "Can I set a pillar score myself?",
-    "a": "No. The Suite works it out from your answers and activity. To change it, work on what the card shows."
-   },
-   {
-    "q": "Why is my Operations score different from the average of my pillars?",
-    "a": "It also includes your Profit answers, your Brain answers and your Quick Pulse check-in."
-   },
-   {
-    "q": "What are the eight pillars?",
-    "a": "Customer Acquisition, Sales Journey, Onboarding, Support / Customer Service, Communication, Fulfillment, Internal Process & Culture, and Referral Process."
-   }
-  ],
-  "related": [
-   "playbook-sops",
-   "how-your-scores-work",
-   "go-deeper-questionnaires",
-   "quick-pulse-check-in",
-   "business-alignment"
-  ],
-  "who": "Everyone. Team members need the Operations & SOPs area.",
-  "keywords": [
-   "operations",
-   "8 pillars",
-   "pillars",
-   "operational",
-   "pillar score",
-   "go deeper",
-   "operations score",
-   "operations insights",
-   "acquisition",
-   "onboarding",
-   "fulfillment",
-   "referral",
-   "not scored yet"
-  ],
-  "sections": [
-   {
-    "id": "pillar-cards",
-    "title": "Pillar cards",
-    "body": "Each card shows the score, its phase (Survival, Growth, Expansion or Legacy), what it is built from, your Notes and a Go deeper button. Some cards also link to the plan where you plan that pillar.",
-    "keywords": [
-     "pillar card",
-     "phase",
-     "survival",
-     "notes",
-     "what your score is built from"
-    ]
-   },
-   {
-    "id": "ai-operations-insights",
-    "title": "AI Operations Insights",
-    "body": "Your assistant gives a headline and a high, medium or low priority for the pillars that need you. Your last set stays on the page until you press Refresh.",
-    "keywords": [
-     "ai operations insights",
-     "generate insights",
-     "refresh",
-     "where to focus"
-    ]
-   }
-  ]
- },
- {
-  "id": "alignment-profile",
-  "name": "Alignment Profile",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Alignment Profile",
-  "href": "/assessments",
-  "what": "The home for your assessments. It holds your Brain, Soul and Profit assessments, your Quick Pulse Check-in and your check-in rhythm. Your assistant can also write a portrait of you and your business here.",
-  "ai": "Has an AI button",
-  "aiNote": "Write my profile has your assistant write a portrait of you and your business from your Brain, Soul and Profit answers, using your own AI key. Private answers are never included. It is saved to your account, and press Refresh for a new one. Your assessments have their own AI help.",
-  "steps": [
-   "Open Alignment Profile from the left menu.",
-   "On an assessment card, press Start Assessment. Once it is finished, the button reads Review your answers.",
-   "Follow the card at the bottom of the page, which shows what you have finished and what is next.",
-   "Press Write my profile once your answers are in.",
-   "Use Your Check-in Rhythm to see what is due, and press Retake or Start."
-  ],
-  "health": "This page does not change your scores by itself. It leads to the assessments that do. Your Brain, Soul, Profit and Quick Pulse answers feed your 12 dimensions and 8 pillars. Your written profile does not change a score, but your assistant uses it.",
-  "tips": [
-   "Keep your scores current with the suggested rhythm: Quick Pulse monthly, Profit quarterly, Brain twice a year and Soul once a year.",
-   "Your scores use four phases: Survival 0 to 40, Growth 41 to 60, Expansion 61 to 80 and Legacy 81 to 100."
-  ],
-  "questions": [
-   {
-    "q": "Why can I only see some pages?",
-    "a": "Until you finish all three assessments, your Suite opens only Set up Suite, the assessments, Settings and Help. The rest opens by itself when the third is finished."
-   },
-   {
-    "q": "Why does a Command Shift card show for me?",
-    "a": "It shows only if you did The Command Shift. Press Bring in my Command Shift work and your assistant and plan drafts can build on it."
-   }
-  ],
-  "related": [
-   "brain-profile",
-   "soul-profile",
-   "profit-profile",
-   "quick-pulse-check-in",
-   "command-shift-answers",
-   "how-your-scores-work"
-  ],
-  "who": "Everyone. Team members need the Assessments & Alignment area.",
-  "keywords": [
-   "alignment profile",
-   "assessments",
-   "assessment hub",
-   "check-in schedule",
-   "check-in rhythm",
-   "write my profile",
-   "portrait",
-   "retake",
-   "brain soul profit",
-   "locked pages"
-  ],
-  "sections": [
-   {
-    "id": "score-my-answers",
-    "title": "Score my answers",
-    "body": "If you finished Brain or Soul with no AI key connected, a card here says those answers still need scoring. Add your key, come back and press Score my answers. It uses your own AI key, and the card leaves once they are scored.",
-    "keywords": [
-     "ai scoring pending",
-     "score my answers",
-     "rescore",
-     "scores missing"
-    ]
-   },
-   {
-    "id": "your-check-in-rhythm",
-    "title": "Your Check-in Rhythm",
-    "body": "A card for each assessment shows when you last took it, when it is next due and whether it is Not started, Due now, Due soon or Up to date.",
-    "keywords": [
-     "check-in rhythm",
-     "due now",
-     "due soon",
-     "up to date",
-     "last taken"
-    ]
-   },
-   {
-    "id": "your-written-profile",
-    "title": "Your written profile",
-    "body": "Your assistant writes who you are, how your business runs and the money, with your strengths and where things pull apart. It may also say what to answer next to sharpen it.",
-    "keywords": [
-     "written profile",
-     "write my profile",
-     "strengths",
-     "where things pull apart"
-    ]
-   }
-  ]
- },
- {
-  "id": "brain-profile",
-  "name": "Brain Profile",
-  "area": "Alignment & Systems",
-  "where": "Alignment Profile > Brain",
-  "href": "/assessments/brain",
-  "what": "The assessment about your systems and operations: 538 questions in 12 sections, from your business identity to your tech stack. It is one of the three assessments, with Soul and Profit.",
-  "ai": "Has an AI button",
-  "aiNote": "Fill this section with my AI gives you a ready-made prompt to copy into the AI you already use. You paste the reply back, review every answer and choose what to keep. This does not use your AI key. When you press Complete, the Suite reads your answers to score them, and that part does use your own AI key.",
-  "steps": [
-   "Open Brain from Alignment Profile and press Start Assessment.",
-   "Answer one section at a time. Your answers save as you go.",
-   "Leave and come back whenever you like, on any device.",
-   "If you have more than one business or revenue stream, answer the follow-ups so each one is covered.",
-   "On the last question, press Complete."
-  ],
-  "health": "Your Brain answers are scored and feed most of your 12 dimensions and all 8 of your pillars. Your full Command Suite opens once Brain, Soul and Profit are all finished.",
-  "tips": [
-   "Plan on 3 to 5 hours. It does not have to happen in one sitting.",
-   "Press a section box below the question to jump to the first one you have not answered.",
-   "Answer honestly about your business as it is today. Your scores, plans and guidance all start here."
-  ],
-  "questions": [
-   {
-    "q": "Will I lose my answers if I close the page?",
-    "a": "No. Answers save to your account as you go and come back on any device. Check the note beside the save icon. If it says Saved on this device, keep the page open until it says Saved to your account."
-   },
-   {
-    "q": "Do I have to answer every question?",
-    "a": "No question stops you moving on, but fuller answers make your scores and guidance better. Your Brain only counts as finished when you press Complete."
-   }
-  ],
-  "related": [
-   "alignment-profile",
-   "soul-profile",
-   "profit-profile",
-   "business-alignment",
-   "how-your-scores-work"
-  ],
-  "who": "Everyone. Team members need the Assessments & Alignment area.",
-  "keywords": [
-   "brain",
-   "brain assessment",
-   "assessment",
-   "questions",
-   "systems",
-   "operations",
-   "questionnaire",
-   "autosave",
-   "revenue streams",
-   "fill this section with my ai",
-   "more than one business"
-  ],
-  "sections": [
-   {
-    "id": "brain-more-than-one-business",
-    "title": "More than one business or revenue stream",
-    "body": "In Business Identity, a follow-up asks for the stage of each business. In Business Model, How many separate revenue streams does the business have? adds the same eight questions for each further stream, up to five.",
-    "keywords": [
-     "more than one business",
-     "stage of each business",
-     "revenue streams",
-     "five streams"
-    ]
-   },
-   {
-    "id": "brain-fill-with-your-ai",
-    "title": "Fill this section with my AI",
-    "body": "Copy the prompt into a new chat with your AI, answer its questions, then paste its reply back. You review every answer before it is saved, and you can see which ones replace an answer you already gave.",
-    "keywords": [
-     "fill this section with my ai",
-     "chatgpt",
-     "copy prompt",
-     "paste reply"
-    ]
-   }
-  ],
-  "starter": true
- },
- {
-  "id": "soul-profile",
-  "name": "Soul Profile",
-  "area": "Alignment & Systems",
-  "where": "Alignment Profile > Soul",
-  "href": "/assessments/soul",
-  "what": "The assessment about you, your purpose and your voice: 263 questions in nine sections, from Core Identity to your Story Library. It is one of the three assessments, with Brain and Profit.",
-  "ai": "Has an AI button",
-  "aiNote": "Fill this section with my AI gives you a ready-made prompt to copy into the AI you already use. You paste the reply back, review every answer and choose what to keep. This does not use your AI key, and Private questions are left out unless you tick Include private questions. When you press Complete, the Suite reads your answers to score them, and that part does use your own AI key. Private answers are left out of that scoring.",
-  "steps": [
-   "Open Soul from Alignment Profile and press Start Assessment.",
-   "Answer one section at a time. Your answers save as you go.",
-   "Questions marked Private are kept out of the Suite's AI, so answer them in your own time.",
-   "Leave and come back whenever you like, on any device.",
-   "On the last question, press Complete."
-  ],
-  "health": "Your Soul answers are scored and feed your Leadership, Vision, Client Experience and Sustainability dimensions and your Communication pillar. Private answers are left out. Your full Command Suite opens once Brain, Soul and Profit are all finished.",
-  "tips": [
-   "Plan on 2 to 3 hours. It does not have to happen in one sitting.",
-   "Press a section box below the question to jump to the first one you have not answered.",
-   "Answer honestly and in your own words. Your scores, plans and guidance all start here."
-  ],
-  "questions": [
-   {
-    "q": "Who sees my Private answers?",
-    "a": "They are saved to your account and marked Private. The Suite's AI does not read them for your scores, plans, written profile or assistant. If you tick Include private questions in the Fill prompt, those questions go to your own AI, and it is told to use only what you say in that chat."
-   },
-   {
-    "q": "Will I lose my answers if I close the page?",
-    "a": "No. Answers save to your account as you go and come back on any device."
-   },
-   {
-    "q": "Do I have to answer every question?",
-    "a": "No question stops you moving on, but your Soul only counts as finished when you press Complete."
-   }
-  ],
-  "related": [
-   "alignment-profile",
-   "brain-profile",
-   "profit-profile",
-   "how-your-scores-work"
-  ],
-  "who": "Everyone. Team members need the Assessments & Alignment area.",
-  "keywords": [
-   "soul",
-   "soul assessment",
-   "assessment",
-   "purpose",
-   "values",
-   "calling",
-   "voice",
-   "private questions",
-   "sensitive",
-   "origin story",
-   "story library",
-   "fill this section with my ai"
-  ],
-  "sections": [
-   {
-    "id": "soul-private-questions",
-    "title": "Private questions",
-    "body": "50 questions carry a Private mark, many of them about your story and what you have been through. The mark is already set on those questions.",
-    "keywords": [
-     "private",
-     "sensitive",
-     "never sent to ai",
-     "protected stories"
-    ]
-   },
-   {
-    "id": "soul-sections",
-    "title": "The nine sections",
-    "body": "Core Identity, Origin Story, Calling, Purpose, and Sacred Why, Values and Standards, Beliefs and Worldview, Voice and Communication Style, Emotional Texture and Presence, Client Transformation, and Story Library.",
-    "keywords": [
-     "sections",
-     "core identity",
-     "origin story",
-     "client transformation",
-     "story library"
-    ]
-   }
-  ]
- },
- {
-  "id": "profit-profile",
-  "name": "Profit Profile",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Alignment Profile > Profit Profile",
-  "href": "/assessments/profit",
-  "what": "The assessment that rates how your business is doing across 12 business domains, from Marketing to Sustainability. It has 60 questions: most are a 1 to 5 rating and each domain ends with one multiple-choice question. It is one of the three assessments, with Brain and Soul.",
-  "ai": "Has an AI button",
-  "aiNote": "Fill this section with my AI gives you a ready-made prompt for the domain you are on, to copy into the AI you already use. You paste the reply back, review every answer and choose what to keep. This does not use your AI key.",
-  "steps": [
-   "Open Alignment Profile from the left menu and press Start Assessment on the Profit Profile card.",
-   "Pick the answer that fits your business as it is today, then press Next.",
-   "Press a domain name at the top to move to that domain.",
-   "Press Complete Assessment on the last question to save your scores."
-  ],
-  "health": "Your Profit answers are scored by domain and feed most of your 12 dimensions and your 8 pillars. Your full Command Suite opens once Brain, Soul and Profit are all finished.",
-  "tips": [
-   "Plan on 1 to 2 hours. It does not have to happen in one sitting.",
-   "Rate the business as it is now, not as you hope it will be. Honest answers give you scores you can use.",
-   "If you change answers later, go to the last question and press Complete Assessment again so your scores update."
-  ],
-  "questions": [
-   {
-    "q": "Will I lose my answers if I close the page?",
-    "a": "No. Answers save to your account as you go and come back on any device."
-   },
-   {
-    "q": "Why is Next greyed out?",
-    "a": "Next stays off until you answer the question on the screen."
-   },
-   {
-    "q": "How is a domain score worked out?",
-    "a": "Each answer becomes a number out of 100, and the domain score is the average of that domain's answers."
-   }
-  ],
-  "related": [
-   "brain-profile",
-   "soul-profile",
-   "alignment-profile",
-   "how-your-scores-work",
-   "quick-pulse-check-in"
-  ],
-  "who": "Everyone. Team members need the Assessments & Alignment area.",
-  "keywords": [
-   "profit assessment",
-   "profit profile",
-   "assessment",
-   "12 domains",
-   "60 questions",
-   "rating",
-   "1 to 5",
-   "domain scores",
-   "business health",
-   "retake profit",
-   "review my answers",
-   "quarterly",
-   "fill with ai"
-  ],
-  "sections": [
-   {
-    "id": "domain-scores",
-    "title": "Domain Scores",
-    "body": "The panel under the question shows a score for each domain as you answer, so you can see where you stand before you finish.",
-    "keywords": [
-     "domain scores",
-     "percent",
-     "progress",
-     "my scores so far"
-    ]
-   },
-   {
-    "id": "profit-rhythm",
-    "title": "Coming back each quarter",
-    "body": "Your Check-in Rhythm on Alignment Profile suggests a Profit re-read every quarter and shows when it is due. Press Retake there, or Review your answers on the card.",
-    "keywords": [
-     "retake",
-     "quarterly",
-     "check-in rhythm",
-     "review your answers",
-     "due"
-    ]
-   }
-  ]
- },
- {
-  "id": "quick-pulse-check-in",
-  "name": "Quick Pulse Check-in",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Alignment Profile > Quick Pulse Check-in",
-  "href": "/assessments/quick-pulse-checkin",
-  "what": "A short check-in with 18 questions, six each on Brain, Soul and Profit. It takes about five minutes. You see your result out of 100 in one of the four phases, how each area moved since last time, and suggested next steps.",
+  "id": "workspace-and-team",
+  "name": "Workspace and team",
+  "area": "Settings",
+  "where": "Settings > Workspace",
+  "href": "/settings?tab=workspace",
+  "what": "Your business details and your team in one place. Set your name, logo, website and social links, then invite people, choose their roles and see what they have been doing.",
   "ai": "No AI",
-  "aiNote": "The next steps come from a set list chosen by your scores, not from AI. Your assistant reads your check-in answers when you chat with it.",
+  "aiNote": "Team members run AI on the account owner's key. The owner can set a monthly limit for each person here.",
   "steps": [
-   "On Alignment Profile, press Start Quick Pulse.",
-   "Choose the answer from 1 to 5 that fits right now, then press Next.",
-   "On the last question, press Complete Check-in.",
-   "Read your Brain, Soul and Profit scores and your Total Score.",
-   "Read your suggested steps under Three Steps Forward."
+   "Open Settings, then Workspace.",
+   "Add your logo, Workspace Name, Description, Website and Social Profiles, then press Save Workspace.",
+   "Under Team Members, press Add Member.",
+   "Enter their email, choose Admin, Editor or Viewer, and press Send Invitation.",
+   "Use Edit access on an Editor or Viewer if you want to narrow what they can reach."
   ],
-  "health": "Your answers feed your 12 dimensions and your 8 pillars, and each check-in adds a dated point to your score trend on Progress.",
+  "health": "This does not change your scores. It keeps your business details in one place and lets your team help you.",
   "tips": [
-   "Take it once a month, or any time your business feels different than it did.",
-   "It opens once your Brain, Soul and Profit assessments are finished.",
-   "Your Check-in Rhythm on Alignment Profile shows when the next one is due."
+   "Press Send invitation on a person's card to send it again. The link in the invitation works once and expires in 7 days.",
+   "Your client portals show the logo from your first workspace.",
+   "You count as one person on your team. Your plan sets how many people and workspaces you can have."
   ],
   "questions": [
    {
-    "q": "What do the phases mean?",
-    "a": "Survival is 0 to 40, Growth is 41 to 60, Expansion is 61 to 80 and Legacy is 81 to 100. They are the same four phases used across your Suite."
+    "q": "What can each role do?",
+    "a": "An Admin runs the account day to day and manages the team, but has no billing, connected accounts or account deletion. An Editor works on tasks, plans, content, finance and sales activity. A Viewer sees what an Editor sees and cannot change anything."
    },
    {
-    "q": "Why do I see two steps and not three?",
-    "a": "Steps are chosen from your lowest area and from any drop since last time. If nothing dropped, you see fewer steps."
+    "q": "Someone says their invitation never came. What do I do?",
+    "a": "Press Send invitation on their card. A link appears there too, so you can copy it and send it to them yourself."
    },
    {
-    "q": "Can I stop halfway?",
-    "a": "Your place is saved in the browser you are using, so come back on the same device to carry on. It only reaches your account when you press Complete Check-in."
+    "q": "Can my team see what each other has done?",
+    "a": "No. Only you and your admins can see the Activity tab."
    }
   ],
   "related": [
-   "alignment-profile",
-   "progress",
-   "how-your-scores-work",
-   "profit-profile",
-   "brain-profile"
+   "team-access-limits",
+   "accepting-a-team-invitation",
+   "ai-assistant-setup-and-your-key",
+   "billing-and-plan",
+   "business-segments"
   ],
-  "who": "Everyone. Team members need the Assessments & Alignment area.",
+  "who": "The account owner and Admins. Editors and Viewers do not see this tab. Only the owner can set AI limits or delete a workspace.",
   "keywords": [
-   "quick pulse",
-   "pulse",
-   "check-in",
-   "checkin",
-   "monthly check in",
-   "18 questions",
-   "five minutes",
-   "score trend",
-   "phase",
-   "three steps forward",
-   "retake",
-   "start quick pulse"
-  ],
-  "sections": [
-   {
-    "id": "three-steps-forward",
-    "title": "Three Steps Forward",
-    "body": "Suggested next steps chosen from your lowest score and what changed since last time. They are also saved to your account.",
-    "keywords": [
-     "three steps forward",
-     "next steps",
-     "action steps",
-     "lowest score"
-    ]
-   },
-   {
-    "id": "your-progress-over-time",
-    "title": "Your Progress Over Time",
-    "body": "After your first check-in, the results page lists your last five with the date and each score.",
-    "keywords": [
-     "history",
-     "past check-ins",
-     "progress over time",
-     "last check-in"
-    ]
-   }
-  ]
- },
- {
-  "id": "legal-compliance",
-  "name": "Legal & Compliance",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Legal & Compliance",
-  "href": "/compliance",
-  "what": "One checklist for contracts, insurance, licenses and filings: 31 items in 8 groups. Give each item a status, keep a link to the document and notes, and track renewal dates. It is a general guide for small businesses, not legal advice, so check anything you are unsure of with your attorney or accountant.",
-  "ai": "Has an AI button",
-  "aiNote": "What applies to my business? has your assistant mark what matters most for you and what likely does not apply, on your own AI key. These are suggestions only. You accept each one yourself, and the latest set is saved. The checklist works without AI.",
-  "steps": [
-   "Open Legal & Compliance from the left menu.",
-   "Press What applies to my business? if you would like your assistant's suggestions.",
-   "Press an item to open it, then add the date, a link to the document and any notes.",
-   "Set the status on each item: Not started, In progress, Done or Doesn't apply.",
-   "To add your own, type it in Add your own item at the bottom and press Add."
-  ],
-  "health": "Your checklist feeds your Legal dimension, alongside your Profit answers on Legal. Done counts in full, In progress counts half and Doesn't apply is left out.",
-  "tips": [
-   "If you run more than one business, choose one at the top of the page and it keeps its own checklist.",
-   "Mark what truly does not apply as Doesn't apply so it stops counting against you.",
-   "Save the link to each document here so you can find it fast at renewal time."
-  ],
-  "questions": [
-   {
-    "q": "Is this legal advice?",
-    "a": "No. It is a checklist to keep you organized. Rules vary, so check anything you are unsure of with your attorney or accountant."
-   },
-   {
-    "q": "Why do only some items have a date?",
-    "a": "The date box shows on items that renew or come due, and on items you add yourself."
-   },
-   {
-    "q": "What does the percent at the top mean?",
-    "a": "It is how much of what applies to you is done. In progress counts as half."
-   }
-  ],
-  "related": [
-   "profit-profile",
-   "how-your-scores-work",
-   "dimension-detail",
-   "progress",
-   "business-alignment"
-  ],
-  "who": "Everyone. Team members need the Legal & Compliance area.",
-  "keywords": [
-   "legal",
-   "compliance",
-   "checklist",
-   "contracts",
-   "insurance",
-   "licenses",
-   "permits",
-   "filings",
-   "renewals",
-   "due dates",
-   "privacy policy",
-   "trademark",
-   "what applies to my business",
-   "legal score",
-   "attorney"
-  ],
-  "sections": [
-   {
-    "id": "what-applies",
-    "title": "What applies to my business?",
-    "body": "Your assistant reads what it knows about your business. Items it sees as important show Priority for you with a short reason. Items that likely do not apply offer Likely doesn't apply · mark it. Press Check again for a fresh look.",
-    "keywords": [
-     "what applies",
-     "priority for you",
-     "likely doesn't apply",
-     "check again",
-     "suggestions"
-    ]
-   },
-   {
-    "id": "coming-up",
-    "title": "Coming up in the next 45 days",
-    "body": "Items with a date in the next 45 days, or overdue, show in a card at the top. You also get a notification when one is within 14 days or overdue.",
-    "keywords": [
-     "renewal",
-     "overdue",
-     "coming up",
-     "45 days",
-     "reminder",
-     "notification"
-    ]
-   },
-   {
-    "id": "each-business",
-    "title": "A checklist for each business",
-    "body": "A business you choose at the top starts with its own empty checklist. Your overall Legal figure averages the checklists you have started, and each business's own score uses its own checklist.",
-    "keywords": [
-     "each business",
-     "multiple businesses",
-     "business switcher",
-     "separate checklist"
-    ]
-   }
-  ]
- },
- {
-  "id": "year-in-review",
-  "name": "Year in Review",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Year in Review",
-  "href": "/year-in-review",
-  "what": "Your year on one page, built from what is already in your Suite: income, expenses and net with your best month and a month-by-month chart, new customers and contacts, sessions and hours, events and sign-ups, program members, tasks finished, goals reached, your business score, and client quotes. You can share it with a private link.",
-  "ai": "No AI",
-  "aiNote": "This page does not use AI. You can ask your assistant in chat how your year is going and it will read you these same numbers.",
-  "steps": [
-   "Open Year in Review from the left menu.",
-   "Choose the Year at the top right.",
-   "Read your numbers, then fix anything that looks off on its own page, such as Income or Contacts.",
-   "To share it, press Make a share link, then Copy.",
-   "Tick Show income, expenses and net only if you want money on the shared page."
-  ],
-  "health": "This does not change your scores. It helps by showing your year in one place, including your business score at the start and end of the year.",
-  "tips": [
-   "Tag contacts client or customer so they count as new customers.",
-   "Use Open to see exactly what people will see before you send the link.",
-   "Each year has its own link, so a share link for one year does not show another."
-  ],
-  "questions": [
-   {
-    "q": "Who can see my share link?",
-    "a": "Anyone who has the link. Money stays hidden unless you tick the box. Press Stop sharing and the link ends at once."
-   },
-   {
-    "q": "Which client quotes appear?",
-    "a": "Up to three approved testimonials your clients agreed to share, with first names only. They also show on the shared page."
-   },
-   {
-    "q": "Why is there no business score?",
-    "a": "It needs at least two score points in that year to show a start and an end."
-   }
-  ],
-  "related": [
-   "progress",
-   "tasks",
-   "goal-ladder",
-   "budget-planner",
-   "business-alignment"
-  ],
-  "who": "Everyone. Team members need the Finance area.",
-  "keywords": [
-   "year in review",
-   "annual review",
-   "year end",
-   "my year",
-   "yearly summary",
-   "wrapped",
-   "share my year",
-   "share link",
-   "best month",
-   "stop sharing",
-   "annual report",
-   "testimonials"
-  ],
-  "sections": [
-   {
-    "id": "share-link",
-    "title": "Share link",
-    "body": "Make a share link creates a private page for that year. Copy and Open are beside it. The box shows or hides income, expenses and net, and Stop sharing turns the link off.",
-    "keywords": [
-     "share link",
-     "make a share link",
-     "copy",
-     "stop sharing",
-     "hide money",
-     "show income"
-    ]
-   }
-  ]
- },
- {
-  "id": "ai-business-guide",
-  "name": "AI Business Guide",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Business Alignment, in the AI Business Guide card",
-  "href": "/business-alignment",
-  "what": "A chat with your assistant on your Business Alignment page. The card greets you with your score and phase and lists your next moves as suggested focus. Your assistant answers from your assessments, scores and what is in your account.",
-  "ai": "AI-powered",
-  "aiNote": "This uses your own AI key. Without one, the chat asks you to add your key in Settings > AI Assistant. Anything your assistant prepares to change for you waits behind Approve in the chat. It is the same assistant as on Executive Home, and it keeps the same conversation.",
-  "steps": [
-   "Open Business Alignment from the left menu and find the AI Business Guide card.",
-   "Read the greeting and your Suggested Focus.",
-   "Press Ask, followed by your assistant's name, to open the chat.",
-   "Type your question in Ask for guidance and press Enter.",
-   "Press a Quick actions button under a reply to hear more on that point."
-  ],
-  "health": "This does not change your scores. It helps by explaining your scores and phase and helping you choose what to work on next. Your assessments are what it reads, so more complete answers give you better guidance.",
-  "tips": [
-   "Ask one clear question, such as what to focus on this week.",
-   "Your conversation stays here when you leave the page.",
-   "Treat what it says as guidance. The final decisions are yours."
-  ],
-  "questions": [
-   {
-    "q": "Is this different from the assistant on Executive Home?",
-    "a": "No. It is the same assistant with the same memory of your recent conversation."
-   },
-   {
-    "q": "Can it change things in my account?",
-    "a": "It can prepare changes, and each one waits for you to press Approve."
-   },
-   {
-    "q": "Why can I not open it yet?",
-    "a": "Your assistant and this page open once your Brain, Soul and Profit assessments are finished."
-   }
-  ],
-  "related": [
-   "business-alignment",
-   "next-three-moves",
-   "how-your-scores-work",
-   "growth-roadmap",
-   "brain-profile"
-  ],
-  "who": "Everyone. Team members need the Assessments & Alignment area.",
-  "keywords": [
-   "ai business guide",
-   "ai guide",
+   "team",
+   "invite",
+   "add member",
+   "add someone",
+   "staff",
    "assistant",
+   "roles",
+   "admin",
+   "editor",
+   "viewer",
+   "workspace",
+   "business name",
+   "logo",
+   "social links",
+   "website",
+   "remove member",
+   "activity log"
+  ],
+  "sections": [
+   {
+    "id": "your-workspace",
+    "title": "Your workspaces",
+    "body": "Your Workspaces lists each one with how many your plan allows. Press Create New Workspace to add one, or Set as Default Workspace to change your default. You must keep at least one.",
+    "keywords": [
+     "workspace",
+     "default workspace",
+     "new workspace",
+     "second business",
+     "delete workspace",
+     "slug"
+    ]
+   },
+   {
+    "id": "team-roles",
+    "title": "Team roles",
+    "body": "Choose Admin, Editor or Viewer when you invite someone. Change it any time from the menu on their card. The Role Permissions box lists what each one can do.",
+    "keywords": [
+     "roles",
+     "admin",
+     "editor",
+     "viewer",
+     "permissions",
+     "change role"
+    ]
+   },
+   {
+    "id": "ai-limits-per-member",
+    "title": "AI limits for each person",
+    "body": "Each card shows AI this month. The owner can press Set a monthly limit and enter a number of requests. Leave it blank for no limit. When someone reaches it, their AI stops until the next month.",
+    "keywords": [
+     "ai limit",
+     "monthly limit",
+     "ai cap",
+     "ai use",
+     "requests"
+    ]
+   },
+   {
+    "id": "team-activity",
+    "title": "Team activity",
+    "body": "Open the Activity tab to see who did what. Past 7 days sums up each person, and you can filter the log by Person, Area, From and To.",
+    "keywords": [
+     "activity",
+     "activity log",
+     "who did what",
+     "audit",
+     "history"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "team-access-limits",
+  "name": "Team access limits",
+  "area": "Settings",
+  "where": "Settings > Workspace > Team Members > Edit access",
+  "href": "/settings?tab=workspace",
+  "what": "Choose exactly what one team member can reach. Turn each area to No access, View or Edit, start from a preset, and add limits such as only their own tasks or no deleting.",
+  "ai": "No AI",
+  "aiNote": "This page does not use AI. If you leave the AI assistant area on for someone, the assistant acts only within the areas they have.",
+  "steps": [
+   "Open Settings, then Workspace, and find the person under Team Members.",
+   "Press Edit access on their card.",
+   "Under What they can reach, choose a preset or Custom.",
+   "Set each area to No access, View or Edit.",
+   "Tick any limits you want, then press Save access."
+  ],
+  "health": "This does not change your scores. It lets you share the work while keeping the rest of your account private.",
+  "tips": [
+   "Changes apply the next time they open a page.",
+   "The summary on each card shows what the person can edit, what they can view and their limits.",
+   "To undo it all, choose Everything their role allows and press Save access."
+  ],
+  "questions": [
+   {
+    "q": "Why is there no Edit access button for my Admin?",
+    "a": "Edit access is there for Editors and Viewers only. An Admin has what the Admin role allows."
+   },
+   {
+    "q": "What will a team member never see?",
+    "a": "Billing, API keys, connected accounts and other members' details stay closed, whatever you choose here."
+   },
+   {
+    "q": "Can I share one of My Pages without opening all of them?",
+    "a": "Yes. Under My Pages, one at a time, choose View or Edit for just that page. It works even when the My Pages area is off."
+   }
+  ],
+  "related": [
+   "workspace-and-team",
+   "accepting-a-team-invitation",
+   "ai-assistant-setup-and-your-key"
+  ],
+  "who": "The account owner and Admins.",
+  "keywords": [
+   "permissions",
+   "limit access",
+   "restrict",
+   "what can my team see",
+   "view only",
+   "hide",
+   "bookkeeper",
+   "virtual assistant",
+   "va",
+   "presets",
+   "cannot delete",
+   "only their own",
+   "share a page"
+  ],
+  "sections": [
+   {
+    "id": "access-presets",
+    "title": "Presets",
+    "body": "Start from Virtual assistant, Bookkeeper, Sales, Content, Viewer, or Support & client care, then adjust any area. Changing an area makes it Custom.",
+    "keywords": [
+     "presets",
+     "virtual assistant",
+     "bookkeeper",
+     "sales",
+     "content",
+     "support"
+    ]
+   },
+   {
+    "id": "show-only-the-areas-above",
+    "title": "Show only the areas above",
+    "body": "Everything else closes and leaves their menu, including Executive Home and the assistant. Settings and Help stay open.",
+    "keywords": [
+     "show only",
+     "restrict",
+     "hide menu",
+     "closed"
+    ]
+   },
+   {
+    "id": "only-their-own",
+    "title": "Tasks and Reminders: only their own",
+    "body": "They see only the tasks and reminders that are theirs. The reminders they make are emailed to them and stay off your list and your bell.",
+    "keywords": [
+     "only their own",
+     "own tasks",
+     "own reminders",
+     "private"
+    ]
+   },
+   {
+    "id": "cannot-delete",
+    "title": "Cannot delete anything without your permission",
+    "body": "They can add, edit and update. A delete is refused and they are asked to come to you.",
+    "keywords": [
+     "cannot delete",
+     "no delete",
+     "permission to delete"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "notifications",
+  "name": "Notifications",
+  "area": "Settings",
+  "where": "Settings > Notifications",
+  "href": "/settings?tab=notifications",
+  "what": "Choose when you hear about timed tasks, and whether the Suite emails you once a day when something needs your attention.",
+  "ai": "No AI",
+  "aiNote": "",
+  "steps": [
+   "Open Settings, then Notifications.",
+   "Under Task reminders, choose how long before a timed task is due you want a reminder.",
+   "Tick and by email if you also want it by email.",
+   "Tick or untick the once-a-day email about things that need your attention."
+  ],
+  "health": "This does not change your scores. It tells you when something needs you, such as a score drop or a slipped goal.",
+  "tips": [
+   "Changes save as you make them. There is no Save button.",
+   "Emails for sign-ups, bookings and registrations are set on each form, calendar and campaign, not here.",
+   "The bell in the app keeps showing an alert until it is resolved or dismissed, even after you have been emailed about it."
+  ],
+  "questions": [
+   {
+    "q": "What is in the once-a-day email?",
+    "a": "Things like a score drop, a slipped goal, a stalled pipeline or a bill coming due. Each alert is emailed once."
+   },
+   {
+    "q": "I am new and have not had this email. Is something wrong?",
+    "a": "No. It waits until your Brain, Soul and Profit assessments are done or your account is 14 days old, so your first emails are a welcome and not a to-do list."
+   },
+   {
+    "q": "How do I stop these emails while I am away?",
+    "a": "Use Pause my reminder emails under Settings > Out of office."
+   }
+  ],
+  "related": [
+   "out-of-office",
+   "profile"
+  ],
+  "who": "Everyone. The once-a-day attention email goes to the account owner.",
+  "keywords": [
+   "notifications",
+   "reminders",
+   "task reminder",
+   "email alerts",
+   "stop emails",
+   "turn off emails",
+   "daily email",
+   "too many emails",
+   "alerts",
+   "bell"
+  ],
+  "sections": [
+   {
+    "id": "new-client-alert-emails-held",
+    "title": "New accounts",
+    "body": "The once-a-day email is held until your assessments are done or your account is 14 days old.",
+    "keywords": [
+     "no alert email",
+     "new account",
+     "held",
+     "assessments"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "out-of-office",
+  "name": "Out of office",
+  "area": "Settings",
+  "where": "Settings > Out of office",
+  "href": "/settings?tab=away",
+  "what": "Going away? Pick your dates once and the Suite covers for you. It can close your booking pages, answer portal messages and pause your reminder emails. Everything your clients signed up for keeps running.",
+  "ai": "No AI",
+  "aiNote": "You can also tell your assistant your away dates. It prepares a card and nothing changes until you press Approve. This uses your own AI key.",
+  "steps": [
+   "Open Settings, then Out of office.",
+   "Pick your First day away and Last day away.",
+   "Write a Note to clients, or leave it blank to use the standard note.",
+   "Tick what you want the Suite to do while you are away.",
+   "Press Set my away dates."
+  ],
+  "health": "This does not change your scores. It looks after your clients and quiets your reminders while you rest.",
+  "tips": [
+   "Your Gmail or Outlook inbox needs its own vacation responder. The Suite cannot answer email sent straight to your inbox.",
+   "If you leave the note blank, clients see that you are away, the day you are back, and that you will reply then."
+  ],
+  "questions": [
+   {
+    "q": "Do my campaigns stop while I am away?",
+    "a": "No. Campaigns, event emails, booking reminders and Client Care keep running."
+   },
+   {
+    "q": "I came home early. How do I turn this off?",
+    "a": "Press I'm back (turn off). Everything goes back to normal."
+   },
+   {
+    "q": "Will a client get my note every time they message?",
+    "a": "No. Each client gets it once per trip, and you still get their message."
+   }
+  ],
+  "related": [
+   "notifications",
+   "what-your-assistant-can-do-for-you",
+   "profile"
+  ],
+  "who": "The account owner and Admins. Editors and Viewers do not see this tab.",
+  "keywords": [
+   "out of office",
+   "away",
+   "vacation",
+   "holiday",
+   "time off",
+   "auto reply",
+   "autoreply",
+   "close bookings",
+   "block dates",
+   "away message",
+   "pause reminders"
+  ],
+  "sections": [
+   {
+    "id": "close-my-booking-pages",
+    "title": "Close my booking pages on those dates",
+    "body": "No one can book a time on those days. Your booking pages show your note.",
+    "keywords": [
+     "close bookings",
+     "block dates",
+     "booking pages",
+     "no bookings"
+    ]
+   },
+   {
+    "id": "answer-portal-messages",
+    "title": "Answer portal messages for me",
+    "body": "A client who messages you in their portal gets your note back once per trip. You still get their message.",
+    "keywords": [
+     "portal",
+     "auto reply",
+     "client messages"
+    ]
+   },
+   {
+    "id": "pause-my-reminder-emails",
+    "title": "Pause my reminder emails",
+    "body": "Your daily alerts, task reminders and to-do emails stop until you are back.",
+    "keywords": [
+     "pause reminders",
+     "stop emails",
+     "quiet"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "appearance-and-text-size",
+  "name": "Appearance and text size",
+  "area": "Settings",
+  "where": "Settings > Appearance",
+  "href": "/settings?tab=appearance",
+  "what": "Make the Suite comfortable for your eyes. Choose light or dark, a colour scheme, a text size and how tightly the pages are spaced.",
+  "ai": "No AI",
+  "aiNote": "",
+  "steps": [
+   "Open Settings, then Appearance.",
+   "Under Theme, press Light, Dark or System.",
+   "Under Color Scheme, press LifeCharter, Sacred or Modern.",
+   "Under Font Size, press Small, Medium or Large.",
+   "Tick Compact mode if you want less padding and more on screen."
+  ],
+  "health": "This does not change your scores. It makes the Suite easier to read and use.",
+  "tips": [
+   "System follows the light or dark setting on your device.",
+   "You can also switch between light and dark from the bottom of the left menu.",
+   "Your choices save as you press them. There is no Save button."
+  ],
+  "questions": [
+   {
+    "q": "Will my text size follow me to my phone?",
+    "a": "Yes. Your font size is saved to your account and follows you to other devices. Your theme, colour scheme and compact mode are saved on the device you set them on."
+   },
+   {
+    "q": "The left menu is hard to read. Can I make it bigger?",
+    "a": "Yes. The menu text follows your Font Size, so Large makes it bigger too."
+   }
+  ],
+  "related": [
+   "profile",
+   "notifications"
+  ],
+  "who": "Everyone. Each person sets their own.",
+  "keywords": [
+   "dark mode",
+   "light mode",
+   "theme",
+   "colors",
+   "colours",
+   "text size",
+   "font size",
+   "bigger text",
+   "hard to read",
+   "small text",
+   "compact",
+   "accessibility"
+  ],
+  "sections": [
+   {
+    "id": "text-size",
+    "title": "Text size on every page",
+    "body": "Small, Medium and Large change the text on every page, including small labels and tags. Medium is the starting size.",
+    "keywords": [
+     "text size",
+     "font size",
+     "bigger text",
+     "labels"
+    ]
+   },
+   {
+    "id": "left-menu-readability",
+    "title": "Left menu",
+    "body": "The menu text follows your Font Size. New clients also see Getting Started pinned at the top of the menu until First 30 Days is complete.",
+    "keywords": [
+     "left menu",
+     "menu text",
+     "getting started",
+     "pinned"
+    ]
+   },
+   {
+    "id": "theme",
+    "title": "Theme",
+    "body": "Choose Light, Dark or System here. The button at the bottom of the left menu switches between light and dark.",
+    "keywords": [
+     "theme",
+     "dark mode",
+     "light mode",
+     "system"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "ai-assistant-setup-and-your-key",
+  "name": "AI Assistant setup and your key",
+  "area": "Settings",
+  "where": "Settings > AI Assistant",
+  "href": "/settings?tab=ai",
+  "what": "Connect your own AI key so your assistant comes online. Name your assistant, tell it how to reply and what to remember about you, and see everything it has prepared.",
+  "ai": "No AI",
+  "aiNote": "This page does not call AI itself. It is where you connect your own key, which powers every AI feature in your Suite. Without a key, your assistant stays offline.",
+  "steps": [
+   "Open AI Assistant under Settings in the left menu.",
+   "Press Get a Claude key or Get an OpenAI key and create an API key on that company's site.",
+   "Paste it into the AI key box.",
+   "Add an Assistant name, how it should reply, and what it should know about you. All three are optional.",
+   "Press Save AI settings, and check for Key configured under the box."
+  ],
+  "health": "This does not change your scores. It turns on the AI features that read your scores and plans and help you act on them.",
+  "tips": [
+   "An API key is different from a Claude or ChatGPT subscription, so those logins will not work here.",
+   "Create a separate key just for the Command Suite so you can see exactly what it costs.",
+   "Voice notes need an OpenAI key. Everything else works with either."
+  ],
+  "questions": [
+   {
+    "q": "Who pays for the AI?",
+    "a": "The AI company you chose charges your own account for what you use. LifeCharter does not receive any of that charge."
+   },
+   {
+    "q": "If I switch from OpenAI to Claude, does my assistant forget everything?",
+    "a": "No. Paste the new key to replace the old one. Your conversations, assessments and plans live in your Command Suite, not with the AI company."
+   },
+   {
+    "q": "Does my team need their own key?",
+    "a": "No. Team members use your key, and you can set a monthly limit for each person under Settings > Workspace."
+   }
+  ],
+  "related": [
+   "ai-assistant",
+   "what-your-assistant-can-do-for-you",
+   "what-your-assistant-will-and-will-not-do",
+   "workspace-and-team",
+   "pop-out-assistant"
+  ],
+  "who": "The account owner only.",
+  "keywords": [
+   "ai key",
+   "api key",
+   "openai",
+   "claude",
+   "anthropic",
+   "chatgpt",
+   "connect ai",
+   "assistant offline",
+   "needs a key",
+   "name my assistant",
+   "instructions",
+   "what does ai cost",
+   "sidekick"
+  ],
+  "sections": [
+   {
+    "id": "name-and-instructions",
+    "title": "Name your assistant and how it replies",
+    "body": "Leave the name blank to use the default. Under How should it reply, give standing instructions on tone, length and format, or press a suggestion to add it. These shape how it replies. It still uses only your own information.",
+    "keywords": [
+     "name",
+     "instructions",
+     "tone",
+     "how it replies",
+     "shorter answers"
+    ]
+   },
+   {
+    "id": "what-it-should-know",
+    "title": "What your assistant should know about you",
+    "body": "Facts it should always keep in mind, such as your team, your schedule and your preferences. This is private to your account. Update it whenever things change.",
+    "keywords": [
+     "remember",
+     "memory",
+     "about me",
+     "notes"
+    ]
+   },
+   {
+    "id": "your-own-key",
+    "title": "Your own key",
+    "body": "Your key can be from Claude or OpenAI, and the Suite recognises which. It is stored securely and is never shown again. Paste a new key any time to replace it.",
+    "keywords": [
+     "key",
+     "claude key",
+     "openai key",
+     "replace key",
+     "encrypted"
+    ]
+   },
+   {
+    "id": "what-your-assistant-has-done",
+    "title": "What your assistant has done",
+    "body": "Open this list to see what your assistant prepared and how it ended: Done, Waiting for you, Cancelled, Undone or Didn't work.",
+    "keywords": [
+     "activity",
+     "history",
+     "what has my assistant done",
+     "log"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "integrations",
+  "name": "Integrations",
+  "area": "Settings",
+  "where": "Settings > Integrations",
+  "href": "/settings?tab=integrations",
+  "what": "Connect the outside accounts your Suite works with: your Google or Microsoft 365 calendar and email, and your own Stripe account. You also set your main currency here.",
+  "ai": "No AI",
+  "aiNote": "",
+  "steps": [
+   "Open Settings, then Integrations.",
+   "Under Calendar & Email, press Add Google account or Add Microsoft 365 account and sign in.",
+   "On the Stripe card, press Connect with Stripe, or paste a read-only key using the steps on the card.",
+   "Under Currency, choose your main currency.",
+   "Use Disconnect on any account to remove it."
+  ],
+  "health": "Connecting Stripe can change your scores. The payments, fees and refunds it adds to your ledger count toward your Finance dimension, which looks at revenue against your goal, margin and cash runway. Your calendar and email connections do not change your scores.",
+  "tips": [
+   "Your AI key and email accounts do not count toward your plan's integration spots.",
+   "Emailing your contacts is separate. Campaigns, broadcasts and booking emails go through your own Resend account, set up in Contacts > Email sending.",
+   "If a Google account shows Calendar is read-only, add that account again so the app can add events."
+  ],
+  "questions": [
+   {
+    "q": "Can I read my Gmail inside the Suite?",
+    "a": "No. A Google account lets the Suite send email from your own address and use your calendar. It does not read your Gmail inbox. A Microsoft 365 account does show your inbox."
+   },
+   {
+    "q": "Will disconnecting Stripe remove my income from Finance?",
+    "a": "No. Payments already in your ledger stay there."
+   },
+   {
+    "q": "Why can I not add another email account?",
+    "a": "You have reached your plan's limit. Disconnect one, or look at your plan under Settings > Billing."
+   }
+  ],
+  "related": [
+   "billing-and-plan",
+   "ai-assistant-setup-and-your-key",
+   "data-privacy",
+   "workspace-and-team"
+  ],
+  "who": "The account owner only. Team members do not see this tab.",
+  "keywords": [
+   "connect",
+   "google",
+   "gmail",
+   "microsoft",
+   "outlook",
+   "calendar",
+   "email account",
+   "stripe",
+   "payments",
+   "disconnect",
+   "reconnect",
+   "currency",
+   "gst",
+   "hst"
+  ],
+  "sections": [
+   {
+    "id": "calendar-and-email",
+    "title": "Calendar & Email",
+    "body": "Connect Google or Microsoft 365 to see your calendar, send email from your own address and let the app add events. The card shows how many email accounts your plan allows.",
+    "keywords": [
+     "calendar",
+     "email",
+     "google",
+     "microsoft",
+     "add account"
+    ]
+   },
+   {
+    "id": "gmail-sending-and-calendar",
+    "title": "Gmail: sending and calendar only",
+    "body": "The Suite does not read Gmail inboxes, so read your messages in Gmail itself. Your replies from the Suite still go out from your own address.",
+    "keywords": [
+     "gmail",
+     "inbox",
+     "read email",
+     "missing emails"
+    ]
+   },
+   {
+    "id": "stripe-your-payments",
+    "title": "Stripe",
+    "body": "Every payment you take through Stripe goes into your Finance Center as income, with fees and refunds as expenses. It syncs each morning, and Sync now runs it any time. Connect with Stripe also lets the Suite make payment links for your offers.",
+    "keywords": [
+     "stripe",
+     "sync",
+     "ledger",
+     "payment links",
+     "fees",
+     "refunds"
+    ]
+   },
+   {
+    "id": "currency-and-sales-tax",
+    "title": "Currency and Canadian sales tax",
+    "body": "Choose US or Canadian dollars as your main currency. The two are kept separate and never converted. With Canadian dollars, a sales tax card also appears for GST/HST, QST and PST. The Suite is a tool, not tax advice.",
+    "keywords": [
+     "currency",
+     "canadian dollars",
+     "cad",
+     "gst",
+     "hst",
+     "qst",
+     "pst"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "billing-and-plan",
+  "name": "Billing and plan",
+  "area": "Settings",
+  "where": "Settings > Billing",
+  "href": "/settings?tab=billing",
+  "what": "See which plan you are on and manage your billing. Update your card, see your invoices and change your plan through Stripe's secure billing page.",
+  "ai": "No AI",
+  "aiNote": "",
+  "steps": [
+   "Open Settings, then Billing.",
+   "Check your plan and renewal date under Current plan.",
+   "Press Manage billing. This opens Stripe's billing page.",
+   "Update your card, open your invoices or choose a different plan.",
+   "When you finish, you return to Settings."
+  ],
+  "health": "This does not change your scores. It keeps your account paid and up to date.",
+  "tips": [
+   "If your card fails, start with Manage billing to update it."
+  ],
+  "questions": [
+   {
+    "q": "How do I cancel?",
+    "a": "Cancelling is not available in Manage billing. Please contact support."
+   },
+   {
+    "q": "What happens when I change plans?",
+    "a": "When you move up, your card on file is charged the prorated difference and you get an email confirming your new plan. When you move down, the unused part of your current period is credited."
+   },
+   {
+    "q": "My team cannot see this page. Is that right?",
+    "a": "Yes. Billing is for the account owner only."
+   }
+  ],
+  "related": [
+   "if-a-payment-fails",
+   "workspace-and-team",
+   "integrations"
+  ],
+  "who": "The account owner only.",
+  "keywords": [
+   "billing",
+   "invoice",
+   "receipt",
+   "update card",
+   "credit card",
+   "payment method",
+   "change plan",
+   "upgrade",
+   "downgrade",
+   "cancel",
+   "renewal",
+   "subscription"
+  ],
+  "sections": [
+   {
+    "id": "plan-limits",
+    "title": "What your plan sets",
+    "body": "Your plan sets how many workspaces, team seats, email accounts and integrations you can have, and your AI limits. You can see what you have used on Settings > Workspace and Settings > Integrations.",
+    "keywords": [
+     "limits",
+     "seats",
+     "how many",
+     "plan limit",
+     "reached limit"
+    ]
+   },
+   {
+    "id": "plan-upgrade-emails",
+    "title": "Emails when you move up",
+    "body": "When you move up a plan, you get an email confirming it, followed by one short check-in email. Moving down sends no emails.",
+    "keywords": [
+     "upgrade email",
+     "confirmation",
+     "check-in"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "security",
+  "name": "Security",
+  "area": "Settings",
+  "where": "Settings > Security",
+  "href": "/settings?tab=security",
+  "what": "Keep your account safe. Change your password, turn on two-factor sign-in, sign out of other devices and see when support has opened your account.",
+  "ai": "No AI",
+  "aiNote": "",
+  "steps": [
+   "Open Settings, then Security.",
+   "To change your password, enter your current one and your new one twice, then press Update Password.",
+   "To add two-factor, press Enable 2FA.",
+   "Add the account to your authenticator app by scanning the code, copying the setup key or opening it in your app.",
+   "Enter the 6-digit code and press Confirm."
+  ],
+  "health": "This does not change your scores. It protects your account and everything in it.",
+  "tips": [
+   "Your new password needs at least 8 characters.",
+   "Lost a device, or used a shared one? Press Sign out other devices. It signs you out everywhere except where you are now.",
+   "Google Authenticator, 1Password and Authy all work for two-factor."
+  ],
+  "questions": [
+   {
+    "q": "I forgot my password. What do I do?",
+    "a": "On the sign-in page, choose Forgot or set your password and enter your email. We will send you a link."
+   },
+   {
+    "q": "What happens when two-factor is on?",
+    "a": "You enter a code from your authenticator app when you sign in. Press Turn off 2FA here if you ever want to stop."
+   },
+   {
+    "q": "Is this the same as Logins & Passwords?",
+    "a": "No. This page protects your Suite sign-in. Logins & Passwords is your private vault for other logins."
+   }
+  ],
+  "related": [
+   "who-has-opened-my-account",
+   "logins-passwords",
+   "data-privacy",
+   "profile"
+  ],
+  "who": "Everyone. Who has opened my account shows for the account owner only.",
+  "keywords": [
+   "password",
+   "change password",
+   "reset password",
+   "two factor",
+   "2fa",
+   "mfa",
+   "authenticator",
+   "security code",
+   "sign out",
+   "lost phone",
+   "hacked",
+   "who has access"
+  ],
+  "sections": [
+   {
+    "id": "sign-out-other-devices",
+    "title": "Sign out other devices",
+    "body": "Under Sessions, press Sign out other devices to sign out everywhere except here.",
+    "keywords": [
+     "sign out",
+     "log out everywhere",
+     "lost device",
+     "shared device"
+    ]
+   },
+   {
+    "id": "who-has-opened-my-account",
+    "title": "Who has opened my account",
+    "body": "Support can open your account read-only to help with a request. It can look but not change, send or delete anything. Each time is listed here.",
+    "keywords": [
+     "support access",
+     "who has seen my account",
+     "read-only",
+     "privacy"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "data-privacy",
+  "name": "Data & Privacy",
+  "area": "Settings",
+  "where": "Settings > Data & Privacy",
+  "href": "/settings?tab=data",
+  "what": "Download a copy of your information, and ask us to delete your account if you ever need to.",
+  "ai": "No AI",
+  "aiNote": "",
+  "steps": [
+   "Open Settings, then Data & Privacy.",
+   "Under Export Your Data, press the download you want.",
+   "Save the file somewhere safe.",
+   "Only if you want to close your account, press Delete under Danger Zone and follow the steps."
+  ],
+  "health": "This does not change your scores. It gives you your own copy of your plans, reviews and records.",
+  "tips": [
+   "This year's ledger (CSV) is handy for your bookkeeper or accountant.",
+   "Your backup never includes your passwords or API keys.",
+   "Export your contacts from the Contacts page with Export contacts."
+  ],
+  "questions": [
+   {
+    "q": "What is in each download?",
+    "a": "Full account backup (JSON) is a data file with your plans, tasks, finance, pipeline, SOPs, assessments and more. Your plans, goals and reviews (document) is one written document. This year's ledger (CSV) is your income and expenses for the year."
+   },
+   {
+    "q": "If I press Delete, is my account gone right away?",
+    "a": "No. It sends a request to our support team. We confirm with you by email before anything is removed."
+   },
+   {
+    "q": "Can my team download a backup?",
+    "a": "No. Only the account owner can."
+   }
+  ],
+  "related": [
+   "security",
+   "billing-and-plan",
+   "who-has-opened-my-account"
+  ],
+  "who": "The account owner only. Team members do not see this tab.",
+  "keywords": [
+   "export",
+   "download",
+   "backup",
+   "my data",
+   "csv",
+   "json",
+   "ledger",
+   "delete account",
+   "close account",
+   "privacy",
+   "accountant"
+  ],
+  "sections": [
+   {
+    "id": "delete-account",
+    "title": "Delete Account",
+    "body": "Press Delete, read the note, type DELETE and press Request account deletion. Nothing is removed until we confirm with you by email. Download a backup first if you want to keep your data. Keep my account closes the box.",
+    "keywords": [
+     "delete account",
+     "close account",
+     "remove my data",
+     "danger zone"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "logins-passwords",
+  "name": "Logins & Passwords",
+  "area": "Settings",
+  "where": "Settings > Logins & Passwords",
+  "href": "/vault",
+  "what": "A private vault for your logins and passwords. Each person has their own, and team members cannot open anyone else's. Passwords, secrets, notes and recovery codes are stored encrypted.",
+  "ai": "No AI",
+  "aiNote": "Your vault is never available to your assistant, and it does not use your AI key.",
+  "steps": [
+   "Open Logins & Passwords from the left menu.",
+   "Enter your Suite password and press Open my vault. It stays open for 15 minutes, or press Lock now.",
+   "Press Add a login and fill in its name, type, web address, login and password. Make one creates a strong password for you.",
+   "Enter your Suite password at the bottom of the window and press Save.",
+   "Use Show or the Password copy button when you need a password. Show hides itself after 20 seconds."
+  ],
+  "health": "This does not change your scores. It keeps your business logins in one protected place.",
+  "tips": [
+   "Adding, editing and deleting each ask for your Suite password again.",
+   "Please do not store bank card numbers or government ID numbers here.",
+   "Press a column heading to sort. Use the filters to see one type, or only logins with 2FA on or off."
+  ],
+  "questions": [
+   {
+    "q": "Can my team or LifeCharter see my passwords?",
+    "a": "No. Each person has their own vault, and nobody else on your team or at LifeCharter sees yours in the app."
+   },
+   {
+    "q": "Can my assistant read my logins?",
+    "a": "No. Your assistant has no access to your vault, and it should never ask you for a password."
+   },
+   {
+    "q": "Can I get a deleted login back?",
+    "a": "No. Delete removes the login and its saved password for good, so the window asks for your Suite password first."
+   }
+  ],
+  "related": [
+   "security",
+   "data-privacy",
+   "who-has-opened-my-account"
+  ],
+  "who": "Private to each person. It opens once your three assessments are finished. Some limited team roles do not have this page.",
+  "keywords": [
+   "vault",
+   "password manager",
+   "credentials",
+   "security",
+   "secret",
+   "2fa",
+   "two-step sign-in",
+   "recovery codes",
+   "backup codes",
+   "save my passwords",
+   "lock",
+   "generate password"
+  ],
+  "sections": [
+   {
+    "id": "what-each-entry-holds",
+    "title": "What each entry holds",
+    "body": "Name, type, web address, login, password, a secret such as a security answer or PIN, notes, whether 2FA is on and which kind, a recovery email or phone, recovery codes, and when the password last changed.",
+    "keywords": [
+     "fields",
+     "type",
+     "security answer",
+     "pin",
+     "recovery email",
+     "password changed"
+    ]
+   },
+   {
+    "id": "show-and-copy",
+    "title": "Show and copy",
+    "body": "Only one login opens at a time. Show displays its password, secret, recovery codes and notes for 20 seconds. They never appear in the list.",
+    "keywords": [
+     "reveal",
+     "show password",
+     "copy password",
+     "20 seconds",
+     "hide"
+    ]
+   },
+   {
+    "id": "recent-activity",
+    "title": "Recent activity",
+    "body": "Press Show recent activity under the list to see when your vault was opened and when a login was added, changed, shown or deleted.",
+    "keywords": [
+     "activity log",
+     "history",
+     "who opened",
+     "audit"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "business-segments",
+  "name": "Business Segments",
+  "area": "Settings",
+  "where": "Settings > Business Segments",
+  "href": "/segments",
+  "what": "Your businesses or brands, and the segments inside each, such as a product line, service, program or audience. Tag income, expenses, tasks, plan goals and sales activity to a segment, and it shows what it earns and its own score.",
+  "ai": "Has an AI button",
+  "aiNote": "Suggest tags with your assistant proposes a segment for anything not yet tagged, and Read my segments compares your segments and says where to put your attention. Both use your own AI key. Suggested tags wait for you: nothing is tagged until you press Apply, and existing tags are never overwritten.",
+  "steps": [
+   "Open Business Segments from the left menu.",
+   "Press Add your business or brand and type its name.",
+   "Press + Add a segment or offering for each thing you want to track, such as Coaching or Courses.",
+   "Tag income and expenses to a segment in Finance, and tasks, plan goals and sales activity where you add them.",
+   "Or press Suggest tags with your assistant, untick anything that is wrong, and press Apply.",
+   "Come back to each segment's card to see its score, what needs work and what is showing progress."
+  ],
+  "health": "Each segment gets its own score across the 12 dimensions. It starts from your business-wide score and moves with what is tagged to it: Finance from its income and expenses, Sales from its sales activity, and any dimension from its plan goals and tasks. Segment scores do not change your overall score or your business-wide dimension scores.",
+  "tips": [
+   "With little tagged to a segment, it keeps the business-wide score and says so. The more you tag, the more its own picture shows.",
+   "Hover over a bar on a segment's card to see that dimension's score and where it came from.",
+   "You can leave general overhead untagged. Pick Leave untagged in the suggestions."
+  ],
+  "questions": [
+   {
+    "q": "Do I have to rate each segment myself?",
+    "a": "No. You don't rate anything. The score comes from your assessments and what is tagged to that segment."
+   },
+   {
+    "q": "What happens if I delete a segment?",
+    "a": "Its scores go with it. Income, expenses and tasks tagged to it stay, just untagged."
+   },
+   {
+    "q": "Why does my segment show the same score as my business?",
+    "a": "Not enough is tagged to it yet. Tag tasks, goals, income or sales activity to it, and it will be scored on its own activity."
+   }
+  ],
+  "related": [
+   "ai-assistant",
+   "ai-assistant-setup-and-your-key",
+   "team-access-limits"
+  ],
+  "who": "Everyone once the three assessments are finished. Team members need the Assessments & Alignment area, and a view-only member can look but not change anything.",
+  "keywords": [
+   "segment",
+   "segments",
+   "offering",
+   "brand",
+   "product line",
+   "multiple businesses",
+   "score by offer",
+   "income by service",
+   "tag income",
+   "profit by segment",
+   "auto tag",
+   "untagged"
+  ],
+  "sections": [
+   {
+    "id": "how-segment-scores-work",
+    "title": "How segment scores work",
+    "body": "Each segment starts from your business-wide score for every dimension, then moves with what is tied to it. A card tells you whether it is scored on its own activity or still on the business-wide score.",
+    "keywords": [
+     "12 dimensions",
+     "needs work",
+     "showing progress",
+     "business-wide score",
+     "dimension strip"
+    ]
+   },
+   {
+    "id": "suggest-tags",
+    "title": "Suggest tags",
+    "body": "Once you have a segment and untagged items, a panel shows how many are not tied to a segment. Your assistant suggests one for each item. Untick or change any of them, then press Apply.",
+    "keywords": [
+     "tie activity",
+     "auto tag",
+     "leave untagged",
+     "apply tags",
+     "confidence"
+    ]
+   },
+   {
+    "id": "read-my-segments",
+    "title": "Read my segments",
+    "body": "Press Read my segments and your assistant compares your businesses and segments, then gives you a focus, what to watch and next steps.",
+    "keywords": [
+     "segment read",
+     "compare",
+     "focus",
+     "next steps"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "ai-assistant",
+  "name": "AI Assistant",
+  "area": "Settings",
+  "where": "Executive Home > AI Assistant card. Set it up in Settings > AI Assistant.",
+  "href": "/",
+  "what": "Chat with your own named assistant. It answers from your assessments, scores, pillars, tasks, income, SOPs, plans and your next 7 days of calendar, plus the Help library and what you have taught it. It can also prepare changes for you.",
+  "ai": "AI-powered",
+  "aiNote": "This runs on your own AI key. It answers straight away, and anything that would change your account waits behind Approve. Emails it writes are saved as drafts: it never sends or schedules a broadcast or campaign. The microphone and speaker use your browser's own speech tools, so they need no key.",
+  "steps": [
+   "Add your AI key in Settings > AI Assistant if you have not yet. Until then the assistant stays offline.",
+   "Open Executive Home and type in the AI Assistant box. Enter sends, and Shift+Enter adds a line.",
+   "Or press the microphone and speak your question. Press the speaker to have replies read aloud.",
+   "When it prepares a change, read the card and press Approve, Edit or Cancel.",
+   "Press New conversation to start fresh. The old one is saved under Past conversations.",
+   "Press Teach to tell it about you, your team and how you work."
+  ],
+  "health": "Chatting does not change your scores. Your assistant reads your 12 dimensions, 8 pillars, scores and plans so its answers fit your business. It can also write plan sections for you, behind Approve.",
+  "tips": [
+   "With the speaker on, a spoken question is sent when you pause, so it works like a conversation.",
+   "Your assistant is also in the floating button in the corner of every page, on the tab with its name.",
+   "Ask for your top priorities or your easiest tasks, and it ranks your open tasks for you."
+  ],
+  "questions": [
+   {
+    "q": "Why can't I open my assistant yet?",
+    "a": "It stays closed until your three assessments are finished. It opens on its own when the third one is done."
+   },
+   {
+    "q": "Does it forget me when I start a new conversation?",
+    "a": "No. It still knows your account, your notes and your settings. Only the chat on the card starts fresh."
+   },
+   {
+    "q": "Can it see my private answers?",
+    "a": "Answers flagged as sensitive are never included, and your logins vault is never available to it."
+   }
+  ],
+  "related": [
+   "ai-assistant-setup-and-your-key",
+   "what-your-assistant-can-do-for-you",
+   "what-your-assistant-will-and-will-not-do",
+   "pop-out-assistant",
+   "have-my-assistant-work-on-this"
+  ],
+  "who": "Everyone once the three assessments are finished. Team members use the account owner's AI key and only within their areas, the owner can set a monthly limit for each one, and some limited team roles do not get the assistant.",
+  "keywords": [
    "chat",
    "ask",
-   "guidance",
-   "suggested focus",
-   "what should i focus on",
-   "my score",
-   "advice",
-   "business coach chat"
+   "sidekick",
+   "assistant name",
+   "voice",
+   "microphone",
+   "read aloud",
+   "past conversations",
+   "new conversation",
+   "teach",
+   "thumbs",
+   "ai key",
+   "what do you know about me"
+  ],
+  "sections": [
+   {
+    "id": "assistant-chat",
+    "title": "The chat",
+    "body": "The conversation stays on the card with the newest message first. It is the same conversation in the pop-out window and the floating button.",
+    "keywords": [
+     "conversation",
+     "newest first",
+     "card",
+     "executive home"
+    ]
+   },
+   {
+    "id": "assistant-voice",
+    "title": "Voice",
+    "body": "Press the microphone to speak a question, and the speaker to hear replies. Voice works in Chrome, Edge and Safari, at no extra cost and with no key.",
+    "keywords": [
+     "speak",
+     "microphone",
+     "speaker",
+     "read aloud",
+     "chrome",
+     "safari"
+    ]
+   },
+   {
+    "id": "past-conversations",
+    "title": "Past conversations",
+    "body": "New conversation saves the current chat under Past conversations, where you can read it, continue it or delete it.",
+    "keywords": [
+     "history",
+     "old chats",
+     "continue",
+     "delete conversation"
+    ]
+   },
+   {
+    "id": "assistant-answer-ratings",
+    "title": "Rating an answer",
+    "body": "Use the thumbs up or down under an answer. Thumbs down asks for an optional note. Your rating is saved with the question and answer, and LifeCharter uses it to improve the assistant.",
+    "keywords": [
+     "thumbs up",
+     "thumbs down",
+     "feedback",
+     "wrong answer",
+     "note"
+    ]
+   }
   ]
  },
  {
-  "id": "go-deeper-questionnaires",
-  "name": "Go deeper questionnaires",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Operations, in the Go deeper link on each pillar card",
-  "href": "/operations",
-  "what": "A short set of questions for each of your 8 pillars, about how that part of your business runs today. Each pillar has five or six questions. Answer what you can and skip what does not apply.",
+  "id": "accepting-a-team-invitation",
+  "name": "Accepting a team invitation",
+  "area": "Settings",
+  "where": "Your invitation email",
+  "href": "/login",
+  "what": "How you join an account as a team member. You open your invitation email, set a password, and you are signed in.",
   "ai": "No AI",
-  "aiNote": "The questions do not use AI. Your AI Operations Insights card on the Operations page reads your answers, including what you type in the open questions, when it writes insights. That card uses your own AI key.",
+  "aiNote": "",
   "steps": [
-   "Open Operations from the left menu.",
-   "On a pillar card, press Go deeper.",
-   "Answer the questions that fit your business.",
-   "Press Save answers.",
-   "Press Back to Operations and check that pillar's score."
+   "Open the email from LifeCharter Command Suite called You're invited to join, followed by the team's name.",
+   "Press Set your password. If you already have a LifeCharter login with this email, the button says Sign in to Command Suite, so use your usual password.",
+   "Type a new password of at least 8 characters, then type it again to confirm.",
+   "Press Set password & sign in. The Command Suite opens."
   ],
-  "health": "Your choice answers are scored into that pillar, and the 8 pillars feed your Operations dimension and your overall score. Open-text answers are not scored. They help your AI insights.",
+  "health": "This does not change anyone's scores. It gives you your own login to the account you were invited to.",
   "tips": [
-   "A pillar that says Not scored yet can often be brought in by answering its Go deeper questions.",
-   "For Where do new clients come from today, more than one channel scores higher.",
-   "Three of the pillars link to the plan where you plan that area."
+   "The link works once and expires in 7 days.",
+   "Questions about your role? Reply to the email to reach the person who added you."
   ],
   "questions": [
    {
-    "q": "Do I have to answer every question?",
-    "a": "No. Answer what you can and skip what does not apply. The card shows how many you have answered."
+    "q": "My link says it has expired or isn't valid. What now?",
+    "a": "Invitation links are single-use and time-limited. Ask whoever invited you to send a fresh one."
    },
    {
-    "q": "Can I change my answers later?",
-    "a": "Yes. Open Go deeper again, change them and press Save answers."
+    "q": "What will I be able to see?",
+    "a": "That depends on the role and areas the account owner gave you. Your invitation email says what your role can do."
    },
    {
-    "q": "Why did my score not change after I typed a long answer?",
-    "a": "Open-text answers are not scored. They shape your AI insights. Choice answers are what move the score."
+    "q": "The email never arrived. What can I do?",
+    "a": "Ask the person who invited you to press Send invitation again, or to copy your link and send it to you themselves."
    }
   ],
   "related": [
-   "operations",
-   "how-your-scores-work",
-   "playbook-sops",
-   "marketing-plan",
-   "sales-plan"
+   "workspace-and-team",
+   "team-access-limits",
+   "profile",
+   "security"
   ],
-  "who": "Everyone. Team members need the Operations & SOPs area.",
+  "who": "Invited team members. The account owner or a team admin sends the invitation.",
   "keywords": [
-   "go deeper",
-   "pillar questions",
-   "8 pillars",
-   "operations questions",
-   "not scored yet",
-   "pillar score",
-   "questionnaire",
-   "save answers",
-   "operations insights",
-   "customer acquisition",
-   "referral process",
-   "onboarding"
+   "invite",
+   "invitation",
+   "join team",
+   "set password",
+   "team member login",
+   "invite expired",
+   "link not working",
+   "accept invite",
+   "no email"
   ],
   "sections": [
    {
-    "id": "what-is-scored",
-    "title": "What is scored",
-    "body": "Choice answers each carry a score, and the pillar's Go deeper score is their average. The channel and asking questions score on how many you pick. Open-text answers are not scored.",
+    "id": "set-your-password",
+    "title": "Setting your password",
+    "body": "The link opens a page with your name and email. Choose a password of at least 8 characters and press Set password & sign in.",
     "keywords": [
-     "scored",
-     "choice answers",
-     "breadth",
-     "open text"
+     "accept invite",
+     "new password",
+     "8 characters",
+     "confirm password"
+    ]
+   },
+   {
+    "id": "team-invitation-email",
+    "title": "The invitation email",
+    "body": "The owner or an admin presses Send invitation beside your name in Settings > Workspace. The email comes from LifeCharter Command Suite, and replies go to the person who added you. If there is no reply address on file, they go to support.",
+    "keywords": [
+     "invitation email",
+     "support@lccommandsuite.com",
+     "send invitation",
+     "resend invite",
+     "reply"
     ]
    }
   ]
  },
  {
-  "id": "command-shift-answers",
-  "name": "Command Shift answers",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Alignment Profile > Command Shift card. It shows only if you did the 21-Day Challenge.",
-  "href": "/assessments/command-shift",
-  "what": "The answers you wrote during The Command Shift 21-Day Challenge, such as your mission line, True North, core offer, brand voice and positioning. Bring them into your Suite once, then read and edit them here. Your assistant and your plan drafts build on them.",
+  "id": "who-has-opened-my-account",
+  "name": "Who has opened my account",
+  "area": "Settings",
+  "where": "Settings > Security, at the bottom",
+  "href": "/settings?tab=security",
+  "what": "A list of each time LifeCharter support opened your account read-only to help with a request, with the date and time.",
   "ai": "No AI",
-  "aiNote": "This page does not use AI. Your assistant reads these answers when it helps you and when it drafts your plans.",
+  "aiNote": "",
   "steps": [
-   "On Alignment Profile, find the Command Shift card.",
-   "Press Bring in my Command Shift work, or Bring it in on the Executive Home banner.",
-   "Read your answers on the Your Command Shift page, each marked with its Challenge day.",
-   "Change anything that has grown since, then press Save under that answer.",
-   "To come back later, press View and edit on the Command Shift card."
+   "Open Settings from the left menu.",
+   "Choose Security.",
+   "Scroll to Who has opened my account at the bottom.",
+   "Read the list. Each line shows the date and time. If it has never happened, it says No one has opened your account."
   ],
-  "health": "This does not change your scores. It helps by giving your assistant and your plans your own words to start from.",
+  "health": "This does not change your scores. It shows you when support has been in your account.",
   "tips": [
-   "This page opens once your Brain, Soul and Profit assessments are finished.",
-   "Empty Marketing Plan sections for positioning, core offer and brand voice start from what you wrote.",
-   "Save works one answer at a time, so press it before moving on."
+   "Support can look, but cannot change, send or delete anything.",
+   "Support cannot see your inbox, calendar, connected accounts, logins vault or billing.",
+   "The list shows your 20 most recent times."
   ],
   "questions": [
    {
-    "q": "I do not see the Command Shift card. Why?",
-    "a": "It shows only for people who did the 21-Day Challenge and have answers to bring in."
+    "q": "Why would support open my account?",
+    "a": "To help with a support request. Every time it happens is listed here."
    },
    {
-    "q": "Will bringing it in overwrite my Marketing Plan?",
-    "a": "No. It only fills sections that are empty. Nothing you already wrote is replaced."
-   },
-   {
-    "q": "If I edit an answer here, does my Marketing Plan change?",
-    "a": "No. Your edit saves here. Change the plan on the Marketing Plan page."
+    "q": "Does the list say why they opened it?",
+    "a": "It shows the date and time only. If a date surprises you, open Help, then Contact Support."
    }
   ],
   "related": [
-   "alignment-profile",
-   "marketing-plan",
-   "planning-hub",
-   "brain-profile",
-   "soul-profile"
+   "security",
+   "data-privacy",
+   "logins-passwords"
   ],
-  "who": "Everyone who did the 21-Day Challenge. Team members need the Assessments & Alignment area.",
+  "who": "The account owner.",
   "keywords": [
-   "command shift",
-   "21 day challenge",
-   "challenge answers",
-   "bring it in",
-   "import challenge",
-   "mission line",
-   "true north",
-   "brand voice",
-   "positioning",
-   "core offer",
-   "edit my answers"
+   "support access",
+   "who logged in",
+   "account access log",
+   "read-only",
+   "view my account",
+   "privacy",
+   "did someone open my account"
+  ]
+ },
+ {
+  "id": "if-a-payment-fails",
+  "name": "If a payment fails",
+  "area": "Settings",
+  "where": "The bell, then Settings > Billing",
+  "href": "/settings?tab=billing",
+  "what": "What to do when a renewal payment for your plan does not go through. The bell tells you, and you update your card in Settings > Billing.",
+  "ai": "No AI",
+  "aiNote": "",
+  "steps": [
+   "Look in the bell for Your last payment didn't go through.",
+   "Open Settings from the left menu and choose Billing.",
+   "Press Manage billing.",
+   "Update your card on the billing page that opens.",
+   "Come back to the Suite. The alert clears once a payment goes through."
+  ],
+  "health": "This does not change your scores. It keeps your plan running.",
+  "tips": [
+   "Update your card as soon as you see the alert, so your plan keeps running without interruption.",
+   "Need a hand? Open Help, then Contact Support."
+  ],
+  "questions": [
+   {
+    "q": "Who can update the card?",
+    "a": "Only the account owner. Billing is closed to team members."
+   },
+   {
+    "q": "Why is the alert still in my bell?",
+    "a": "It stays until a payment goes through. If you have updated your card and it is still there, open Help, then Contact Support."
+   }
+  ],
+  "related": [
+   "billing-and-plan",
+   "notifications"
+  ],
+  "who": "The account owner.",
+  "keywords": [
+   "payment failed",
+   "card declined",
+   "past due",
+   "update card",
+   "expired card",
+   "billing problem",
+   "payment didn't go through",
+   "manage billing",
+   "renewal"
+  ]
+ },
+ {
+  "id": "what-your-assistant-can-do-for-you",
+  "name": "What your assistant can do for you",
+  "area": "Settings",
+  "where": "Any assistant chat, plus Daily Operations > Waiting for my approval",
+  "href": "/assistant-approvals",
+  "what": "Ask in plain words and your assistant prepares the change as a card for you to check. Nothing happens until you press Approve, and most actions have Undo.",
+  "ai": "AI-powered",
+  "aiNote": "This uses your own AI key. Anything that changes your account waits behind Approve. Broadcasts and email campaigns are saved as drafts: your assistant never sends or schedules them. Two things do send email once you approve them, and the card says so: starting named people on an existing campaign, and an invoice, which Stripe emails.",
+  "steps": [
+   "Ask in the chat, for example add a task or draft a broadcast to my newsletter tag.",
+   "Read the card it prepares. Press its link if you want to see where the work will land.",
+   "Press Approve, or Edit to say what to change, or Cancel.",
+   "If you are not ready, open Waiting for my approval from the left menu. Every card waits there with its own buttons.",
+   "After you approve, press Undo if you change your mind and the card offers it."
+  ],
+  "health": "This does not change your scores. It can write or revise your Business, Marketing, Sales and Forecasting plan sections from your assessments, one section at a time behind Approve.",
+  "tips": [
+   "Be specific. Name the contact, tag, form or page you mean, and it can find the right one.",
+   "Settings > AI Assistant > What your assistant has done lists what it prepared and how each one turned out.",
+   "A card that renames something shows the old name and the new name."
+  ],
+  "questions": [
+   {
+    "q": "Can my assistant email people on its own?",
+    "a": "No. It saves broadcasts and campaigns as drafts for you to review and schedule. Email only goes out from it if you press Approve on a card that says so, such as starting named people on a campaign."
+   },
+   {
+    "q": "Can I undo everything?",
+    "a": "Most things. You cannot undo starting people on a campaign, because email 1 goes right away and cannot be unsent. Adding a contact and sending a problem to support have no Undo either."
+   },
+   {
+    "q": "Why does it say it can't do something?",
+    "a": "It only works in your own account, and a team member is limited by their role. Some things stay with you, such as publishing a page or sending an agreement for signature."
+   }
+  ],
+  "related": [
+   "ai-assistant",
+   "what-your-assistant-will-and-will-not-do",
+   "have-my-assistant-work-on-this",
+   "ai-assistant-setup-and-your-key",
+   "team-access-limits"
+  ],
+  "who": "Everyone once the three assessments are finished. Team members can only prepare and approve work inside the areas they have.",
+  "keywords": [
+   "approve",
+   "preview",
+   "undo",
+   "edit card",
+   "what can my assistant do",
+   "draft",
+   "waiting for my approval",
+   "actions",
+   "tools",
+   "add a task",
+   "tag contacts",
+   "draft email",
+   "can it send"
   ],
   "sections": [
    {
-    "id": "command-shift-import",
-    "title": "Bring it in",
-    "body": "A banner on Executive Home and the Command Shift card both copy your Challenge answers into your Suite. The banner leaves once they are in. It is safe to press again, because it only adds what is missing.",
+    "id": "contacts-tasks-sales",
+    "title": "Contacts, tasks and sales",
+    "body": "Tag or untag contacts and add a contact. Create and change tasks and reminders. Create an outreach pipeline, add and move people, and add a Sales Pipeline deal.",
     "keywords": [
-     "bring it in",
-     "import",
-     "banner",
-     "executive home",
-     "bring in my command shift work"
+     "tag",
+     "contact",
+     "task",
+     "reminder",
+     "outreach",
+     "pipeline",
+     "deal"
+    ]
+   },
+   {
+    "id": "email-and-content",
+    "title": "Email and content drafts",
+    "body": "Write a broadcast or email campaign as a draft. Write social posts or a content plan onto your Content Calendar. Create, update and delete pages in your left menu.",
+    "keywords": [
+     "broadcast",
+     "campaign",
+     "draft",
+     "social posts",
+     "content calendar",
+     "my pages"
+    ]
+   },
+   {
+    "id": "starting-a-campaign",
+    "title": "Starting people on a campaign",
+    "body": "It can start named people on one of your existing email campaigns, up to 20 per approval. The card lists who, what is sent and when, and who is left out. On Approve, email 1 goes right away and cannot be unsent.",
+    "keywords": [
+     "enroll",
+     "start campaign",
+     "email 1",
+     "20 people",
+     "unsent"
+    ]
+   },
+   {
+    "id": "forms-bookings-sops",
+    "title": "Forms, booking links, fields and SOPs",
+    "body": "Create or change a form, booking link, extra contact field or SOP. When it changes one, the card shows before and after, and Undo restores it.",
+    "keywords": [
+     "form",
+     "booking link",
+     "custom field",
+     "sop",
+     "before and after"
+    ]
+   },
+   {
+    "id": "offers-money-payments",
+    "title": "Offers, money and payments",
+    "body": "Add or change offers, record income or expense entries, prepare an invoice or a payment link, and read how your year is going. It can also show who likely needs a 1099-NEC, as a guide for your accountant and not tax advice.",
+    "keywords": [
+     "offer",
+     "income",
+     "expense",
+     "invoice",
+     "payment link",
+     "year so far",
+     "1099"
+    ]
+   },
+   {
+    "id": "plans-and-projects",
+    "title": "Plans and projects",
+    "body": "Write or revise plan sections, create a project from a template or blank, and add tasks to a project.",
+    "keywords": [
+     "business plan",
+     "marketing plan",
+     "sales plan",
+     "forecast",
+     "project",
+     "template"
+    ]
+   },
+   {
+    "id": "courses-away-landing-pages",
+    "title": "Courses, away dates and landing pages",
+    "body": "Start a course, membership or group program with lessons drafted, with no members and no email. Report course progress. Set or clear away dates. Draft a landing page, which stays a draft until you publish it, and report its visits and conversions.",
+    "keywords": [
+     "course",
+     "membership",
+     "group program",
+     "lessons",
+     "out of office",
+     "landing page"
+    ]
+   },
+   {
+    "id": "events-time-portals-care",
+    "title": "Events, time, client portals and Client Care",
+    "body": "Report on events and draft one, which stays closed until you press Open sign-ups. Summarize your time and add time you worked. Check a client's portal and add homework or a goal. Report on Client Care. Add a contact to a course or program with no email sent.",
+    "keywords": [
+     "event",
+     "challenge",
+     "time tracking",
+     "client portal",
+     "homework",
+     "client care",
+     "program member"
+    ]
+   },
+   {
+    "id": "agreements",
+    "title": "Agreements and proposals",
+    "body": "Show who has signed, and draft an agreement or proposal in LC Plume with its signers. You read it and press Send for signature yourself.",
+    "keywords": [
+     "agreement",
+     "proposal",
+     "lc plume",
+     "signature",
+     "draft"
+    ]
+   },
+   {
+    "id": "what-stays-with-you",
+    "title": "What stays with you",
+    "body": "Your assistant cannot publish a page, open an event for sign-ups, email a portal link, switch on Client Care, email course members, send an agreement for signature, or read a receipt photo in the chat.",
+    "keywords": [
+     "can't do",
+     "cannot",
+     "publish",
+     "receipt photo",
+     "limits"
+    ]
+   },
+   {
+    "id": "report-a-problem",
+    "title": "Reporting a problem",
+    "body": "Tell it something is broken and it writes the problem up for LifeCharter support. You approve it first, and you get a confirmation email.",
+    "keywords": [
+     "bug",
+     "broken",
+     "report problem",
+     "support"
     ]
    }
   ]
  },
  {
-  "id": "sop-template-library",
-  "name": "SOP template library",
-  "area": "Alignment & Systems",
-  "where": "Alignment & Systems > Playbook & SOPs, Template library button",
-  "href": "/operations/sops",
-  "what": "Fifty ready-made SOPs across your 8 pillars, already in your account as drafts you can edit. Each one opens as a tick-box checklist with section headers. Make them fit your business, approve them and they go into use. If you delete one, you can add it back from Template library.",
-  "ai": "Has an AI button",
-  "aiNote": "In the editor, Have your assistant work on this SOP can fit it to your business, fill in the [placeholders] it knows, add section headers, shorten it, add what to prepare first, or follow what you type. It uses your own AI key. The result lands in the editor and nothing saves until you press Save SOP. In chat, your assistant can add a template or change an SOP, and that waits behind Approve. The library itself does not use AI.",
+  "id": "pop-out-assistant",
+  "name": "Pop-out assistant",
+  "area": "Settings",
+  "where": "Executive Home > AI Assistant card > Pop out",
+  "href": "/",
+  "what": "Floats your assistant over any page, so you can work and ask for help side by side. It knows which page you are on, and it is the same conversation as the card.",
+  "ai": "AI-powered",
+  "aiNote": "This is the same assistant on your own AI key. Anything that changes your account still waits behind Approve.",
   "steps": [
-   "Open Playbook & SOPs from the left menu. Your template drafts are listed by pillar.",
-   "Press a card to read it as a checklist.",
-   "Press Edit to change the wording and fill in the [bracketed placeholders], then press Save SOP.",
-   "Press Approve to put it in use.",
-   "To add a template back, press Template library, then Add to my SOPs."
+   "Open Executive Home and press Pop out on the AI Assistant card.",
+   "Move to any page. The window stays with you.",
+   "Drag it by its title bar, and resize it from the corner.",
+   "Press the minimize button to shrink it to a small button with your assistant's name. Press that button to open it again.",
+   "Press Bring back to Executive Home when you are done."
   ],
-  "health": "Drafts do not change your scores. Once you approve an SOP it counts as in use, which feeds your Systems dimension and the matching pillars on Operations. An archived SOP stops counting.",
+  "health": "This does not change your scores. It keeps help beside the work you are doing.",
   "tips": [
-   "Start with the process you explain most often, not all fifty.",
-   "Use Make a copy to adapt one for a different situation.",
-   "Editing an approved SOP shows Edited since approved until you approve it again."
+   "Ask about the page you are on. The box says which page your assistant is looking at.",
+   "Your assistant stays popped out and in the same spot on this device, even after you close the page."
   ],
   "questions": [
    {
-    "q": "Do the templates count before I change them?",
-    "a": "No. A template draft counts only once you approve it."
+    "q": "Is this a different conversation?",
+    "a": "No. It reads the same saved conversation as the card, and it has the same Approve cards, New conversation and Past conversations."
    },
    {
-    "q": "Are the ticks saved?",
-    "a": "Yes. Ticks are saved on the SOP, so everyone running it sees the same list. Ticking never counts as an edit."
-   },
-   {
-    "q": "How do I add a section header?",
-    "a": "In the editor, press Add a section header. Any step line that starts with ## becomes a header."
+    "q": "Where did the card on Executive Home go?",
+    "a": "While your assistant is popped out, the card offers a button to bring it back."
    }
   ],
   "related": [
-   "playbook-sops",
-   "operations",
-   "go-deeper-questionnaires",
-   "tasks",
-   "how-your-scores-work"
+   "ai-assistant",
+   "have-my-assistant-work-on-this",
+   "what-your-assistant-can-do-for-you"
   ],
-  "who": "Everyone. Team members need the Operations & SOPs area.",
+  "who": "Everyone once the three assessments are finished. Team members need the assistant in their areas.",
   "keywords": [
-   "sop templates",
-   "template library",
-   "50 templates",
-   "sop",
-   "checklist",
-   "ready-made sops",
-   "playbook",
-   "tick box",
-   "section header",
-   "start a fresh run",
-   "add to my sops",
-   "process",
-   "procedures"
+   "pop out",
+   "floating assistant",
+   "float",
+   "side by side",
+   "minimize",
+   "resize",
+   "move assistant",
+   "bring back"
+  ]
+ },
+ {
+  "id": "have-my-assistant-work-on-this",
+  "name": "Have my assistant work on this",
+  "area": "Settings",
+  "where": "Daily Operations > Tasks and Reminders, on each open task or reminder",
+  "href": "/tasks",
+  "what": "One button that hands a task or reminder to your assistant. It reads the whole item, checks what it can, prepares what it can, and reports back.",
+  "ai": "AI-powered",
+  "aiNote": "This uses your own AI key. Anything it prepares waits for your Approve. Only its report saves on its own, as a note on the item, and you can Undo that. It never sends anything without you. The one time email goes out is if you approve starting named people on a campaign.",
+  "steps": [
+   "Open Tasks or Reminders from the left menu.",
+   "Press Have my assistant work on this on the item.",
+   "Your assistant opens in its floating window and starts work. You can keep working.",
+   "Review each card it prepares, and press Approve, Edit or Cancel.",
+   "Read the report. Press See report on a task, or See the assistant's report on a reminder.",
+   "Open Waiting for my approval to work through your next steps."
+  ],
+  "health": "The button itself does not change your scores. A task you finish still counts toward task follow-through in the usual way.",
+  "tips": [
+   "Put the details in the task's notes or the reminder's note first. Your assistant reads all of it.",
+   "When an item is finished, it prepares one to three follow-ups as separate cards, or asks one short question."
+  ],
+  "questions": [
+   {
+    "q": "Can it tell who replied to my DMs?",
+    "a": "Only from your Outreach Pipelines. It cannot read LinkedIn, Instagram, Facebook or WhatsApp, so a reply only shows once you have moved that person to a reply stage."
+   },
+   {
+    "q": "Can it check replies to my email campaign?",
+    "a": "Yes, if a Microsoft 365 inbox is connected. It cannot read a Gmail account."
+   },
+   {
+    "q": "Do I have to approve the report?",
+    "a": "No. The report saves itself as a note on the item. What needs you is the checklist inside it and any cards it prepared."
+   }
+  ],
+  "related": [
+   "what-your-assistant-can-do-for-you",
+   "pop-out-assistant",
+   "ai-assistant",
+   "ai-assistant-setup-and-your-key"
+  ],
+  "who": "Everyone once the three assessments are finished. Team members need the assistant in their areas, and a team member in the Sales role does not get the button on tasks.",
+  "keywords": [
+   "work on this",
+   "assistant report",
+   "see report",
+   "task help",
+   "reminder help",
+   "delegate to assistant",
+   "follow up tasks",
+   "check outreach",
+   "check campaign",
+   "next steps"
   ],
   "sections": [
    {
-    "id": "add-templates",
-    "title": "Template library",
-    "body": "Search the list by pillar. Press Add to my SOPs for one, or Add all that are not in my SOPs yet. A template you already have shows In your SOPs.",
+    "id": "the-report",
+    "title": "The report",
+    "body": "The report is saved on the task or reminder. It sums up where things stand, shows the key numbers, what was done, and any cards still waiting. Each next step is marked Suite, Assistant, You, or You + assistant.",
     "keywords": [
-     "template library",
-     "add to my sops",
-     "add all",
-     "search templates",
-     "in your sops"
+     "report card",
+     "summary",
+     "key numbers",
+     "next steps",
+     "checklist"
     ]
    },
    {
-    "id": "sop-checklist",
-    "title": "Running an SOP as a checklist",
-    "body": "Each step has a tick box and its first sentence is bold. A bar shows how many are done. Press Start a fresh run to clear the ticks for next time.",
+    "id": "outreach-check",
+    "title": "Checking your outreach",
+    "body": "It can report messages logged as sent, first messages and follow-ups, how many people are in each stage, and who is waiting for a follow-up. Name a date range to look at one batch.",
     "keywords": [
-     "checklist",
-     "tick box",
-     "progress bar",
-     "start a fresh run",
-     "clear ticks"
+     "dms",
+     "outreach pipelines",
+     "batch",
+     "follow-up",
+     "messages sent"
     ]
    },
    {
-    "id": "sop-editor",
-    "title": "Editing a template",
-    "body": "In the editor you can change any step, move steps up or down, remove them, and use Add a step or Add a section header. Make a copy saves a new draft to adapt.",
+    "id": "email-campaign-check",
+    "title": "Checking your email campaigns",
+    "body": "It can show who was sent which email and when each person's next email is due. If you ask it to start named people on a campaign, the card lists who and what. On Approve, email 1 goes right away and cannot be unsent.",
     "keywords": [
-     "edit sop",
-     "move step",
-     "reorder",
-     "make a copy",
-     "add a step"
+     "campaign",
+     "who was sent",
+     "next email",
+     "replies",
+     "microsoft 365",
+     "enroll"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "what-your-assistant-will-and-will-not-do",
+  "name": "What your assistant will and will not do",
+  "area": "Settings",
+  "where": "Behind every assistant answer",
+  "href": "/",
+  "what": "The rules every client's assistant follows, whatever your own instructions say. Your instructions can change its tone and length, but never these rules.",
+  "ai": "AI-powered",
+  "aiNote": "These rules sit behind your assistant on your own AI key. If a message suggests serious distress, the caring reply below comes straight away, even with no AI key.",
+  "steps": [
+   "Ask your assistant as you normally would. The rules are always on, so there is nothing to switch on.",
+   "To change its tone, length or focus, open Settings > AI Assistant and fill in How should it reply.",
+   "If it cannot do something, it will say so and point you to Help, then Contact Support.",
+   "If an answer is off, press thumbs down under it and add a note."
+  ],
+  "health": "This does not change your scores. It keeps your assistant honest, private and careful with you.",
+  "tips": [
+   "Your assistant uses only your own information and never mentions other clients.",
+   "If it says it did something, a tool really did it. Anything that sends, publishes or changes data waits for your Approve."
+  ],
+  "questions": [
+   {
+    "q": "Will it give me legal, tax or medical advice?",
+    "a": "It shares general information only, says it is not professional advice, and suggests you check with a qualified professional."
+   },
+   {
+    "q": "Does the LifeCharter team read what I wrote?",
+    "a": "The alert the team gets never includes what you wrote. It only says someone should reach out."
+   },
+   {
+    "q": "Can I turn these rules off?",
+    "a": "No. They apply to every assistant, on top of your own instructions."
+   }
+  ],
+  "related": [
+   "ai-assistant",
+   "what-your-assistant-can-do-for-you",
+   "ai-assistant-setup-and-your-key",
+   "data-privacy"
+  ],
+  "who": "Every client's assistant, all the time.",
+  "keywords": [
+   "rules",
+   "house rules",
+   "will not do",
+   "refuse",
+   "limits",
+   "privacy",
+   "legal advice",
+   "tax advice",
+   "fake testimonials",
+   "guarantee",
+   "crisis",
+   "988",
+   "safety"
+  ],
+  "sections": [
+   {
+    "id": "house-rules",
+    "title": "The house rules",
+    "body": "Your assistant will not quote prices for LifeCharter's own services, promise results, income or timelines, or invent features. It uses only your own information, keeps your private details private, and declines fake testimonials, invented results and fear-based marketing.",
+    "keywords": [
+     "honesty",
+     "no invented features",
+     "own account only",
+     "promises",
+     "testimonials",
+     "pricing question"
+    ]
+   },
+   {
+    "id": "if-you-are-struggling",
+    "title": "If you are having a hard time",
+    "body": "If a message suggests serious distress, your assistant stops coaching and replies with care and crisis resources: call or text 988 in the US, call 911 in immediate danger, or visit findahelpline.com. A person on the LifeCharter team is told, so they can check in.",
+    "keywords": [
+     "distress",
+     "crisis",
+     "988",
+     "911",
+     "help line",
+     "check in"
+    ]
+   },
+   {
+    "id": "hardship-and-frustration",
+    "title": "Money worries and frustration",
+    "body": "If you mention financial hardship, it never suggests spending or debt, and offers free, low-effort next steps. If you are frustrated with the Suite, it fixes what it can and points you to support. In both cases the LifeCharter team is told, so a real person can follow up.",
+    "keywords": [
+     "hardship",
+     "can't pay",
+     "frustrated",
+     "support",
+     "real person"
+    ]
+   },
+   {
+    "id": "quiet-accounts",
+    "title": "If you have been away",
+    "body": "A daily check lets the LifeCharter team know when someone has not signed in for two weeks, so a person can reach out.",
+    "keywords": [
+     "not signed in",
+     "two weeks",
+     "inactive",
+     "check in"
     ]
    }
   ]

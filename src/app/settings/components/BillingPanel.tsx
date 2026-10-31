@@ -353,8 +353,7 @@ export default function BillingPanel() {
       </div>
 
       <p className="text-xs text-[#b8a898]">
-        Self-serve checkout and invoices are being finalized. For now, plan changes are handled directly — reach out
-        and we&apos;ll get you set up.
+        Questions about your plan? Reach out and we&apos;ll help.
       </p>
     </div>
   );
