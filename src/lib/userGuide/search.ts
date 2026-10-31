@@ -63,7 +63,7 @@ export function searchGuide(query: string, entries: GuideEntry[], limit = 8): Gu
     const sectionScore = new Map<string, number>();
     for (const term of asked) {
       const inName = wordMatch(term, name) * 12;
-      const inKeywords = wordMatch(term, keywords) * 6;
+      const inKeywords = wordMatch(term, keywords) * 9;
       const inBody = wordMatch(term, body) * 2;
       let inSection = 0;
       for (const { s, words } of sections) {
