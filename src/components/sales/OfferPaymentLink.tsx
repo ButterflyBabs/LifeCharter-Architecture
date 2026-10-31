@@ -8,12 +8,15 @@ export type PayLink = { offer_id: string; url: string; kind: string; amount: num
 export type PayLinks = { connected: boolean; salesTax?: boolean; taxWord?: string; livemode: boolean | null; links: Record<string, PayLink>; plans: Record<string, { ok: boolean; text: string }> };
 
 // One offer's payment link, made on the client's OWN Stripe account: create it, copy it, open it, or turn it off.
-export default function OfferPaymentLink({ offerId, data, onChange }: { offerId: string; data: PayLinks; onChange: () => void }) {
+export default function OfferPaymentLink({ offerId, data, onChange, existingLink }: { offerId: string; data: PayLinks; onChange: () => void; existingLink?: string }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [copied, setCopied] = useState(false);
   const link = data.links[offerId];
   const plan = data.plans[offerId];
+  // A link the owner already saved on the offer (Stripe, Payhip, a sales page) counts: no prompt to make another unless they ask.
+  const [makeNew, setMakeNew] = useState(false);
+  const saved = !link && !makeNew ? (existingLink ?? "").trim() : "";
 
   async function post(body: Record<string, unknown>) {
     setBusy(true);
@@ -24,13 +27,13 @@ export default function OfferPaymentLink({ offerId, data, onChange }: { offerId:
     if (!r.ok) return setMsg(d.error || "That didn't work.");
     onChange();
   }
-  async function copy() {
+  async function copyText(url: string) {
     try {
-      await navigator.clipboard.writeText(link.url);
+      await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      setMsg(link.url);
+      setMsg(url);
     }
   }
 
@@ -42,7 +45,7 @@ export default function OfferPaymentLink({ offerId, data, onChange }: { offerId:
             <CreditCard className="h-3.5 w-3.5 text-[#635bff]" /> Payment link{!link.livemode && <span className="rounded bg-[#c9a227]/20 px-1.5 text-[10px] font-semibold text-[#8a6a15]">TEST</span>}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-3 text-xs">
-            <button onClick={() => void copy()} className="inline-flex items-center gap-1 font-semibold text-[#2E7C83] hover:underline">{copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}{copied ? "Copied" : "Copy link"}</button>
+            <button onClick={() => void copyText(link.url)} className="inline-flex items-center gap-1 font-semibold text-[#2E7C83] hover:underline">{copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}{copied ? "Copied" : "Copy link"}</button>
             <a href={link.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-[#2E7C83] hover:underline"><ExternalLink className="h-3 w-3" />Open</a>
             <button onClick={() => void post({})} disabled={busy} className="font-semibold text-[#2E7C83] hover:underline disabled:opacity-50" title="Make a fresh link with the offer's current price (the old one stops working)">Remake</button>
             <button onClick={() => void post({ action: "off" })} disabled={busy} className="font-semibold text-[#8a2f2f] hover:underline disabled:opacity-50">Turn off</button>
@@ -54,6 +57,13 @@ export default function OfferPaymentLink({ offerId, data, onChange }: { offerId:
             <p className="mt-1 text-[11px] text-[#8a6a15]">You now charge {data.taxWord || "GST/HST"}, but this link was made before and adds no tax. Press Remake to get a link that adds it.</p>
           ) : null}
         </>
+      ) : saved ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          <span className="inline-flex items-center gap-1 font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]"><CreditCard className="h-3.5 w-3.5 text-[#635bff]" /> Your link is saved on this offer</span>
+          <button onClick={() => void copyText(saved)} className="font-semibold text-[#2E7C83] hover:underline">{copied ? "Copied" : "Copy link"}</button>
+          <a href={saved} target="_blank" rel="noreferrer" className="font-semibold text-[#2E7C83] hover:underline">Open</a>
+          {data.connected && plan?.ok && <button onClick={() => setMakeNew(true)} className="text-[#7b6b8d] hover:underline">Make a new payment link instead</button>}
+        </div>
       ) : !data.connected ? (
         <p className="text-xs text-[#5b5f73] dark:text-[#b8a898]"><CreditCard className="mr-1 inline h-3.5 w-3.5 text-[#635bff]" />Take payment for this offer: <Link href="/settings?tab=integrations" className="font-semibold text-[#2E7C83] hover:underline">Connect with Stripe</Link> first.</p>
       ) : plan?.ok ? (

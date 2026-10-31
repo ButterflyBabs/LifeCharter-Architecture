@@ -4266,7 +4266,8 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "health": "A payment link does not change your scores on its own. Each payment adds income to your Finance records, and that income feeds your Finance dimension.",
     "tips": [
       "Your link does not follow a price change. Press Remake, and the old link stops working.",
-      "A TEST label beside Payment link means your Stripe connection is in test mode, so no real money moves."
+      "A TEST label beside Payment link means your Stripe connection is in test mode, so no real money moves.",
+      "If you already saved a link in Sales page or checkout link, the box shows it with Copy link and Open. Press Make a new payment link instead if you want one made here."
     ],
     "questions": [
       {

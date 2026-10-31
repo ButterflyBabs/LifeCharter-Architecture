@@ -293,7 +293,7 @@ export default function OffersPage() {
                   {o.deliverables.length > 4 && <li className="list-none text-[#7b6b8d]">+ {o.deliverables.length - 4} more</li>}
                 </ul>
               )}
-              {pay && <OfferPaymentLink offerId={o.id} data={pay} onChange={() => void loadPay()} />}
+              {pay && <OfferPaymentLink offerId={o.id} data={pay} onChange={() => void loadPay()} existingLink={o.link} />}
               <div className="mt-auto flex flex-wrap items-center gap-3 pt-4 text-sm">
                 {o.capacity !== null && <span className="inline-flex items-center gap-1 text-[#7b6b8d]"><Users className="h-3.5 w-3.5" /> {o.capacity} spots</span>}
                 {o.link && <a href={o.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[#2E7C83] hover:underline"><ExternalLink className="h-3.5 w-3.5" /> Sales page</a>}
