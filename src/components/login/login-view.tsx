@@ -4,7 +4,7 @@
 // wired to Supabase Auth (the app's existing browser client). If the account
 // has 2FA (TOTP), a second step requires the authenticator code before entry.
 import Image from "next/image";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { QuoteCarousel } from "./quote-carousel";
@@ -41,6 +41,16 @@ export function LoginView() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Someone whose time-limited access has ended is sent here with ?access=ended.
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).get("access") === "ended") {
+        setError("Your access to this Command Suite has ended. If you still need it, ask the person who invited you to turn it back on.");
+      }
+    } catch {
+      /* no message */
+    }
+  }, []);
 
   // 2FA step
   const [mfaStep, setMfaStep] = useState(false);

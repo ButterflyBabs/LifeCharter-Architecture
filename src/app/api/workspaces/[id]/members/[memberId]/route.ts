@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cleanExtras, cleanFeatureMap, PRESETS } from "@/lib/teamRoles";
+import { accessEndOf, cleanExpiryDate, cleanExtras, cleanFeatureMap, cleanTimeZone, memberAccessExpired, PRESETS, todayInZone, withAccessEnd } from "@/lib/teamRoles";
 import { createServerClient } from "@/lib/supabase/server";
 import { isSuperAdmin, resolveActor } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
@@ -33,6 +33,9 @@ function serialize(m: MemberRow, aiUsed = 0) {
     status: (m.status as string) || "active",
     avatar: m.avatar_url || null,
     joinedAt: m.joined_at || null,
+    // The last day of their access (null = no end date), and whether that day has passed.
+    accessEndsOn: accessEndOf(m.permissions)?.on ?? null,
+    accessEnded: memberAccessExpired(m.permissions),
     // Per-feature access (null = the role's defaults).
     access: m.permissions?.features ? { preset: m.permissions.preset ?? null, features: cleanFeatureMap(m.permissions.features), extras: cleanExtras(m.permissions.extras) } : null,
     // Monthly AI cap on the owner's key (null = no cap) and this month's use.
@@ -75,6 +78,9 @@ export async function PATCH(
 
   const body = await request.json().catch(() => ({}));
   const update: Record<string, unknown> = {};
+  const { data: cur } = await supabase.from("workspace_members").select("permissions").eq("id", params.memberId).maybeSingle();
+  const currentPermissions = (cur?.permissions as Record<string, unknown> | null) ?? {};
+  const currentEnd = accessEndOf(currentPermissions);
   if (typeof body.name === "string") update.name = body.name.trim();
   if (typeof body.role === "string" && ROLES.includes(body.role as Role)) {
     // Sales opens the owner's own sales page and contacts, so only the owner (super admin) may grant it.
@@ -86,13 +92,26 @@ export async function PATCH(
   if (typeof body.avatar === "string" || body.avatar === null) update.avatar_url = body.avatar || null;
   if (typeof body.status === "string") update.status = body.status;
   // Per-feature access: { preset, features } to narrow the member, or null for the role's defaults.
-  if (body.access === null) update.permissions = {};
+  // Changing what they can reach never changes or drops their last day of access; that has its own field below.
+  if (body.access === null) update.permissions = currentEnd ? withAccessEnd({}, currentEnd) : {};
   else if (body.access && typeof body.access === "object") {
     const features = cleanFeatureMap(body.access.features);
     if (!features) return NextResponse.json({ error: "Choose what they can reach." }, { status: 400 });
     const preset = PRESETS.some((p) => p.key === body.access.preset) ? body.access.preset : "custom";
     const extras = cleanExtras(body.access.extras);
-    update.permissions = { preset, features, ...(extras ? { extras } : {}) };
+    update.permissions = withAccessEnd({ preset, features, ...(extras ? { extras } : {}) }, currentEnd);
+  }
+  // The last day of access: a date (today or later, counted in the owner's own time zone), or null for no end date.
+  if ("accessEndsOn" in body) {
+    let end: { on: string; tz: string } | null = null;
+    if (body.accessEndsOn !== null && body.accessEndsOn !== "") {
+      const on = cleanExpiryDate(body.accessEndsOn);
+      const tz = cleanTimeZone(body.tz) ?? currentEnd?.tz ?? "America/Denver";
+      if (!on) return NextResponse.json({ error: "Choose a real date for the last day of access." }, { status: 400 });
+      if (on < todayInZone(tz)) return NextResponse.json({ error: "The last day of access can't be in the past." }, { status: 400 });
+      end = { on, tz };
+    }
+    update.permissions = withAccessEnd(update.permissions ?? currentPermissions, end);
   }
 
   // Monthly AI cap on the owner's key: a whole number of requests, or null for no cap.

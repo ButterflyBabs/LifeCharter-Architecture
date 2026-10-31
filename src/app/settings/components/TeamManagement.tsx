@@ -30,6 +30,7 @@ import MemberAccess from "./MemberAccess";
 import MemberAccessSummary from "./MemberAccessSummary";
 import TeamActivity from "./TeamActivity";
 import MemberAiCap from "./MemberAiCap";
+import MemberAccessEnd, { prettyDay } from "./MemberAccessEnd";
 import type { AccessExtras, FeatureMap } from "@/lib/teamRoles";
 
 type Role = "admin" | "editor" | "viewer" | "sales" | "consultant";
@@ -45,7 +46,18 @@ interface TeamMember {
   access?: { preset: string | null; features: FeatureMap; extras?: AccessExtras | null } | null;
   aiMonthlyCap?: number | null;
   aiUsedThisMonth?: number;
+  accessEndsOn?: string | null; // the last day of their access (YYYY-MM-DD), or null for no end date
+  accessEnded?: boolean; // that day has passed, so they can no longer sign in
 }
+
+// The owner's own time zone: the last day of access is counted in it.
+const browserZone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return undefined;
+  }
+};
 
 const PRESET_LABEL: Record<string, string> = { va: "Virtual assistant", bookkeeper: "Bookkeeper", sales: "Sales", content: "Content", viewer: "Viewer", team_ops: "Team: sales, content & support", support: "Support & client care", custom: "Custom access" };
 
@@ -119,7 +131,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
 
   const [isAdding, setIsAdding] = useState(false);
   const [adding, setAdding] = useState(false);
-  const [newMember, setNewMember] = useState({ email: "", name: "", role: "editor" as Role });
+  const [newMember, setNewMember] = useState({ email: "", name: "", role: "editor" as Role, accessEndsOn: "" });
 
   // The Sales role opens the owner's own sales page, so only the owner (super admin) can grant it.
   const [canGrantSales, setCanGrantSales] = useState(false);
@@ -200,12 +212,12 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
       const res = await fetch(`/api/workspaces/${workspaceId}/members`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newMember),
+        body: JSON.stringify({ ...newMember, accessEndsOn: newMember.accessEndsOn || null, tz: browserZone() }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.member) throw new Error(data?.error);
       setMembers((prev) => [...prev, data.member]);
-      setNewMember({ email: "", name: "", role: "editor" });
+      setNewMember({ email: "", name: "", role: "editor", accessEndsOn: "" });
       setIsAdding(false);
       // Send their invitation straight away.
       void handleCreateLogin(data.member.id);
@@ -253,6 +265,10 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
   };
 
   const handleChangeRole = (id: string, role: Role) => patchMember(id, { role });
+  const saveAccessEnd = async (id: string, day: string | null) => {
+    await patchMember(id, { accessEndsOn: day, tz: browserZone() } as Partial<TeamMember>);
+    flash(true, day ? `Their access now ends after ${prettyDay(day)}.` : "Their access no longer has an end date.");
+  };
   const saveAiCap = async (id: string, cap: number | null) => {
     await patchMember(id, { aiMonthlyCap: cap });
     flash(true, cap === null ? "AI limit removed." : `AI limit set to ${cap} requests a month.`);
@@ -490,6 +506,21 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
               </div>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0] mb-2" htmlFor="new-member-end">
+                Access ends on (optional)
+              </label>
+              <Input
+                id="new-member-end"
+                type="date"
+                min={new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())}
+                value={newMember.accessEndsOn}
+                onChange={(e) => setNewMember({ ...newMember, accessEndsOn: e.target.value })}
+                className="w-full sm:w-56"
+              />
+              <p className="text-xs text-[#b8a898] mt-1">For a contractor, advisor or reviewer. Their login works through this day and stops after it. Leave it empty for no end date.</p>
+            </div>
+
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setIsAdding(false)}>
                 Cancel
@@ -588,6 +619,11 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                             Pending
                           </span>
                         )}
+                        {member.accessEnded ? (
+                          <span className="text-xs bg-red-500/10 text-red-600 px-2 py-0.5 rounded whitespace-nowrap">Access ended</span>
+                        ) : member.accessEndsOn ? (
+                          <span className="text-xs bg-[#c9a227]/15 text-[#7a5a12] px-2 py-0.5 rounded whitespace-nowrap">Ends {prettyDay(member.accessEndsOn)}</span>
+                        ) : null}
                       </div>
                       <p className="text-sm text-[#7a8a99] mt-1 break-all">{member.email}</p>
                     </div>
@@ -648,6 +684,8 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                       <UserX className="w-4 h-4" />
                     </Button>
                 </div>
+
+                <MemberAccessEnd key={`${member.id}:${member.accessEndsOn ?? ""}`} endsOn={member.accessEndsOn ?? null} ended={Boolean(member.accessEnded)} busy={isBusy} onSave={(day) => saveAccessEnd(member.id, day)} />
 
                 <MemberAccessSummary role={member.role} roleText={roleDescriptions[member.role] ?? ""} access={member.access ?? null} pageTitles={pageTitles} showHouse={isArchitect} />
 

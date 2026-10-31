@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cleanExtras, cleanFeatureMap } from "@/lib/teamRoles";
+import { accessEndOf, cleanExpiryDate, cleanExtras, cleanFeatureMap, cleanTimeZone, memberAccessExpired, todayInZone, withAccessEnd } from "@/lib/teamRoles";
 import { createServerClient } from "@/lib/supabase/server";
 import { isSuperAdmin } from "@/lib/authz";
 import { crossOriginBlocked } from "@/lib/security";
@@ -36,6 +36,9 @@ function serialize(m: MemberRow, aiUsed = 0) {
     joinedAt: m.joined_at || null,
     // Per-feature access (null = the role's defaults).
     access: m.permissions?.features ? { preset: m.permissions.preset ?? null, features: cleanFeatureMap(m.permissions.features), extras: cleanExtras(m.permissions.extras) } : null,
+    // The last day of their access (null = no end date), and whether that day has passed.
+    accessEndsOn: accessEndOf(m.permissions)?.on ?? null,
+    accessEnded: memberAccessExpired(m.permissions),
     // Monthly AI cap on the owner's key (null = no cap) and this month's use.
     aiMonthlyCap: m.ai_monthly_cap ?? null,
     aiUsedThisMonth: aiUsed,
@@ -120,6 +123,16 @@ export async function POST(request: Request, { params }: { params: { id: string 
     );
   }
 
+  // Optional last day of access (a contractor or advisor): today or later, counted in the owner's own time zone.
+  let permissions: Record<string, unknown> = {};
+  if (body.accessEndsOn !== undefined && body.accessEndsOn !== null && body.accessEndsOn !== "") {
+    const on = cleanExpiryDate(body.accessEndsOn);
+    const tz = cleanTimeZone(body.tz);
+    if (!on) return NextResponse.json({ error: "Choose a real date for the last day of access." }, { status: 400 });
+    if (on < todayInZone(tz ?? undefined)) return NextResponse.json({ error: "The last day of access can't be in the past." }, { status: 400 });
+    permissions = withAccessEnd({}, { on, tz });
+  }
+
   const { data, error } = await supabase
     .from("workspace_members")
     .insert({
@@ -128,6 +141,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       email,
       role,
       status: "pending",
+      ...(Object.keys(permissions).length ? { permissions } : {}),
     })
     .select(COLS)
     .single();

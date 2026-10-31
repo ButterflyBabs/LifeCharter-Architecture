@@ -9089,7 +9089,8 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "Add your logo, Workspace Name, Description, Website and Social Profiles, then press Save Workspace.",
       "Under Team Members, press Add Member.",
       "Enter their email, choose Admin, Editor or Viewer, and press Send Invitation.",
-      "Use Edit access on an Editor or Viewer if you want to narrow what they can reach."
+      "Use Edit access on an Editor or Viewer if you want to narrow what they can reach.",
+      "For a contractor, advisor or reviewer, set Access ends on (when you invite them, or on their card afterwards). Their login stops working after that day."
     ],
     "health": "This does not change your scores. It keeps your business details in one place and lets your team help you.",
     "tips": [
@@ -9101,6 +9102,10 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       {
         "q": "What can each role do?",
         "a": "An Admin runs the account day to day and manages the team, but has no billing, connected accounts or account deletion. An Editor works on tasks, plans, content, finance and sales activity. A Viewer sees what an Editor sees and cannot change anything."
+      },
+      {
+        "q": "How do I give a contractor or advisor access for a limited time?",
+        "a": "Choose Access ends on when you invite them, or open their card later and use Set last day. Their login works through that day, counted in your own time zone, and stops after it. They see a message that their access has ended. To turn it back on, choose a new last day; to keep them in for good, press No end date. Their card shows Ends and the date, and turns to Access ended when the day has passed."
       },
       {
         "q": "Someone says their invitation never came. What do I do?",

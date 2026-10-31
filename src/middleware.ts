@@ -187,8 +187,8 @@ async function isCommunityMember(userId: string): Promise<boolean> {
 // edge middleware stays dependency-free. Admits active or pending members (a
 // member is still "pending" on their very first request, before resolveActor
 // flips them to active).
-async function getMemberInfo(email: string): Promise<{ isMember: boolean; role: string | null; workspaceId: string | null; features: FeatureMap | null; extras: AccessExtras | null }> {
-  const none = { isMember: false, role: null, workspaceId: null, features: null, extras: null };
+async function getMemberInfo(email: string): Promise<{ isMember: boolean; role: string | null; workspaceId: string | null; features: FeatureMap | null; extras: AccessExtras | null; expired?: boolean }> {
+  const none: { isMember: boolean; role: string | null; workspaceId: string | null; features: FeatureMap | null; extras: AccessExtras | null; expired?: boolean } = { isMember: false, role: null, workspaceId: null, features: null, extras: null };
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const svc = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !svc) return none;
@@ -200,7 +200,7 @@ async function getMemberInfo(email: string): Promise<{ isMember: boolean; role: 
     if (!res.ok) return none;
     const rows = (await res.json()) as { role?: string; workspace_id?: string; permissions?: { features?: unknown; extras?: unknown } | null }[];
     if (!Array.isArray(rows) || rows.length === 0) return none;
-    if (memberAccessExpired(rows[0].permissions)) return none; // a time-limited login (Julian's demo access) stops working after its last day
+    if (memberAccessExpired(rows[0].permissions)) return { ...none, expired: true }; // a time-limited login stops working after its last day
     return { isMember: true, role: rows[0].role ?? null, workspaceId: rows[0].workspace_id ?? null, features: cleanFeatureMap(rows[0].permissions?.features), extras: cleanExtras(rows[0].permissions?.extras) };
   } catch {
     return none;
@@ -456,6 +456,7 @@ export async function middleware(request: NextRequest) {
   let memberRole: string | null = null;
   let isTeamMember = false;
   let isHouseMember = false;
+  let accessEnded = false; // a team member whose last day of access has passed
   let memberFeatures: FeatureMap | null = null;
   let memberExtras: AccessExtras | null = null;
   // A paying client owns their own account: full access, no role limits. Someone who ALSO belongs to a
@@ -466,6 +467,7 @@ export async function middleware(request: NextRequest) {
   if (user && !authed && ownsAccount && !wantsTeam) authed = true;
   if (user && !authed && email) {
     const info = await getMemberInfo(email);
+    if (info.expired) accessEnded = true;
     authed = info.isMember;
     isTeamMember = info.isMember;
     memberRole = info.role;
@@ -633,7 +635,7 @@ export async function middleware(request: NextRequest) {
   if ((!authed && !isDemo) || needsMfa) {
     // Community visitors get the Collective's own sign-in, not the Command Suite login.
     const isCommunityPath = path === "/community" || path.startsWith("/community/");
-    return NextResponse.redirect(new URL(isCommunityPath && !needsMfa ? "/community/sign-in" : "/login", request.url));
+    return NextResponse.redirect(new URL(isCommunityPath && !needsMfa ? "/community/sign-in" : accessEnded && !needsMfa ? "/login?access=ended" : "/login", request.url));
   }
 
   if (lockCandidate && !gatePageAllowed(path) && (await isLocked())) {

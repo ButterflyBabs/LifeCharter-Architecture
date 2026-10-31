@@ -243,14 +243,41 @@ export interface AccessExtras {
   noDelete?: boolean;
   pages?: Record<string, "view" | "edit">;
   demo?: boolean; // may present the Demo Account (sample data) — only meaningful in Babs's own team
-  expiresOn?: string; // YYYY-MM-DD: the last day this person's access works (Mountain time); the day after, they are signed out of everything
+  expiresOn?: string; // YYYY-MM-DD: the last day this person's access works; the day after, they are signed out of everything
+  expiresTz?: string; // the time zone that day is counted in (the owner's, when they set it); Mountain time when absent
 }
 const EXPIRY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const DEFAULT_EXPIRY_TZ = "America/Denver";
+/** A usable IANA time zone name, or null. */
+export function cleanTimeZone(v: unknown): string | null {
+  if (typeof v !== "string" || !v || v.length > 64) return null;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: v });
+    return v;
+  } catch {
+    return null;
+  }
+}
+/** Today's date (YYYY-MM-DD) in a time zone. */
+export function todayInZone(tz: string = DEFAULT_EXPIRY_TZ, now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: cleanTimeZone(tz) ?? DEFAULT_EXPIRY_TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+}
+/** A real calendar day written YYYY-MM-DD, or null. */
+export function cleanExpiryDate(v: unknown): string | null {
+  if (typeof v !== "string" || !EXPIRY_RE.test(v)) return null;
+  const d = new Date(`${v}T12:00:00Z`);
+  return Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== v ? null : v;
+}
 export function cleanExtras(v: unknown): AccessExtras | null {
   if (!v || typeof v !== "object") return null;
   const o = v as Record<string, unknown>;
   const out: AccessExtras = {};
-  if (typeof o.expiresOn === "string" && EXPIRY_RE.test(o.expiresOn)) out.expiresOn = o.expiresOn;
+  const expiresOn = cleanExpiryDate(o.expiresOn);
+  if (expiresOn) {
+    out.expiresOn = expiresOn;
+    const tz = cleanTimeZone(o.expiresTz);
+    if (tz) out.expiresTz = tz;
+  }
   if (o.restrict === true) out.restrict = true;
   if (o.ownOnly === true) out.ownOnly = true;
   if (o.noDelete === true) out.noDelete = true;
@@ -265,13 +292,33 @@ export function cleanExtras(v: unknown): AccessExtras | null {
   return Object.keys(out).length ? out : null;
 }
 
-/** True once the day after a member's expiresOn has begun in Mountain time. A member with no expiry never expires. */
+/** The last day of a member's access, if one is set. */
+export function accessEndOf(permissions: unknown): { on: string; tz: string } | null {
+  const extras = (permissions as { extras?: { expiresOn?: unknown; expiresTz?: unknown } } | null | undefined)?.extras;
+  const on = cleanExpiryDate(extras?.expiresOn);
+  return on ? { on, tz: cleanTimeZone(extras?.expiresTz) ?? DEFAULT_EXPIRY_TZ } : null;
+}
+/** The permissions with the last day of access set (or removed when null), everything else kept as it was. */
+export function withAccessEnd(permissions: unknown, end: { on: string; tz?: string | null } | null): Record<string, unknown> {
+  const base: Record<string, unknown> = permissions && typeof permissions === "object" && !Array.isArray(permissions) ? { ...(permissions as Record<string, unknown>) } : {};
+  const extras: Record<string, unknown> = base.extras && typeof base.extras === "object" ? { ...(base.extras as Record<string, unknown>) } : {};
+  delete extras.expiresOn;
+  delete extras.expiresTz;
+  if (end) {
+    extras.expiresOn = end.on;
+    extras.expiresTz = cleanTimeZone(end.tz) ?? DEFAULT_EXPIRY_TZ;
+  }
+  if (Object.keys(extras).length) base.extras = extras;
+  else delete base.extras;
+  return base;
+}
+
+/** True once the day after a member's last day has begun (in the time zone it was set in; Mountain time if none). No expiry never expires. */
 export function memberAccessExpired(permissions: unknown, now: Date = new Date()): boolean {
-  const extras = (permissions as { extras?: { expiresOn?: unknown } } | null | undefined)?.extras;
-  const last = typeof extras?.expiresOn === "string" && EXPIRY_RE.test(extras.expiresOn) ? extras.expiresOn : null;
+  const extras = (permissions as { extras?: { expiresOn?: unknown; expiresTz?: unknown } } | null | undefined)?.extras;
+  const last = cleanExpiryDate(extras?.expiresOn);
   if (!last) return false;
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
-  return today > last;
+  return todayInZone(cleanTimeZone(extras?.expiresTz) ?? DEFAULT_EXPIRY_TZ, now) > last;
 }
 
 export const NO_DELETE_MESSAGE ="Deleting needs the account owner's permission. Ask them and they will remove it for you.";
