@@ -123,11 +123,27 @@ export default function TravelPartnerWidget() {
   const activeTab = tab ?? (setupStatus && !setupStatus.complete ? "help" : "assistant");
   const [assistantName, setAssistantName] = useState(DEFAULT_ASSISTANT_NAME);
   useEffect(() => {
+    try {
+      const cached = localStorage.getItem("travelPartnerAssistantName");
+      if (cached) setAssistantName(cached);
+    } catch {
+      /* private window: the fetch below still sets it */
+    }
     fetch("/api/profile", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => d?.assistantName && setAssistantName(d.assistantName))
+      .then((d) => {
+        if (!d?.assistantName) return;
+        setAssistantName(d.assistantName);
+        try {
+          localStorage.setItem("travelPartnerAssistantName", d.assistantName);
+        } catch {
+          /* ignore */
+        }
+      })
       .catch(() => {});
   }, []);
+  // Once the client has named their assistant, the collapsed button wears that name (the widget itself is still Travel Partner).
+  const namedAssistant = assistantName !== DEFAULT_ASSISTANT_NAME;
   // Help & setup › "How do I…" — answers questions from the LifeCharter knowledge base.
   const [mode, setMode] = useState<"journey" | "ask">("journey");
   const [askInput, setAskInput] = useState("");
@@ -213,7 +229,7 @@ export default function TravelPartnerWidget() {
   useEffect(() => {
     if (!dragging) return;
     
-    const onMove = (e: MouseEvent) => {
+    const onMove = (e: PointerEvent) => {
       const newX = e.clientX - dragStartPos.current.x;
       const newY = e.clientY - dragStartPos.current.y;
       
@@ -238,19 +254,21 @@ export default function TravelPartnerWidget() {
       setTimeout(() => setHasDragged(false), 50);
     };
     
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onUp);
     document.body.style.userSelect = "none";
     
     return () => {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      document.removeEventListener("pointercancel", onUp);
       document.body.style.userSelect = "";
     };
   }, [dragging, pos]);
 
-  const startDrag = (e: React.MouseEvent) => {
-    // Only drag if clicking the header/grip area
+  const startDrag = (e: React.PointerEvent) => {
+    // Only drag from the header, the grip, or anywhere on the collapsed button (all marked data-drag)
     const target = e.target as HTMLElement;
     if (!target.closest("[data-drag]")) return;
     
@@ -338,8 +356,10 @@ export default function TravelPartnerWidget() {
       <div
         ref={widgetRef}
         style={getStyle()}
-        className="flex w-max items-center gap-2 whitespace-nowrap px-4 py-3 bg-gradient-to-r from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0] rounded-full shadow-lg hover:scale-105 transition-transform cursor-move"
-        onMouseDown={startDrag}
+        data-drag
+        title={namedAssistant ? `${assistantName}, your assistant, with your setup guide (Travel Partner). Click to open, or drag to move.` : "Click to open, or drag to move."}
+        className="flex w-max items-center gap-2 whitespace-nowrap px-4 py-3 bg-gradient-to-r from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0] rounded-full shadow-lg hover:scale-105 transition-transform cursor-move select-none touch-none"
+        onPointerDown={startDrag}
         onClick={() => {
           // Only open if user didn't drag
           if (!hasDragged) setIsOpen(true);
@@ -347,7 +367,7 @@ export default function TravelPartnerWidget() {
       >
         <GripVertical data-drag className="w-5 h-5 text-[#e8e4f0] opacity-60 cursor-grab active:cursor-grabbing" />
         <Compass className="w-5 h-5 text-[#c9a227]" />
-        <span className="font-medium"><Term id="travel-partner">Travel Partner</Term></span>
+        <span className="font-medium">{namedAssistant ? assistantName : <Term id="travel-partner">Travel Partner</Term>}</span>
         {progress > 0 && (
           <span className="ml-2 text-xs bg-[#c9a227] text-[#1a2b4a] px-2 py-0.5 rounded-full">{progress}%</span>
         )}
@@ -361,8 +381,8 @@ export default function TravelPartnerWidget() {
         {/* Draggable Header */}
         <div 
           data-drag
-          onMouseDown={startDrag}
-          className="bg-gradient-to-r from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0] p-4 cursor-move select-none"
+          onPointerDown={startDrag}
+          className="bg-gradient-to-r from-[#1a2b4a] to-[#7b6b8d] text-[#F8F5F0] p-4 cursor-move select-none touch-none"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

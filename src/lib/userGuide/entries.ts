@@ -10506,6 +10506,10 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       {
         "q": "Why does it say it can't do something?",
         "a": "It only works in your own account, and a team member is limited by their role. Some things stay with you, such as publishing a page or sending an agreement for signature."
+      },
+      {
+        "q": "Can my assistant manage my team?",
+        "a": "Yes, for the owner and admins. Ask who is on your team and what each person can reach, add someone as pending with a role, an access preset and an optional last day, change a role or preset, give a contractor a last day of access (or change or remove it), or remove someone. Each is a card to Approve, and the ones that can be reversed have Undo. It never emails an invitation: after you approve adding someone, open their card in Settings > Team and press Send invite."
       }
     ],
     "related": [
@@ -10544,6 +10548,21 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
           "outreach",
           "pipeline",
           "deal"
+        ]
+      },
+      {
+        "id": "your-team",
+        "title": "Your team",
+        "body": "List who is on your team, their role, whether they have accepted and any last day of access. Add a pending team member, change a role or access preset, set, change or remove a last day of access, or remove someone. You are reminded in your bell and daily email two days before a last day. It never sends the invitation email.",
+        "keywords": [
+          "team",
+          "team member",
+          "invite",
+          "access ends",
+          "last day",
+          "contractor",
+          "advisor",
+          "role"
         ]
       },
       {
@@ -12117,7 +12136,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "area": "Help and everywhere",
     "where": "Floating button, bottom right of every page",
     "href": "/",
-    "what": "Your helper that follows you from page to page. One tab is your AI assistant. The other is Help & setup, with your setup checklist and a box for how-to questions.",
+    "what": "Your helper that follows you from page to page. Travel Partner is the window; your AI assistant is who you talk to inside it. One tab is your assistant (it carries the name you gave it). The other is Help & setup, with your setup checklist and a box for how-to questions.",
     "ai": "AI-powered",
     "aiNote": "The assistant tab and How do I… both use your own AI key. Anything the assistant changes for you waits behind Approve. Without a key, How do I… still gives you the closest answer from the Help library.",
     "steps": [
@@ -12126,7 +12145,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "For setup, press Help & setup, then Setup checklist, and press Next Step to go to it.",
       "For a how-to answer, press Help & setup, then How do I…, and type in Ask about any feature.",
       "If the answer does not cover it, press Send this to support.",
-      "To move the button, drag the grip. Press Reset to put it back."
+      "To move the button, drag it from anywhere on it, whether it is open or collapsed. Press Reset to put it back."
     ],
     "health": "Using Travel Partner does not change your scores. The setup checklist points you to your assessments, and those are what set your scores.",
     "tips": [
@@ -12136,8 +12155,16 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     ],
     "questions": [
       {
+        "q": "What is the difference between Travel Partner and my AI assistant?",
+        "a": "Travel Partner is the button and window in the corner of every page, with your setup checklist and how-to help. Your AI assistant is the one you talk to, the same assistant as on Executive Home, and you can name it under Settings > AI Assistant. Once you name it, the button wears that name and the first tab reads Ask followed by the name. The window is still Travel Partner."
+      },
+      {
         "q": "Does it know my business?",
         "a": "Your assistant does. How do I… only answers from the Help library and any Q&A you added."
+      },
+      {
+        "q": "The button is collapsed in the middle of my screen. How do I move it?",
+        "a": "Press and drag it from anywhere on the button, with a mouse or a finger. You do not need to open it first. Press Reset in the open window to send it back to the bottom right."
       },
       {
         "q": "Why is the button missing?",
