@@ -9090,7 +9090,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "Under Team Members, press Add Member.",
       "Enter their email, choose Admin, Editor or Viewer, and press Send Invitation.",
       "Use Edit access on an Editor or Viewer if you want to narrow what they can reach.",
-      "For a contractor, advisor or reviewer, set Access ends on (when you invite them, or on their card afterwards). Their login stops working after that day."
+      "For a contractor, advisor or reviewer, set Access ends on (when you invite them, or on their card afterwards). Their login stops working after that day. Two days before, a reminder lands in your bell and your daily alert email."
     ],
     "health": "This does not change your scores. It keeps your business details in one place and lets your team help you.",
     "tips": [

@@ -313,6 +313,14 @@ export function withAccessEnd(permissions: unknown, end: { on: string; tz?: stri
   return base;
 }
 
+/** Whole days from today (in the time zone the end date was set in) to a member's last day: 0 on the last day itself, null when there is no end date or it has passed. */
+export function accessDaysLeft(permissions: unknown, now: Date = new Date()): number | null {
+  const end = accessEndOf(permissions);
+  if (!end) return null;
+  const left = Math.round((new Date(`${end.on}T12:00:00Z`).getTime() - new Date(`${todayInZone(end.tz, now)}T12:00:00Z`).getTime()) / 86_400_000);
+  return left >= 0 ? left : null;
+}
+
 /** True once the day after a member's last day has begun (in the time zone it was set in; Mountain time if none). No expiry never expires. */
 export function memberAccessExpired(permissions: unknown, now: Date = new Date()): boolean {
   const extras = (permissions as { extras?: { expiresOn?: unknown; expiresTz?: unknown } } | null | undefined)?.extras;

@@ -55,3 +55,13 @@ test("setting or removing the last day keeps everything else in the permissions"
   assert.deepEqual(withAccessEnd({ extras: { expiresOn: "2026-11-06" } }, null), {});
   assert.equal(accessEndOf({}), null);
 });
+
+import { accessDaysLeft } from "../src/lib/teamRoles";
+
+test("accessDaysLeft counts whole days to the last day in the zone it was set in, and goes quiet once it has passed", () => {
+  assert.equal(accessDaysLeft(perms, at("2026-11-04T15:00:00Z")), 2); // Nov 4, 8 AM MST
+  assert.equal(accessDaysLeft(perms, at("2026-11-05T15:00:00Z")), 1);
+  assert.equal(accessDaysLeft(perms, at("2026-11-07T05:00:00Z")), 0); // still Nov 6 at 10 PM MST
+  assert.equal(accessDaysLeft(perms, at("2026-11-07T08:00:00Z")), null); // Nov 7 in Mountain time: ended
+  assert.equal(accessDaysLeft({}, at("2026-11-04T15:00:00Z")), null);
+});

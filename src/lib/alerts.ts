@@ -364,6 +364,33 @@ export async function deriveNotifications(
     /* best effort */
   }
 
+  // 11b. A team member's access ends within 2 days (a contractor, advisor or reviewer given a last day in Settings > Team).
+  // The key carries the date, so choosing a new last day brings a fresh reminder.
+  try {
+    const { accessDaysLeft, accessEndOf } = await import("@/lib/teamRoles");
+    const { data: spaces } = await supabase.from("workspaces").select("id").eq("master_plan_id", masterPlanId);
+    const spaceIds = ((spaces || []) as { id: string }[]).map((w) => w.id);
+    if (spaceIds.length) {
+      const { data: members } = await supabase.from("workspace_members").select("id, name, email, permissions").in("workspace_id", spaceIds).neq("status", "removed");
+      for (const m of (members || []) as { id: string; name: string | null; email: string | null; permissions: unknown }[]) {
+        const left = accessDaysLeft(m.permissions);
+        const end = accessEndOf(m.permissions);
+        if (left === null || left > 2 || !end) continue;
+        const who = (m.name || m.email || "A team member").trim();
+        const day = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${end.on}T12:00:00Z`));
+        out.push({
+          nkey: `access-ends:${m.id}:${end.on}`,
+          type: "action",
+          title: left === 0 ? `${who}'s access ends today` : `${who}'s access ends in ${left} day${left === 1 ? "" : "s"}`,
+          body: `Their last day is ${day}. After it they are signed out of everything. To keep them on, choose a new last day (or No end date) under Settings > Team.`,
+          href: "/settings",
+        });
+      }
+    }
+  } catch {
+    /* best effort */
+  }
+
   // 12. Accountability Partner: encouragement, nudges, "I'm stuck" requests, a partner's wins and
   // reminders waiting for you, plus an invitation from another Suite client. They leave the
   // bell once you've opened the page (that marks them read there).
@@ -608,7 +635,7 @@ export async function deriveNotifications(
 
 
 // Alerts worth an email (the rest stay in the bell): keyed by nkey prefix.
-export const EMAIL_WORTHY = ["score-drop:", "goals-slipped:", "deals-next-step:", "pipeline-quiet:", "rhythm:", "bill-due:", "review-due:", "legal-due:", "gst-due:", "gst-line:", "pst-due:"];
+export const EMAIL_WORTHY = ["score-drop:", "goals-slipped:", "deals-next-step:", "pipeline-quiet:", "rhythm:", "bill-due:", "review-due:", "legal-due:", "access-ends:", "gst-due:", "gst-line:", "pst-due:"];
 export const isEmailWorthy = (nkey: string | null) => !!nkey && EMAIL_WORTHY.some((p) => nkey.startsWith(p));
 
 // Brings the stored notifications in line with the live alerts (keeping
