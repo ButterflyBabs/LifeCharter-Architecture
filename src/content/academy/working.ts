@@ -773,7 +773,7 @@ export const WORKING: Lesson[] = [
       },
       {
         heading: "Access for a limited time",
-        text: "For a contractor, advisor or reviewer, set Access ends on when you invite them, or use Set last day on their card. Their login works through that day, in your time zone, and stops after it. A reminder lands two days before. The invitation link works once and expires in 7 days, so press Send invitation on their card to send it again.",
+        text: "For a contractor, advisor or reviewer, set Access ends on when you invite them, or use Set last day on their card. Their login works through that day, in your time zone, and stops after it. A reminder lands two days before. The invitation link works once and expires in 7 days, so press Send invitation on their card to send it again. Until they sign in, their card shows Pending and Invite sent with the date the email went out; Invite not sent means it has not gone yet.",
       },
       {
         heading: "AI limits and activity",

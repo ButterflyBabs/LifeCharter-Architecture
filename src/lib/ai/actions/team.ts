@@ -25,8 +25,9 @@ interface Member {
   permissions: Record<string, unknown> | null;
   user_id: string | null;
   joined_at: string | null;
+  invite_sent_at?: string | null;
 }
-const COLS = "id, workspace_id, name, email, role, status, permissions, user_id, joined_at";
+const COLS = "id, workspace_id, name, email, role, status, permissions, user_id, joined_at, invite_sent_at";
 
 const day = (ymd: string) => new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${ymd}T12:00:00Z`));
 
@@ -84,7 +85,7 @@ export const listTeam: ActionTool = {
     if (!all.length) return "No one else is on the team yet. The client adds people under Settings > Team (or ask me to add someone).";
     const presets = PUBLIC_PRESETS.map((p) => `${p.key} (${p.label})`).join("; ");
     return (
-      all.map((m) => `- ${who(m)} | ${ROLE_WORDS[m.role || ""] ?? m.role} | ${m.status === "pending" ? "invitation not accepted yet" : m.status} | ${areasOf(m)} | ${endLine(m)}`).join("\n") +
+      all.map((m) => `- ${who(m)} | ${ROLE_WORDS[m.role || ""] ?? m.role} | ${m.status === "pending" ? (m.invite_sent_at ? `invitation emailed ${m.invite_sent_at.slice(0, 10)}, not accepted yet` : "invitation not emailed yet") : m.status} | ${areasOf(m)} | ${endLine(m)}`).join("\n") +
       `\nAccess presets I can apply: ${presets}.`
     );
   },

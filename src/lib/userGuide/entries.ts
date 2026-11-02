@@ -9096,6 +9096,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "health": "This does not change your scores. It keeps your business details in one place and lets your team help you.",
     "tips": [
       "Press Send invitation on a person's card to send it again. The link in the invitation works once and expires in 7 days.",
+      "A person who has not signed in yet shows Pending, plus Invite sent and the date the email went out. If it says Invite not sent, the email has not gone yet, so press Send invitation.",
       "Your client portals show the logo from your first workspace.",
       "You count as one person on your team. Your plan sets how many people and workspaces you can have."
     ],
@@ -9110,7 +9111,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       },
       {
         "q": "Someone says their invitation never came. What do I do?",
-        "a": "Press Send invitation on their card. A link appears there too, so you can copy it and send it to them yourself."
+        "a": "Look at their card. Pending with Invite sent and a date means the email went out that day, so ask them to check spam. Invite not sent means it did not go. Press Send invitation to send it again; a link appears there too, so you can copy it and send it to them yourself. A new invitation replaces the old link."
       },
       {
         "q": "Can my team see what each other has done?",
