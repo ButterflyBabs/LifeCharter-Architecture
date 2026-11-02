@@ -250,5 +250,81 @@
   "a-exam": {
     "hash": "47cf4e42dcc26418",
     "reviewed": "2026-11-02"
+  },
+  "e-solve": {
+    "hash": "5c21024d773fd780",
+    "reviewed": "2026-11-02"
+  },
+  "e-teach": {
+    "hash": "86bdf9b85613243a",
+    "reviewed": "2026-11-02"
+  },
+  "e-trust": {
+    "hash": "116b25694d12b7f2",
+    "reviewed": "2026-11-02"
+  },
+  "e-own-tools": {
+    "hash": "5fa2e3664a40ac83",
+    "reviewed": "2026-11-02"
+  },
+  "e-collective": {
+    "hash": "d3ab4740c5e22eaf",
+    "reviewed": "2026-11-02"
+  },
+  "e-people": {
+    "hash": "108b9a967d301553",
+    "reviewed": "2026-11-02"
+  },
+  "e-journal": {
+    "hash": "fd40453a320463f3",
+    "reviewed": "2026-11-02"
+  },
+  "ec-assessments": {
+    "hash": "84adae49e166061f",
+    "reviewed": "2026-11-02"
+  },
+  "ec-support-calls": {
+    "hash": "253ece6ffa81ba01",
+    "reviewed": "2026-11-02"
+  },
+  "ec-billing": {
+    "hash": "a212d6c91e7d1a3f",
+    "reviewed": "2026-11-02"
+  },
+  "ec-canada": {
+    "hash": "edf6c9e559f50524",
+    "reviewed": "2026-11-02"
+  },
+  "ec-year-end": {
+    "hash": "512837a3bccfcd84",
+    "reviewed": "2026-11-02"
+  },
+  "et-new-client": {
+    "hash": "6a9cd44c4ade6692",
+    "reviewed": "2026-11-02"
+  },
+  "et-money-edge": {
+    "hash": "d129cb0074f3811c",
+    "reviewed": "2026-11-02"
+  },
+  "et-mentor": {
+    "hash": "034335ca9e0baa1a",
+    "reviewed": "2026-11-02"
+  },
+  "es-questions": {
+    "hash": "c63f1e21757b555b",
+    "reviewed": "2026-11-02"
+  },
+  "es-canada": {
+    "hash": "72010eb351f3558e",
+    "reviewed": "2026-11-02"
+  },
+  "es-handoff": {
+    "hash": "72c08e614d783725",
+    "reviewed": "2026-11-02"
+  },
+  "e-final": {
+    "hash": "aeca6cee3edd5390",
+    "reviewed": "2026-11-02"
   }
 }

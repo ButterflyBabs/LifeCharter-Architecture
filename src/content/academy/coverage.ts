@@ -1,37 +1,4 @@
-// User Guide entries no lesson teaches yet. The Expert level takes these off the list as it covers them.
+// User Guide entries no lesson teaches yet. All four levels are written, so a new entry belongs in a lesson, not here.
 // A NEW User Guide entry must go in a lesson, or on this list on purpose: npm test fails until it does.
 export const NOT_YET_IN_A_LESSON: string[] = [
-  "accountability-partner",
-  "my-pages",
-  "coaching-calls-and-replays",
-  "the-collective",
-  "collective-events-and-calls",
-  "my-alignment-journal",
-  "lifecharter-library",
-  "collective-plus",
-  "collective-on-your-phone",
-  "collective-channels-and-posts",
-  "collective-messages",
-  "collective-members-directory",
-  "collective-profile-and-notifications",
-  "your-own-lifecharter-affiliate-links",
-  "1099-contractor-totals",
-  "gst-hst",
-  "currency-usd-and-cad",
-  "provincial-sales-tax-qst-pst-rst",
-  "brain-profile",
-  "soul-profile",
-  "profit-profile",
-  "command-shift-answers",
-  "billing-and-plan",
-  "who-has-opened-my-account",
-  "if-a-payment-fails",
-  "welcome-overview",
-  "website-review",
-  "glossary",
-  "your-welcome-emails-and-calls",
-  "suggestions-light-bulb",
-  "calls-with-the-lifecharter-team",
-  "privacy-terms-and-your-agreement",
-  "newer-version-notice"
 ];
