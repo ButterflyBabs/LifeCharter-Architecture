@@ -68,6 +68,13 @@ export async function POST(
   const email = (member.email || "").trim().toLowerCase();
   if (!email) return NextResponse.json({ error: "member has no email" }, { status: 400 });
 
+  // Optional second address for the same invitation (someone whose work mailbox isn't set up yet).
+  const body = await request.json().catch(() => ({}));
+  const also = typeof body?.alsoTo === "string" ? body.alsoTo.trim().toLowerCase() : "";
+  if (also && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(also)) {
+    return NextResponse.json({ error: "that extra email address doesn't look right" }, { status: 400 });
+  }
+
   const admin = adminClient();
 
   // Ensure an auth user exists for this member, reusing one where possible.
@@ -123,7 +130,7 @@ export async function POST(
   const profile = await senderProfile(masterPlanId, supabase).catch(() => null);
   const ownerReply = profile && !profile.house ? profile.replyTo : (plan?.client_email as string) || "";
   const emailed = await sendTeamInvite({
-    to: email,
+    to: also && also !== email ? [email, also] : email,
     name: member.name,
     inviterName,
     workspaceName,

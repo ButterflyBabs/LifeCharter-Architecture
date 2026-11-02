@@ -17,7 +17,8 @@ function esc(s: string) {
 }
 
 export async function sendTeamInvite(opts: {
-  to: string;
+  /** One address, or several (the same invitation goes to each). */
+  to: string | string[];
   name: string | null;
   inviterName: string;
   workspaceName: string;
