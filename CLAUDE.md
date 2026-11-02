@@ -23,7 +23,7 @@ The Academy must never teach something the app no longer does. The app changes f
 - `npm test` fails when a source changes and the lesson has not been reviewed, and when a new User Guide entry is in no lesson and not on `src/content/academy/coverage.ts`.
 - To fix it, run `npm run academy:check`. Read each lesson it names against what changed, then rewrite the text and the questions, answers and explanations that are now wrong.
 - Then run `npm run academy:stamp -- <lesson ids>`. Stamp a lesson only after reading it. Stamping is the statement that the lesson is correct.
-- A new feature gets a lesson or a place in an existing one. Use `coverage.ts` only when a named later level will teach it.
+- A new feature gets a lesson or a place in an existing one. All four levels are written, so `coverage.ts` stays empty.
 - Changing a lesson's wording shows "Edited since approved" on the page. Tell Babs which lessons need her Approved again.
 
 Every try-it has a question. Answers go to the assistant through `buildAssistantKnowledge`. A lesson with a `dimension` lifts that score (`academyLift`), so give a new lesson a dimension only where its work really affects that score.
