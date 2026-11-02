@@ -14,6 +14,8 @@ import { computeDimensionScores, ScoringInputs, ScoringOutput } from "./computeS
 import { baselineCompleteness } from "@/lib/plans/blueprints";
 import { PULSE_LABEL_BY_ID } from "./pulseLabels";
 import { taskFollowThrough } from "./operational";
+import { ACADEMY_LESSONS } from "@/content/academy";
+import { creditedByDimension } from "@/lib/academy/rules";
 import { computePillarScores, averagePillarScore, type PillarResult } from "./pillarModel";
 import type { DeeperAnswers } from "@/lib/operationsDeeper";
 import { toCurrency } from "@/lib/currency";
@@ -319,6 +321,20 @@ async function liveOperationalMetrics(
   return m;
 }
 
+// LCCS Academy: lessons of real work in this account, per dimension.
+async function academyCreditFor(supabase: ReturnType<typeof createServerClient>, scopeId: string | null) {
+  if (!scopeId) return {};
+  try {
+    const [{ data: passed }, { data: answers }] = await Promise.all([
+      supabase.from("academy_progress").select("user_id, lesson_id").eq("master_plan_id", scopeId).not("passed_at", "is", null),
+      supabase.from("academy_answers").select("user_id, lesson_id").eq("master_plan_id", scopeId),
+    ]);
+    return creditedByDimension(ACADEMY_LESSONS, (passed ?? []) as { user_id: string; lesson_id: string }[], (answers ?? []) as { user_id: string; lesson_id: string }[]);
+  } catch {
+    return {}; // optional
+  }
+}
+
 // Baseline completeness per plan type (business/marketing/sales/forecasting),
 // so each plan feeds its matching dimension. Null = not started (neutral).
 async function planCompletenessFor(
@@ -352,11 +368,12 @@ export async function gatherAndCompute(
   const supabase = createServerClient();
   const mp = await latestMasterPlan(supabase, planId);
   const scopeId = mp?.id ?? planId ?? null;
-  const [pulse, brain, planCompleteness, live] = await Promise.all([
+  const [pulse, brain, planCompleteness, live, academyCredit] = await Promise.all([
     pulseAnswers(supabase, scopeId),
     brainAnswers(supabase, scopeId),
     planCompletenessFor(supabase, scopeId),
     liveOperationalMetrics(supabase, scopeId),
+    academyCreditFor(supabase, scopeId),
   ]);
 
   // Merge live metrics over the manual monthly-review blob (live wins where present).
@@ -374,6 +391,7 @@ export async function gatherAndCompute(
     businessPlanCompleteness: planCompleteness.business,
     planCompleteness,
     aiScores: aiScoresFromMasterPlan(mp), // Phase 2: cached by /api/scoring/recompute
+    academyCredit,
     now: new Date().toISOString(),
   };
 

@@ -3,8 +3,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { ACADEMY_LESSONS, academyLesson } from "@/content/academy";
 import { canOpen, academyLearner, memberOfHouse, type Learner } from "@/lib/academy/server";
-import { forLearner, gradeQuiz, isLevel, lessonHash, lessonStates, levelViews, pathFor, reviewState, trackFor, type ProgressRow } from "@/lib/academy/rules";
-import { LEVELS, TRACK_LABELS, type LearnerTrack, type ReviewState } from "@/lib/academy/types";
+import { countsToward, forLearner, gradeQuiz, isLevel, lessonHash, lessonStates, levelViews, pathFor, reviewState, trackFor, wingsFor, type ProgressRow } from "@/lib/academy/rules";
+import { LEVELS, TRACK_LABELS, WINGS, type LearnerTrack, type ReviewState } from "@/lib/academy/types";
 import { cleanFeatureMap } from "@/lib/teamRoles";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +15,7 @@ export const dynamic = "force-dynamic";
 //   GET ?people=1           -> who is where, and the questions people miss most
 //   GET ?certificate=<level>-> my certificate for a finished level
 //   POST { action: "submit", lessonId, answers } -> marks a quiz on the server and saves the result
+//   POST { action: "answer", lessonId, answer } -> saves the try-it answer their assistant reads
 //   POST { action: "review", lessonId, status, note } -> Babs's Approved / Edit on a lesson
 const noStore = { headers: { "Cache-Control": "no-store" } };
 const denied = (error: string, status: number) => NextResponse.json({ error }, { status });
@@ -22,6 +23,11 @@ const denied = (error: string, status: number) => NextResponse.json({ error }, {
 async function myProgress(l: Learner): Promise<ProgressRow[]> {
   const { data } = await createServerClient().from("academy_progress").select("lesson_id, best_score, attempts, passed_at").eq("user_id", l.userId);
   return (data ?? []) as ProgressRow[];
+}
+
+async function myAnswers(l: Learner): Promise<Map<string, string>> {
+  const { data } = await createServerClient().from("academy_answers").select("lesson_id, answer").eq("user_id", l.userId);
+  return new Map(((data ?? []) as { lesson_id: string; answer: string }[]).map((a) => [a.lesson_id, a.answer]));
 }
 
 async function reviews(): Promise<Map<string, ReviewState>> {
@@ -105,7 +111,8 @@ export async function GET(request: Request) {
     return NextResponse.json(await people(l), noStore);
   }
 
-  const progress = await myProgress(l);
+  const [progress, answers] = await Promise.all([myProgress(l), myAnswers(l)]);
+  const answered = new Set(answers.keys());
 
   const level = url.searchParams.get("certificate");
   if (level) {
@@ -136,7 +143,9 @@ export async function GET(request: Request) {
       summary: lesson.summary,
       sections: lesson.sections,
       questions: (lesson.kind === "exam" ? [...lesson.questions].sort(() => Math.random() - 0.5) : lesson.questions).map(forLearner),
-      tryIt: lesson.tryIt && canOpen(l, lesson.tryIt.href) ? lesson.tryIt : null,
+      tryIt: lesson.tryIt ? { ...lesson.tryIt, href: canOpen(l, lesson.tryIt.href) ? lesson.tryIt.href : null } : null,
+      answer: answers.get(lessonId) ?? null,
+      countsToward: countsToward(lesson),
       state,
       bestScore: row?.best_score ?? null,
       attempts: row?.attempts ?? 0,
@@ -147,14 +156,15 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     learner: { name: l.name, track: l.track, trackLabel: TRACK_LABELS[l.track], required: l.required, preview: l.preview, canSeePeople: l.canSeePeople },
-    levels: levelViews(path, progress, l.preview, l.preview ? await reviews() : undefined),
+    levels: levelViews(path, progress, l.preview, l.preview ? await reviews() : undefined, answered),
+    rewards: { wings: wingsFor(path, progress, answered), answered: path.filter((p) => answered.has(p.id)).length, tryIts: path.filter((p) => p.tryIt).length },
     tracks: l.preview ? TRACK_LABELS : null,
   }, noStore);
 }
 
 export async function POST(request: Request) {
   if (crossOriginBlocked(request)) return denied("cross-origin request blocked", 403);
-  const body = (await request.json().catch(() => ({}))) as { action?: string; lessonId?: string; answers?: Record<string, unknown>; status?: string; note?: string; track?: string };
+  const body = (await request.json().catch(() => ({}))) as { action?: string; lessonId?: string; answers?: Record<string, unknown>; answer?: string; status?: string; note?: string; track?: string };
   const l = await academyLearner(body.track);
   if (!l) return denied("Not found.", 404);
   const lesson = academyLesson(String(body.lessonId || ""));
@@ -171,17 +181,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ review: { status, note } }, noStore);
   }
 
-  if (body.action !== "submit") return denied("Unknown action.", 400);
+  if (body.action !== "submit" && body.action !== "answer") return denied("Unknown action.", 400);
   if (l.viewingAs) return denied("You're viewing as a team member, so answers aren't saved.", 403);
+
+  if (body.action === "answer") {
+    if (!lesson.tryIt) return denied("This lesson has no question to answer.", 400);
+    const answer = String(body.answer ?? "").trim().slice(0, 2000);
+    if (answer.length < 15) return denied("Write a sentence or two so your assistant has something to work with.", 400);
+    const { error } = await db.from("academy_answers").upsert({ user_id: l.userId, lesson_id: lesson.id, master_plan_id: l.planId, name: l.name, question: lesson.tryIt.question, answer, updated_at: new Date().toISOString() });
+    if (error) return denied("Your answer didn't save. Try again.", 500);
+    return NextResponse.json({ answer, countsToward: countsToward(lesson) }, noStore);
+  }
+
   const path = pathFor(l.track, ACADEMY_LESSONS);
   const progress = await myProgress(l);
   const onPath = path.some((p) => p.id === lesson.id) || l.preview;
   const state = lessonStates(l.preview ? [lesson] : path, progress, l.preview).get(lesson.id);
   if (!onPath || state === "locked") return denied("Finish the lesson before this one first.", 403);
-  const answers = body.answers && typeof body.answers === "object" ? body.answers : {};
-  if (lesson.questions.some((q) => !answers[q.id])) return denied("Answer every question first.", 400);
+  const picks = body.answers && typeof body.answers === "object" ? body.answers : {};
+  if (lesson.questions.some((q) => !picks[q.id])) return denied("Answer every question first.", 400);
 
-  const result = gradeQuiz(lesson, answers);
+  const result = gradeQuiz(lesson, picks);
   const now = new Date().toISOString();
   const row = progress.find((p) => p.lesson_id === lesson.id);
   const { error } = await db.from("academy_progress").upsert({
@@ -198,5 +218,5 @@ export async function POST(request: Request) {
   if (error) return denied("Your answers didn't save. Try again.", 500);
   await db.from("academy_attempts").insert({ user_id: l.userId, master_plan_id: l.planId, lesson_id: lesson.id, score: result.score, passed: result.passed, missed: result.missed });
   const here = path.findIndex((p) => p.id === lesson.id);
-  return NextResponse.json({ ...result, exam: lesson.kind === "exam", nextId: path[here + 1]?.id ?? null, level: lesson.level }, noStore);
+  return NextResponse.json({ ...result, exam: lesson.kind === "exam", nextId: path[here + 1]?.id ?? null, level: lesson.level, wings: lesson.kind === "exam" ? WINGS.exam : WINGS.lesson }, noStore);
 }

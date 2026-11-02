@@ -1,5 +1,7 @@
 // LCCS Academy: the shapes shared by the lessons, the API and the pages. No answers ever leave the server: the pages
 // only see LessonForLearner.
+import type { DimensionKey } from "../scoring/dimensionModel";
+
 export const LEVELS = [
   { key: "foundations", title: "Foundations", blurb: "What the Suite is, how to find your way around it and how to use it every day." },
   { key: "working", title: "Working Knowledge", blurb: "Doing the real work of your role in the Suite, start to finish, on your own." },
@@ -40,7 +42,8 @@ export interface Lesson {
   minutes: number;
   summary: string;
   sections: LessonSection[];
-  tryIt?: { label: string; href: string; task: string };
+  tryIt?: { label: string; href: string; task: string; question: string };
+  dimension?: DimensionKey; // the health score this lesson's work counts toward, where one applies
   questions: Question[];
   // What this lesson was written from. If any of these change, npm test fails until the lesson is reviewed.
   sources: string[]; // User Guide entry ids
@@ -59,6 +62,9 @@ export interface LessonCard {
   state: LessonState;
   bestScore: number | null;
   attempts: number;
+  hasTryIt: boolean;
+  answered: boolean;
+  countsToward: string | null;
   review?: ReviewState;
 }
 
@@ -83,9 +89,11 @@ export interface QuestionForLearner {
   options: { id: string; text: string }[];
 }
 
-export interface LessonForLearner extends Omit<Lesson, "questions" | "sources" | "files" | "tryIt"> {
+export interface LessonForLearner extends Omit<Lesson, "questions" | "sources" | "files" | "tryIt" | "dimension"> {
   questions: QuestionForLearner[];
-  tryIt: Lesson["tryIt"] | null;
+  tryIt: { label: string; href: string | null; task: string; question: string } | null; // href is null when this person cannot open that page
+  answer: string | null;
+  countsToward: string | null;
   state: LessonState;
   bestScore: number | null;
   attempts: number;
@@ -101,3 +109,6 @@ export interface QuizResult {
 }
 
 export const PASS_MARK = 80;
+
+// Wings: the reward for doing the work. Worked out from progress, never stored.
+export const WINGS = { lesson: 1, answer: 1, exam: 5 };

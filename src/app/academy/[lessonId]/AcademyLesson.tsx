@@ -5,7 +5,7 @@ import Link from "next/link";
 import { guideCard } from "@/app/user-guide/guideStyles";
 import { PASS_MARK, type LessonForLearner, type QuizResult, type ReviewState } from "@/lib/academy/types";
 
-type Submitted = QuizResult & { exam: boolean; nextId: string | null; level: string };
+type Submitted = QuizResult & { exam: boolean; nextId: string | null; level: string; wings: number };
 
 const REVIEW_LABEL = { draft: "Needs review", approved: "Approved", changes: "Changes asked", edited: "Edited since approved" };
 const primary = "rounded-lg bg-[#1a2b4a] px-4 py-2 text-sm font-semibold text-white hover:bg-[#24395f] disabled:opacity-50";
@@ -40,6 +40,39 @@ function ReviewBar({ lessonId, track, review, onChange }: { lessonId: string; tr
           <button type="button" className={`${primary} mt-2`} onClick={() => save("changes")}>Save my note</button>
         </div>
       )}
+      {error && <p role="alert" className="mt-2 text-sm text-[#b3402e]">{error}</p>}
+    </section>
+  );
+}
+
+// The try-it is real work, so it has a place to land: the answer is saved for their assistant and earns its reward.
+function TryIt({ lesson, track, onSaved }: { lesson: LessonForLearner; track: string; onSaved: (answer: string) => void }) {
+  const tryIt = lesson.tryIt!;
+  const [text, setText] = useState(lesson.answer ?? "");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+  const save = async () => {
+    setSaving(true);
+    setError("");
+    setSaved(false);
+    const r = await fetch("/api/academy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "answer", lessonId: lesson.id, track, answer: text }) });
+    const d = await r.json().catch(() => ({}));
+    setSaving(false);
+    if (!r.ok) return setError(d.error || "Your answer did not save. Try again.");
+    setSaved(true);
+    onSaved(d.answer);
+  };
+  return (
+    <section className={`${guideCard} mt-6 p-5`}>
+      <h2 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Try it in your account</h2>
+      <p className={`mt-1 ${muted}`}>{tryIt.task}</p>
+      {tryIt.href ? <a href={tryIt.href} target="_blank" rel="noopener" className={`${secondary} mt-3 inline-block`}>{tryIt.label}</a> : <p className={`mt-2 text-sm ${muted}`}>That page is not part of your access, so answer from what you know.</p>}
+      <label htmlFor="try-answer" className="mt-4 block font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{tryIt.question}</label>
+      <textarea id="try-answer" rows={4} maxLength={2000} value={text} onChange={(e) => { setText(e.target.value); setSaved(false); }} className="mt-1 w-full rounded-lg border border-[#E6DDCB] dark:border-[#2F3B4A] bg-card p-2 text-[#1a2b4a] dark:text-[#F8F5F0]" />
+      <p className={`mt-1 text-sm ${muted}`}>Your assistant reads this so it can help you follow through. It earns 1 Wing{lesson.countsToward ? ` and, once you pass the quiz, counts toward your ${lesson.countsToward} score` : ""}.</p>
+      <button type="button" className={`${primary} mt-2`} disabled={saving || text.trim().length < 15} onClick={save}>{saving ? "Saving…" : lesson.answer ? "Update my answer" : "Save my answer"}</button>
+      {saved && <p role="status" className="mt-2 text-sm font-medium text-[#2f7d4f]">Saved. Your assistant has it.</p>}
       {error && <p role="alert" className="mt-2 text-sm text-[#b3402e]">{error}</p>}
     </section>
   );
@@ -99,6 +132,13 @@ export default function AcademyLesson({ id, track }: { id: string; track: string
         <section className={`${guideCard} mt-5 p-5`} aria-live="polite">
           <p className="font-serif text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{result.passed ? `You passed with ${result.score}%` : `You scored ${result.score}%. You need ${PASS_MARK}% to pass.`}</p>
           <p className={`mt-1 ${muted}`}>{result.passed ? (result.missed.length ? "Look at the questions you missed below." : "You got every question right.") : result.exam ? "The questions you missed are marked below. Go back through the lessons, then try again." : "Read why under each question you missed, then try again."}</p>
+          {result.passed && (
+            <p className="mt-2 font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">
+              You earned {result.wings} {result.wings === 1 ? "Wing" : "Wings"}.
+              {lesson.tryIt && !lesson.answer ? " Answer the try-it below to earn 1 more." : ""}
+              {lesson.countsToward ? (lesson.answer ? ` This lesson now counts toward your ${lesson.countsToward} score.` : ` Your answer also counts toward your ${lesson.countsToward} score.`) : ""}
+            </p>
+          )}
           <div className="mt-4 flex flex-wrap gap-3">
             {result.passed && result.exam && <Link href={`/academy/certificate/${result.level}?track=${track}`} className={primary}>View your certificate</Link>}
             {result.passed && result.nextId && <Link href={`/academy/${result.nextId}?track=${track}`} className={primary}>Next lesson</Link>}
@@ -116,13 +156,7 @@ export default function AcademyLesson({ id, track }: { id: string; track: string
         </section>
       ))}
 
-      {lesson.tryIt && (
-        <section className={`${guideCard} mt-6 p-5`}>
-          <h2 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Try it in your account</h2>
-          <p className={`mt-1 ${muted}`}>{lesson.tryIt.task}</p>
-          <a href={lesson.tryIt.href} target="_blank" rel="noopener" className={`${secondary} mt-3 inline-block`}>{lesson.tryIt.label}</a>
-        </section>
-      )}
+      {lesson.tryIt && <TryIt lesson={lesson} track={track} onSaved={(answer) => setLesson({ ...lesson, answer })} />}
 
       <section className="mt-8" aria-labelledby="quiz-title">
         <h2 id="quiz-title" className="font-serif text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{lesson.kind === "exam" ? "Exam" : "Check your understanding"}</h2>

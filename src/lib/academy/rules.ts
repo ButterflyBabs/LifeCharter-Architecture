@@ -1,7 +1,8 @@
 // LCCS Academy rules, the pure parts: which lessons a person takes, what is unlocked, grading, and turning a lesson
 // into what the page may see (never the answers). Server only: the lessons import from here carry the answers.
 import crypto from "node:crypto";
-import { LEVELS, PASS_MARK, type Lesson, type LearnerTrack, type LevelKey, type LevelView, type LessonState, type Question, type QuestionForLearner, type QuizResult, type ReviewState } from "./types";
+import { DIMENSION_LABEL, type DimensionKey } from "../scoring/dimensionModel";
+import { LEVELS, PASS_MARK, WINGS, type Lesson, type LearnerTrack, type LevelKey, type LevelView, type LessonState, type Question, type QuestionForLearner, type QuizResult, type ReviewState } from "./types";
 
 export interface ProgressRow {
   lesson_id: string;
@@ -43,7 +44,9 @@ export function lessonStates(path: Lesson[], progress: ProgressRow[], openAll = 
   return out;
 }
 
-export function levelViews(path: Lesson[], progress: ProgressRow[], openAll = false, reviews?: Map<string, ReviewState>): LevelView[] {
+export const countsToward = (l: Lesson) => (l.dimension ? DIMENSION_LABEL[l.dimension] : null);
+
+export function levelViews(path: Lesson[], progress: ProgressRow[], openAll = false, reviews?: Map<string, ReviewState>, answered: Set<string> = new Set()): LevelView[] {
   const states = lessonStates(path, progress, openAll);
   const rows = new Map(progress.map((p) => [p.lesson_id, p]));
   return LEVELS.map((lv) => {
@@ -57,11 +60,29 @@ export function levelViews(path: Lesson[], progress: ProgressRow[], openAll = fa
       state: states.get(l.id) ?? "locked",
       bestScore: rows.get(l.id)?.best_score ?? null,
       attempts: rows.get(l.id)?.attempts ?? 0,
+      hasTryIt: Boolean(l.tryIt),
+      answered: answered.has(l.id),
+      countsToward: countsToward(l),
       ...(reviews ? { review: reviews.get(l.id) ?? { status: "draft" as const, note: null } } : {}),
     }));
     const passed = lessons.filter((l) => l.state === "passed").length;
     return { key: lv.key, title: lv.title, blurb: lv.blurb, lessons, passed, certificate: lessons.length > 0 && passed === lessons.length };
   });
+}
+
+/** Wings for one person: a passed lesson, an answered try-it on a passed lesson, a passed exam. */
+export function wingsFor(path: Lesson[], progress: ProgressRow[], answered: Set<string>): number {
+  const passed = new Set(progress.filter((p) => p.passed_at).map((p) => p.lesson_id));
+  return path.filter((l) => passed.has(l.id)).reduce((n, l) => n + (l.kind === "exam" ? WINGS.exam : WINGS.lesson) + (answered.has(l.id) ? WINGS.answer : 0), 0);
+}
+
+/** How many lessons of real work count toward each dimension: quiz passed AND try-it answered by the same person. */
+export function creditedByDimension(lessons: Lesson[], passed: { user_id: string; lesson_id: string }[], answers: { user_id: string; lesson_id: string }[]): Partial<Record<DimensionKey, number>> {
+  const done = new Set(passed.map((p) => `${p.user_id}|${p.lesson_id}`));
+  const ids = new Set(answers.filter((a) => done.has(`${a.user_id}|${a.lesson_id}`)).map((a) => a.lesson_id));
+  const out: Partial<Record<DimensionKey, number>> = {};
+  for (const l of lessons) if (l.dimension && ids.has(l.id)) out[l.dimension] = (out[l.dimension] ?? 0) + 1;
+  return out;
 }
 
 const optionId = (q: Question, text: string) => crypto.createHash("sha1").update(`${q.id}|${text}`).digest("hex").slice(0, 10);

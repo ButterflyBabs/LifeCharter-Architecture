@@ -226,6 +226,15 @@ export async function buildAssistantKnowledge(
     const { data: sops } = await supabase.from("sops").select("title, status").eq("master_plan_id", masterPlanId).or("template_key.is.null,status.eq.active").limit(40); // untouched template drafts are left out
     const sopList = (sops ?? []) as { title: string; status: string }[];
     if (sopList.length) parts.push(`Their documented SOPs: ${sopList.map((x) => `"${x.title.slice(0, 60)}"${x.status === "draft" ? " (draft)" : ""}`).join(", ")}.`);
+    // LCCS Academy: what they have finished, and what they wrote for each try-it.
+    const [{ data: academyDone }, { data: academyAnswers }] = await Promise.all([
+      supabase.from("academy_progress").select("lesson_id").eq("master_plan_id", masterPlanId).not("passed_at", "is", null).limit(500),
+      supabase.from("academy_answers").select("name, question, answer, updated_at").eq("master_plan_id", masterPlanId).order("updated_at", { ascending: false }).limit(15),
+    ]);
+    const academyRows = (academyAnswers ?? []) as { name: string | null; question: string; answer: string; updated_at: string }[];
+    if ((academyDone ?? []).length || academyRows.length) {
+      parts.push(`LCCS Academy: ${(academyDone ?? []).length} lessons passed in this account.` + (academyRows.length ? ` What they wrote while doing the work (use it to help them follow through; these are their own commitments, so build on them and never grade them): ${academyRows.map((a) => `[${a.updated_at.slice(0, 10)}${a.name ? `, ${a.name}` : ""}] "${a.question}" ${a.answer.slice(0, 300)}`).join(" | ")}` : ""));
+    }
     // What their assistant last advised on Operations.
     const op = await latestInsight(masterPlanId, "operations");
     const opList = Array.isArray(op?.content?.insights) ? (op!.content.insights as { pillar?: string; priority?: string; detail?: string }[]) : [];

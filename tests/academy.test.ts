@@ -4,7 +4,8 @@ import fs from "node:fs";
 import { ACADEMY_LESSONS as L } from "../src/content/academy";
 import { NOT_YET_IN_A_LESSON } from "../src/content/academy/coverage";
 import { GUIDE_ENTRIES } from "../src/lib/userGuide/entries";
-import { forLearner, gradeQuiz, lessonStates, levelViews, pathFor, reviewState, lessonHash, trackFor } from "../src/lib/academy/rules";
+import { creditedByDimension, forLearner, gradeQuiz, lessonStates, levelViews, pathFor, reviewState, lessonHash, trackFor, wingsFor } from "../src/lib/academy/rules";
+import { academyLift, computeDimensionScores } from "../src/lib/scoring/computeScores";
 import { staleLessons, uncoveredEntries, type Stamps } from "../src/lib/academy/freshness";
 import { academyOpenFor } from "../src/lib/academy/flag";
 import { extrasApiAccess, memberApiAccess, memberPageRedirect, restrictedPageRedirect } from "../src/lib/teamRoles";
@@ -33,6 +34,38 @@ test("lessons are well formed and cite real User Guide entries", () => {
       if (l.kind === "lesson") assert.ok(q.why, q.id);
     }
   }
+});
+
+test("every try-it asks a question", () => {
+  for (const l of L) if (l.tryIt) assert.ok(l.tryIt.question.endsWith("?"), l.id);
+});
+test("Academy work only lifts a score, is capped, and never makes a score from nothing", () => {
+  assert.equal(academyLift(50, 0), 0);
+  assert.equal(academyLift(50, 1), 1);
+  assert.equal(academyLift(50, 3), 2);
+  assert.equal(academyLift(50, 50), 3);
+  assert.equal(academyLift(100, 50), 0);
+  const base = { brain: [], pulse: [], operational: null, businessPlanCompleteness: null };
+  const profit = { profitDomains: { sales: { score: 40 } } };
+  const plain = computeDimensionScores({ ...base, ...profit }).domains.find((d) => d.key === "sales")!;
+  const lifted = computeDimensionScores({ ...base, ...profit, academyCredit: { sales: 2 } }).domains.find((d) => d.key === "sales")!;
+  assert.equal(lifted.score, (plain.score as number) + 2);
+  assert.equal(lifted.academyLift, 2);
+  const none = computeDimensionScores({ ...base, profitDomains: {}, academyCredit: { sales: 5 } }).domains.find((d) => d.key === "sales")!;
+  assert.equal(none.score, null);
+});
+test("a lesson earns score credit only with a passed quiz and an answer from the same person", () => {
+  const id = L.find((l) => l.dimension === "sales")!.id;
+  assert.deepEqual(creditedByDimension(L, [{ user_id: "a", lesson_id: id }], [{ user_id: "b", lesson_id: id }]), {});
+  assert.deepEqual(creditedByDimension(L, [{ user_id: "a", lesson_id: id }], []), {});
+  assert.equal(creditedByDimension(L, [{ user_id: "a", lesson_id: id }, { user_id: "b", lesson_id: id }], [{ user_id: "a", lesson_id: id }, { user_id: "b", lesson_id: id }]).sales, 1);
+});
+test("Wings reward lessons, answers and exams", () => {
+  const p = pathFor("client", L);
+  const exam = p[p.length - 1];
+  const row = (id: string) => ({ lesson_id: id, best_score: 100, attempts: 1, passed_at: "2026-11-02" });
+  assert.equal(wingsFor(p, [row(p[0].id), row(exam.id)], new Set([p[0].id])), 7);
+  assert.equal(wingsFor(p, [], new Set([p[0].id])), 0);
 });
 
 const path = pathFor("client", L);

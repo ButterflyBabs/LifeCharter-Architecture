@@ -56,6 +56,8 @@ export interface ScoringInputs {
    * redistributes.
    */
   aiScores?: Record<string, { score: number; rationale?: string; answeredAt?: string }>;
+  /** LCCS Academy: lessons of real work per dimension (quiz passed and try-it answered). See academyLift. */
+  academyCredit?: Partial<Record<DimensionKey, number>>;
   /** Reference "now" for staleness (ISO). Defaults to runtime now in the route. */
   now?: string;
 }
@@ -79,6 +81,7 @@ export interface DimensionResult {
   partial: boolean; // true when some weight was redistributed (AI/operational pending)
   lastMeasured: string | null;
   sources: SourceBreakdown[];
+  academyLift?: number; // points added for LCCS Academy work
 }
 
 export interface ScoringOutput {
@@ -161,6 +164,12 @@ function subScoreFor(
   }
 }
 
+// LCCS Academy work moves a dimension part of the way from its score toward 100: 1.5% of that gap per lesson, 5% at most.
+// It only ever lifts a score, and a dimension with no real score stays unscored, so training alone never makes one.
+export function academyLift(score: number, lessons: number): number {
+  return Math.round((100 - score) * Math.min(0.05, 0.015 * lessons));
+}
+
 // ---- Main ------------------------------------------------------------------
 
 export function computeDimensionScores(inputs: ScoringInputs): ScoringOutput {
@@ -205,12 +214,15 @@ export function computeDimensionScores(inputs: ScoringInputs): ScoringOutput {
       };
     });
 
-    const score =
+    const blended =
       present.length && totalPresentWeight > 0
         ? Math.round(
             present.reduce((s, r) => s + (r.source.weight / totalPresentWeight) * (r.subScore as number), 0)
           )
         : null;
+
+    const lift = blended === null ? 0 : academyLift(blended, inputs.academyCredit?.[def.key] ?? 0);
+    const score = blended === null ? null : blended + lift;
 
     // Partial if any nominal weight went unfilled (AI/operational/unanswered).
     const partial = present.length > 0 && totalPresentWeight < nominalTotal;
@@ -222,6 +234,7 @@ export function computeDimensionScores(inputs: ScoringInputs): ScoringOutput {
       partial,
       lastMeasured: latest(raw.map((r) => r.answeredAt)),
       sources,
+      ...(lift ? { academyLift: lift } : {}),
     };
   });
 

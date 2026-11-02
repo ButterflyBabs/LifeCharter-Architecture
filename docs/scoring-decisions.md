@@ -27,6 +27,10 @@ Source of truth for the assessment-driven scoring build. Encoded in
   window (full assessment ~90d, Quick Pulse ~14d). No hard expiry yet; weight
   decay is a later enhancement.
 
+## LCCS Academy credit (AmiLynne, 2026-11-02)
+- A lesson with a `dimension` counts once its quiz is passed and its try-it answered by the same person.
+- Each such lesson moves that dimension 1.5% of the way from its score to 100, capped at 5%. It never lowers a score, and it never creates a score for a dimension with no evidence. See `academyLift` in `computeScores.ts`.
+
 ## Phase behavior
 - **Phase 1** (no LLM): scores computed from Profit (scale), Brain scale questions,
   Quick Pulse, and operational data. Soul + open-ended Brain contribute nothing yet;

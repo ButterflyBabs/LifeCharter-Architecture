@@ -26,4 +26,6 @@ The Academy must never teach something the app no longer does. The app changes f
 - A new feature gets a lesson or a place in an existing one. Use `coverage.ts` only when a named later level will teach it.
 - Changing a lesson's wording shows "Edited since approved" on the page. Tell Babs which lessons need her Approved again.
 
+Every try-it has a question. Answers go to the assistant through `buildAssistantKnowledge`. A lesson with a `dimension` lifts that score (`academyLift`), so give a new lesson a dimension only where its work really affects that score.
+
 Babs approves lessons in the Academy. `ACADEMY_STAGE` in `src/lib/academy/flag.ts` is `review`, `team` or `all`. Client announcements go out only at `all`.

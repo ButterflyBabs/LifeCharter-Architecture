@@ -10,6 +10,7 @@ import AcademyPeople from "./AcademyPeople";
 type Overview = {
   learner: { name: string; track: string; trackLabel: string; required: boolean; preview: boolean; canSeePeople: boolean };
   levels: LevelView[];
+  rewards: { wings: number; answered: number; tryIts: number };
   tracks: Record<string, string> | null;
 };
 
@@ -29,6 +30,8 @@ function LessonRow({ lesson, track }: { lesson: LessonCard; track: string }) {
           <span className="mt-2 block text-xs text-[#5a6472] dark:text-[#b8c2cf]">
             {lesson.kind === "exam" ? "Exam" : "Lesson"} · about {lesson.minutes} minutes
             {lesson.bestScore !== null ? ` · best score ${lesson.bestScore}%` : ""}
+            {lesson.hasTryIt && lesson.answered ? " · answer saved" : ""}
+            {lesson.countsToward ? ` · counts toward ${lesson.countsToward}` : ""}
             {locked ? " · finish the lesson before this one" : ""}
           </span>
           {lesson.review && <span className={`mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${lesson.review.status === "approved" ? "bg-[#2f7d4f]/15 text-[#2f7d4f]" : "bg-[#c9a227]/15 text-[#7a6210] dark:text-[#e4c766]"}`}>{REVIEW_LABEL[lesson.review.status]}</span>}
@@ -60,6 +63,7 @@ export default function AcademyHome() {
   const lessons = data.levels.flatMap((l) => l.lessons);
   const passed = lessons.filter((l) => l.state === "passed").length;
   const percent = lessons.length ? Math.round((passed / lessons.length) * 100) : 0;
+  const certificates = data.levels.filter((l) => l.certificate).length;
   const approved = lessons.filter((l) => l.review?.status === "approved").length;
   const tabClass = (on: boolean) => `rounded-full border px-4 py-1.5 text-sm ${on ? "border-[#c9a227] bg-[#c9a227]/15 text-[#1a2b4a] dark:text-[#F8F5F0]" : "border-[#E6DDCB] dark:border-[#2F3B4A] bg-card text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#c9a227]/10"}`;
 
@@ -97,6 +101,12 @@ export default function AcademyHome() {
             <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-[#E6DDCB] dark:bg-[#2F3B4A]" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Lessons passed">
               <div className="h-full rounded-full bg-[#c9a227]" style={{ width: `${percent}%` }} />
             </div>
+            <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div><dt className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Wings earned</dt><dd className="font-serif text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{data.rewards.wings}</dd></div>
+              <div><dt className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Try-its answered</dt><dd className="font-serif text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{data.rewards.answered} of {data.rewards.tryIts}</dd></div>
+              <div><dt className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Certificates</dt><dd className="font-serif text-2xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{certificates}</dd></div>
+            </dl>
+            <p className="mt-3 text-sm text-[#5a6472] dark:text-[#b8c2cf]">You earn 1 Wing for each lesson you pass, 1 more for answering its try-it, and 5 for each exam. A lesson marked counts toward lifts that health score once you pass it and answer its try-it.</p>
           </section>
 
           {data.levels.map((level) => (
