@@ -47,6 +47,7 @@ export default function EventPage() {
   const e = d.event;
   const accent = e.accent && /^#[0-9a-fA-F]{6}$/.test(e.accent) ? e.accent : "#2E7C83";
   const ink = onAccent(accent);
+  const dailyAt = e.startsAt ? new Date(e.startsAt).toLocaleTimeString("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit", timeZoneName: "short" }) : null;
   const when = e.startsAt ? new Date(e.startsAt).toLocaleString("en-US", { timeZone: tz, weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }) : null;
   const closed = e.status !== "published" || e.full || e.past;
 
@@ -65,6 +66,7 @@ export default function EventPage() {
             {e.kind === "live" && when && <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm"><CalendarDays className="h-4 w-4" style={{ color: accent }} />{when}</span>}
             {e.kind === "live" && <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm"><Clock className="h-4 w-4" style={{ color: accent }} />{e.durationMin} minutes · online</span>}
             {e.kind === "challenge" && <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm"><Sparkles className="h-4 w-4" style={{ color: accent }} />{e.days}-day challenge{e.startsOn ? ` · starts ${new Date(`${e.startsOn}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })}` : " · starts the day after you join"}</span>}
+            {e.kind === "challenge" && dailyAt && <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm"><Clock className="h-4 w-4" style={{ color: accent }} />Live daily at {dailyAt} · {e.durationMin} minutes · online</span>}
           </div>
           {e.description && <div className="mt-6 whitespace-pre-wrap text-[16px] leading-relaxed text-[#2E3A46]">{e.description}</div>}
         </section>

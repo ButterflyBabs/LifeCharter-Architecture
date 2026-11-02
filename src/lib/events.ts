@@ -36,7 +36,7 @@ export const replayUrl = (slug: string, token: string) => `${SITE()}/e/${slug}/r
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 /** Google Calendar "add event" link for a live event. */
-export function googleCalendarUrl(e: Pick<EventRow, "title" | "starts_at" | "duration_min" | "join_url" | "description">): string | null {
+export function googleCalendarUrl(e: Pick<EventRow, "title" | "starts_at" | "duration_min" | "join_url" | "description"> & Partial<Pick<EventRow, "days">>): string | null {
   if (!e.starts_at) return null;
   const s = new Date(e.starts_at);
   const f = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
@@ -47,18 +47,19 @@ export function googleCalendarUrl(e: Pick<EventRow, "title" | "starts_at" | "dur
   u.searchParams.set("dates", `${f(s)}/${f(end)}`);
   u.searchParams.set("details", [e.join_url ? `Join: ${e.join_url}` : "", (e.description || "").slice(0, 800)].filter(Boolean).join("\n\n"));
   if (e.join_url) u.searchParams.set("location", e.join_url);
+  if (e.days) u.searchParams.set("recur", `RRULE:FREQ=DAILY;COUNT=${e.days}`);
   return u.toString();
 }
 
-/** An .ics file for Apple Calendar and Outlook. */
-export function icsFor(e: Pick<EventRow, "id" | "title" | "starts_at" | "duration_min" | "join_url" | "description">): string {
+/** An .ics file for Apple Calendar and Outlook. A live challenge repeats daily for its number of days. */
+export function icsFor(e: Pick<EventRow, "id" | "title" | "starts_at" | "duration_min" | "join_url" | "description"> & Partial<Pick<EventRow, "days">>): string {
   const s = new Date(e.starts_at!);
   const f = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
   const end = new Date(s.getTime() + e.duration_min * 60_000);
   const clean = (t: string) => t.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
   return [
     "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//LifeCharter Command Suite//Events//EN", "METHOD:PUBLISH", "BEGIN:VEVENT",
-    `UID:${e.id}@lccommandsuite.com`, `DTSTAMP:${f(new Date())}`, `DTSTART:${f(s)}`, `DTEND:${f(end)}`, `SUMMARY:${clean(e.title)}`,
+    `UID:${e.id}@lccommandsuite.com`, `DTSTAMP:${f(new Date())}`, `DTSTART:${f(s)}`, `DTEND:${f(end)}`, ...(e.days ? [`RRULE:FREQ=DAILY;COUNT=${e.days}`] : []), `SUMMARY:${clean(e.title)}`,
     `DESCRIPTION:${clean([e.join_url ? `Join: ${e.join_url}` : "", e.description || ""].filter(Boolean).join("\n\n").slice(0, 1500))}`,
     ...(e.join_url ? [`LOCATION:${clean(e.join_url)}`, `URL:${e.join_url}`] : []),
     "END:VEVENT", "END:VCALENDAR",
@@ -133,6 +134,8 @@ async function sendConfirmation(db: Db, e: EventRow, r: { email: string; first_n
     });
   } else {
     const start = e.starts_on || startFor(e, new Date().toISOString());
+    // A challenge taught live has a daily session: starts_at is the first one.
+    const g = e.starts_at ? googleCalendarUrl({ ...e, days: e.days ?? undefined }) : null;
     await sendMail(who, {
       to: r.email, fromName: from,
       subject: `Welcome to ${e.title}`,
@@ -140,6 +143,13 @@ async function sendConfirmation(db: Db, e: EventRow, r: { email: string; first_n
       lines: [
         `You're signed up for <strong>${esc(e.title)}</strong>: ${e.days ?? 0} days.`,
         `Day 1 arrives by email on ${esc(new Date(`${start}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }))}. Each day also opens on your challenge page, where you can tick it off.`,
+        ...(e.starts_at
+          ? [
+              `We meet live every day, starting ${esc(fmt(e.starts_at, tz))}.`,
+              e.join_url ? `Join here each day: <a href="${e.join_url}">${esc(e.join_url)}</a>` : "",
+              `Add all ${e.days ?? 0} days to your calendar: <a href="${g}">Google Calendar</a> · <a href="${SITE()}/api/e/${e.slug}/ics">Apple or Outlook</a>`,
+            ]
+          : []),
       ],
       button: { label: "Open my challenge page", url: challengeUrl(e.slug, r.token) },
     });
@@ -218,8 +228,8 @@ export async function runEvents(db: Db): Promise<Record<string, number>> {
                 to: r.email, fromName: from,
                 subject: `Day ${n} of ${e.days}: ${d?.title || e.title}`,
                 heading: `Day ${n}: ${d?.title || "today's step"}`,
-                lines: [d?.body ? esc(d.body.slice(0, 600)).replace(/\n/g, "<br>") + (d.body.length > 600 ? "…" : "") : "", d?.action ? `<strong>Today's step:</strong> ${esc(d.action)}` : ""],
-                button: { label: `Open day ${n}`, url: challengeUrl(e.slug, r.token) },
+                lines: [d?.body ? esc(d.body.slice(0, 600)).replace(/\n/g, "<br>") + (d.body.length > 600 ? "…" : "") : "", d?.action ? `<strong>Today's step:</strong> ${esc(d.action)}` : "", e.starts_at ? `<a href="${challengeUrl(e.slug, r.token)}">Open day ${n}</a>` : ""],
+                button: e.starts_at && e.join_url ? { label: "Join live", url: e.join_url } : { label: `Open day ${n}`, url: challengeUrl(e.slug, r.token) },
               });
               await db.from("event_registrations").update({ last_day_sent: n }).eq("id", r.id);
               out.days++;
