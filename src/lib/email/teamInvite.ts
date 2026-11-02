@@ -28,6 +28,8 @@ export async function sendTeamInvite(opts: {
   base: string;
   /** Where replies should go: the person who added them. Falls back to support. */
   replyTo?: string | null;
+  /** Quietly copied on the send (the house account copies AmiLynne on every invitation). */
+  bcc?: string | null;
 }): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
@@ -67,6 +69,7 @@ export async function sendTeamInvite(opts: {
         from: "LifeCharter Command Suite <support@lccommandsuite.com>",
         to: opts.to,
         reply_to: replyTo,
+        ...(opts.bcc ? { bcc: [opts.bcc] } : {}),
         subject: `You're invited to join ${opts.workspaceName} on LifeCharter Command Suite`,
         html,
         text,

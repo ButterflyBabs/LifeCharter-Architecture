@@ -22,6 +22,7 @@ type MemberRow = {
   joined_at: string | null;
   permissions?: { preset?: string | null; features?: unknown; extras?: unknown } | null;
   ai_monthly_cap?: number | null;
+  invite_sent_at?: string | null;
 };
 
 function serialize(m: MemberRow, aiUsed = 0) {
@@ -33,6 +34,8 @@ function serialize(m: MemberRow, aiUsed = 0) {
     status: (m.status as string) || "active",
     avatar: m.avatar_url || null,
     joinedAt: m.joined_at || null,
+    // When the latest invitation email went out (null = none sent yet).
+    inviteSentAt: m.invite_sent_at || null,
     // The last day of their access (null = no end date), and whether that day has passed.
     accessEndsOn: accessEndOf(m.permissions)?.on ?? null,
     accessEnded: memberAccessExpired(m.permissions),
@@ -44,7 +47,7 @@ function serialize(m: MemberRow, aiUsed = 0) {
   };
 }
 
-const COLS = "id, workspace_id, name, email, role, status, avatar_url, joined_at, permissions, ai_monthly_cap";
+const COLS = "id, workspace_id, name, email, role, status, avatar_url, joined_at, permissions, ai_monthly_cap, invite_sent_at";
 
 // Confirms the member belongs to a workspace owned by the current client.
 async function ownedMember(workspaceId: string, memberId: string) {

@@ -43,12 +43,19 @@ interface TeamMember {
   status: "active" | "pending" | "inactive";
   avatar?: string | null;
   joinedAt?: string | null;
+  inviteSentAt?: string | null; // when the latest invitation email went out, or null if none has
   access?: { preset: string | null; features: FeatureMap; extras?: AccessExtras | null } | null;
   aiMonthlyCap?: number | null;
   aiUsedThisMonth?: number;
   accessEndsOn?: string | null; // the last day of their access (YYYY-MM-DD), or null for no end date
   accessEnded?: boolean; // that day has passed, so they can no longer sign in
 }
+
+// "Nov 2" for the day an invitation email went out, in the viewer's own time zone.
+const sentOn = (iso: string) => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+};
 
 // The owner's own time zone: the last day of access is counted in it.
 const browserZone = () => {
@@ -302,6 +309,7 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.url) throw new Error(data?.error);
       setInviteLink({ id, url: data.url, emailed: Boolean(data.emailed), hasLogin: Boolean(data.hasLogin) });
+      setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, inviteSentAt: data.inviteSentAt ?? null } : m)));
     } catch (e) {
       flash(false, (e as Error)?.message || "Couldn't create the login link.");
     } finally {
@@ -618,6 +626,17 @@ export function TeamManagement({ workspaceId, workspaceName, onChangePlan }: Tea
                           <span className="text-xs bg-yellow-500/10 text-yellow-600 px-2 py-0.5 rounded whitespace-nowrap">
                             Pending
                           </span>
+                        )}
+                        {member.status === "pending" && (
+                          member.inviteSentAt ? (
+                            <span className="text-xs bg-[#2E7C83]/10 text-[#2E7C83] px-2 py-0.5 rounded whitespace-nowrap" title="The invitation email went out on this date">
+                              Invite sent {sentOn(member.inviteSentAt)}
+                            </span>
+                          ) : (
+                            <span className="text-xs bg-[#7a8a99]/15 text-[#5c6b7a] px-2 py-0.5 rounded whitespace-nowrap" title="Press Send invitation to email them">
+                              Invite not sent
+                            </span>
+                          )
                         )}
                         {member.accessEnded ? (
                           <span className="text-xs bg-red-500/10 text-red-600 px-2 py-0.5 rounded whitespace-nowrap">Access ended</span>

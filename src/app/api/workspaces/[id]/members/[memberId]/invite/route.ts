@@ -10,6 +10,7 @@ import { senderProfile } from "@/lib/email/accountSender";
 
 export const dynamic = "force-dynamic";
 
+const HOUSE_COPY = "amilynne@amilynnecarroll.com";
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // Service-role auth-admin client (for creating/updating the member's login).
@@ -131,7 +132,14 @@ export async function POST(
     hasLogin,
     base: origin,
     replyTo: ownerReply || null,
+    // On AmiLynne's own account, she is copied on every invitation that goes out.
+    bcc: profile?.house ? HOUSE_COPY : null,
   });
 
-  return NextResponse.json({ url, email, expiresAt, emailed, hasLogin });
+  // Record when the email really went out, so the team page can show "Invite sent <date>". A failed send
+  // clears it: the new link replaced the old one, so nothing valid has been delivered.
+  const inviteSentAt = emailed ? new Date().toISOString() : null;
+  await supabase.from("workspace_members").update({ invite_sent_at: inviteSentAt }).eq("id", member.id);
+
+  return NextResponse.json({ url, email, expiresAt, emailed, hasLogin, inviteSentAt });
 }

@@ -23,6 +23,7 @@ type MemberRow = {
   joined_at: string | null;
   permissions?: { preset?: string | null; features?: unknown; extras?: unknown } | null;
   ai_monthly_cap?: number | null;
+  invite_sent_at?: string | null;
 };
 
 function serialize(m: MemberRow, aiUsed = 0) {
@@ -34,6 +35,8 @@ function serialize(m: MemberRow, aiUsed = 0) {
     status: (m.status as string) || "active",
     avatar: m.avatar_url || null,
     joinedAt: m.joined_at || null,
+    // When the latest invitation email went out (null = none sent yet).
+    inviteSentAt: m.invite_sent_at || null,
     // Per-feature access (null = the role's defaults).
     access: m.permissions?.features ? { preset: m.permissions.preset ?? null, features: cleanFeatureMap(m.permissions.features), extras: cleanExtras(m.permissions.extras) } : null,
     // The last day of their access (null = no end date), and whether that day has passed.
@@ -45,7 +48,7 @@ function serialize(m: MemberRow, aiUsed = 0) {
   };
 }
 
-const COLS = "id, workspace_id, name, email, role, status, avatar_url, joined_at, permissions, ai_monthly_cap";
+const COLS = "id, workspace_id, name, email, role, status, avatar_url, joined_at, permissions, ai_monthly_cap, invite_sent_at";
 
 // Confirms the workspace exists and belongs to the current client.
 async function ownedWorkspace(id: string) {
