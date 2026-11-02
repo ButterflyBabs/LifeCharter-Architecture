@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { ACADEMY_LESSONS, academyLesson } from "@/content/academy";
 import { canOpen, academyLearner, memberOfHouse, type Learner } from "@/lib/academy/server";
-import { countsToward, forLearner, gradeQuiz, isLevel, lessonHash, lessonStates, levelViews, pathFor, reviewState, trackFor, wingsFor, type ProgressRow } from "@/lib/academy/rules";
+import { countsToward, forLearner, gradeQuiz, isLevel, lessonHash, lessonStates, levelViews, pathFor, releasedLessons, reviewState, trackFor, wingsFor, type ProgressRow } from "@/lib/academy/rules";
 import { LEVELS, TRACK_LABELS, WINGS, type LearnerTrack, type ReviewState } from "@/lib/academy/types";
 import { cleanFeatureMap } from "@/lib/teamRoles";
 
@@ -36,6 +36,9 @@ async function reviews(): Promise<Map<string, ReviewState>> {
   return new Map(ACADEMY_LESSONS.map((lesson) => [lesson.id, reviewState(lesson, rows.get(lesson.id))]));
 }
 
+// Babs previews every lesson; everyone else sees only what she has approved.
+const lessonsFor = async (l: Learner) => (l.preview ? ACADEMY_LESSONS : releasedLessons(ACADEMY_LESSONS, await reviews()));
+
 async function people(l: Learner) {
   const db = createServerClient();
   const allAccounts = l.preview;
@@ -55,6 +58,7 @@ async function people(l: Learner) {
   type Row = { user_id: string; lesson_id: string; master_plan_id: string | null; email: string | null; name: string | null; best_score: number; passed_at: string | null; last_at: string };
   type Member = { name: string | null; email: string | null; role: string | null; permissions: { features?: unknown } | null; workspace_id: string };
   const house = await memberOfHouse(ids[0] ?? null);
+  const released = releasedLessons(ACADEMY_LESSONS, await reviews());
   const roster = new Map(((members ?? []) as Member[]).map((m) => [(m.email || "").toLowerCase(), m]));
   const trackOf = (m: Member | undefined): LearnerTrack =>
     m ? trackFor({ houseMember: house, role: m.role, salesReference: (cleanFeatureMap(m.permissions?.features)?.sales_reference ?? "none") !== "none" }) : "client";
@@ -68,7 +72,7 @@ async function people(l: Learner) {
     const m = roster.get(key);
     const mine = byEmail.get(key) ?? [];
     const track = trackOf(m);
-    const path = pathFor(track, ACADEMY_LESSONS);
+    const path = pathFor(track, released);
     const passed = mine.filter((r) => r.passed_at && path.some((p) => p.id === r.lesson_id));
     const current = path.find((p) => !passed.some((r) => r.lesson_id === p.id));
     return {
@@ -104,7 +108,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const l = await academyLearner(url.searchParams.get("track"));
   if (!l) return denied("Not found.", 404);
-  const path = pathFor(l.track, ACADEMY_LESSONS);
+  const path = pathFor(l.track, await lessonsFor(l));
 
   if (url.searchParams.get("people")) {
     if (!l.canSeePeople) return denied("Only the account owner or an admin can see this.", 403);
@@ -193,7 +197,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ answer, countsToward: countsToward(lesson) }, noStore);
   }
 
-  const path = pathFor(l.track, ACADEMY_LESSONS);
+  const path = pathFor(l.track, await lessonsFor(l));
   const progress = await myProgress(l);
   const onPath = path.some((p) => p.id === lesson.id) || l.preview;
   const state = lessonStates(l.preview ? [lesson] : path, progress, l.preview).get(lesson.id);

@@ -4,7 +4,7 @@ import fs from "node:fs";
 import { ACADEMY_LESSONS as L } from "../src/content/academy";
 import { NOT_YET_IN_A_LESSON } from "../src/content/academy/coverage";
 import { GUIDE_ENTRIES } from "../src/lib/userGuide/entries";
-import { creditedByDimension, forLearner, gradeQuiz, lessonStates, levelViews, pathFor, reviewState, lessonHash, trackFor, wingsFor } from "../src/lib/academy/rules";
+import { creditedByDimension, forLearner, gradeQuiz, lessonStates, levelViews, pathFor, reviewState, lessonHash, releasedLessons, trackFor, wingsFor } from "../src/lib/academy/rules";
 import { academyLift, computeDimensionScores } from "../src/lib/scoring/computeScores";
 import { staleLessons, uncoveredEntries, type Stamps } from "../src/lib/academy/freshness";
 import { academyOpenFor } from "../src/lib/academy/flag";
@@ -112,6 +112,11 @@ test("an approval goes out of date when the lesson changes", () => {
   assert.equal(reviewState(lesson, row).status, "approved");
   assert.equal(reviewState(lesson, { ...row, content_hash: "old" }).status, "edited");
   assert.equal(reviewState(lesson, undefined).status, "draft");
+});
+test("learners see only approved lessons, and an edited one stays up", () => {
+  const [a, b, c] = L;
+  const reviews = new Map([[a.id, { status: "approved" as const, note: null }], [b.id, { status: "edited" as const, note: null }], [c.id, { status: "changes" as const, note: "x" }]]);
+  assert.deepEqual(releasedLessons([a, b, c, L[3]], reviews).map((l) => l.id), [a.id, b.id]);
 });
 test("release stages open the Academy in order", () => {
   assert.equal(academyOpenFor("x@y.z", false, true, "review"), false);

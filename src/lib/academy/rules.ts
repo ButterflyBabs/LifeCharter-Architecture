@@ -112,6 +112,10 @@ export function gradeQuiz(lesson: Lesson, answers: Record<string, unknown>): Qui
   return { score, passed: score >= PASS_MARK, missed: results.filter((r) => !r.correct).map((r) => r.id), results };
 }
 
+/** What learners may take: lessons Babs approved. An approved lesson edited afterward stays up while she re-approves it. */
+export const releasedLessons = (lessons: Lesson[], reviews: Map<string, ReviewState>) =>
+  lessons.filter((l) => ["approved", "edited"].includes(reviews.get(l.id)?.status ?? ""));
+
 export const levelTitle = (key: string) => LEVELS.find((l) => l.key === key)?.title ?? null;
 export const isLevel = (key: string): key is LevelKey => LEVELS.some((l) => l.key === key);
 
