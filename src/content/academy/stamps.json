@@ -170,5 +170,85 @@
   "w-exam": {
     "hash": "fee64e418e212f12",
     "reviewed": "2026-11-02"
+  },
+  "a-read-score": {
+    "hash": "364e528ea788fefb",
+    "reviewed": "2026-11-02"
+  },
+  "a-keep-current": {
+    "hash": "6a17d2fd8bf9978f",
+    "reviewed": "2026-11-02"
+  },
+  "a-pillars": {
+    "hash": "7121c9bdcbd759b0",
+    "reviewed": "2026-11-02"
+  },
+  "a-lead-to-client": {
+    "hash": "fd1e9d95b69d382d",
+    "reviewed": "2026-11-02"
+  },
+  "a-on-its-own": {
+    "hash": "6512c229d2fbb8a4",
+    "reviewed": "2026-11-02"
+  },
+  "ac-money-map": {
+    "hash": "be21a411d863e236",
+    "reviewed": "2026-11-02"
+  },
+  "ac-forecast": {
+    "hash": "5fb1333860e90201",
+    "reviewed": "2026-11-02"
+  },
+  "ac-segments": {
+    "hash": "a0f31ce64009fe86",
+    "reviewed": "2026-11-02"
+  },
+  "ac-tax-tools": {
+    "hash": "a50a5011c46d07e0",
+    "reviewed": "2026-11-02"
+  },
+  "ac-legal": {
+    "hash": "8d0a6e6db2aec8b3",
+    "reviewed": "2026-11-02"
+  },
+  "ac-programs": {
+    "hash": "f1cf6953c2bf0127",
+    "reviewed": "2026-11-02"
+  },
+  "ac-leads": {
+    "hash": "905c07d3787f37bc",
+    "reviewed": "2026-11-02"
+  },
+  "ac-affiliates": {
+    "hash": "e3f12399a672224a",
+    "reviewed": "2026-11-02"
+  },
+  "at-legal": {
+    "hash": "8d0a6e6db2aec8b3",
+    "reviewed": "2026-11-02"
+  },
+  "at-programs": {
+    "hash": "6e6342edb284e38d",
+    "reviewed": "2026-11-02"
+  },
+  "at-tracking": {
+    "hash": "192d4eded5bc4851",
+    "reviewed": "2026-11-02"
+  },
+  "as-numbers": {
+    "hash": "33b653984a52902e",
+    "reviewed": "2026-11-02"
+  },
+  "as-meta": {
+    "hash": "685fa3f71e37e645",
+    "reviewed": "2026-11-02"
+  },
+  "as-affiliates": {
+    "hash": "e3f12399a672224a",
+    "reviewed": "2026-11-02"
+  },
+  "a-exam": {
+    "hash": "47cf4e42dcc26418",
+    "reviewed": "2026-11-02"
   }
 }
