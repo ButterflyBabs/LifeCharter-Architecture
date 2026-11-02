@@ -215,6 +215,7 @@ const navigationSections = [
     color: "text-[#8fb58a]",
     items: [
       { id: "user-guide", label: "User Guide", icon: BookOpen, href: "/user-guide" },
+      { id: "academy", label: "LCCS Academy", icon: GraduationCap, href: "/academy" },
       { id: "setup", label: "Set up Suite", icon: Rocket, href: "/setup" },
       { id: "first30", label: "First 30 Days", icon: Sprout, href: "/first-30-days" },
       { id: "starter-guide", label: "Starter Guide", icon: BookOpen, href: STARTER_GUIDE_URL },
@@ -760,6 +761,7 @@ export function CollapsibleSidebar() {
   // Team Huddle shows only for an account with a team (a member, or someone added to the huddle by email).
   const [hasTeam, setHasTeam] = useState(true);
   const [userGuide, setUserGuide] = useState(false);
+  const [academy, setAcademy] = useState(false);
   useEffect(() => {
     fetch("/api/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
@@ -771,6 +773,7 @@ export function CollapsibleSidebar() {
         setAssessmentsLocked(d?.assessmentsLocked === true);
         setHasTeam(d?.hasTeam !== false);
         setUserGuide(d?.userGuide === true);
+        setAcademy(d?.academy === true);
       })
       .catch(() => {});
   }, []);
@@ -798,7 +801,7 @@ export function CollapsibleSidebar() {
     const p = href.split("?")[0];
     const key = featureForPage(p);
     // "Show only their areas": a page that belongs to no area they have stays out of the menu (Settings and Help stay).
-    if (extras?.restrict && !key) return p.startsWith("/settings") || p === "/user-guide" || p === "/help" || p.startsWith("/help/");
+    if (extras?.restrict && !key) return p.startsWith("/settings") || p === "/user-guide" || p === "/academy" || p === "/help" || p.startsWith("/help/");
     return !key || (features[key] ?? "none") !== "none";
   };
   // The client's own pages (made by them or their AI assistant), in a section at the end of the menu.
@@ -838,7 +841,7 @@ export function CollapsibleSidebar() {
   // left bar holds only Settings (profile, appearance and security).
   const consultantNav = [{ title: "MY ACCOUNT", color: "text-[#c9a227]", items: [{ id: "settings", label: "Settings", icon: Settings2, href: "/settings" }] }];
   const sections = teamRole === "consultant" ? consultantNav : [...(superAdmin && !isDemo ? [...demoOrderedSections, ...architectGroups, efSection] : demoOrderedSections), ...teamExtra, ...mySection]
-    .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href) && ((superAdmin && !isDemo) || !ARCHITECT_ONLY_IDS.includes(i.id)) && (i.id !== "team-huddle" || hasTeam) && (i.id !== "user-guide" || userGuide)) }))
+    .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href) && ((superAdmin && !isDemo) || !ARCHITECT_ONLY_IDS.includes(i.id)) && (i.id !== "team-huddle" || hasTeam) && (i.id !== "user-guide" || userGuide) && (i.id !== "academy" || academy)) }))
     .filter((s) => s.items.length > 0);
 
   // Pages can be dragged into whatever order you use most, within each

@@ -29,7 +29,7 @@ export const CONSULTANT_APIS = [
   "/api/uploads/image", // their own profile photo
 ];
 
-export const SALES_PAGES = ["/sales-reference", "/huddle", "/tasks"]; // /tasks: only the tasks assigned to them (the API enforces it) // /huddle: the shared Team Huddle (page-level check: only people Babs added by email)
+export const SALES_PAGES = ["/sales-reference", "/huddle", "/tasks", "/academy"]; // /tasks: only the tasks assigned to them (the API enforces it) // /huddle: the shared Team Huddle (page-level check: only people Babs added by email)
 export const SALES_APIS = [
   "/api/sales/onboard-client",
   "/api/sales/lookup-contact",
@@ -43,6 +43,7 @@ export const SALES_APIS = [
   "/api/tasks", // their own assigned tasks only (each route narrows a Sales member to tasks assigned to them)
   "/api/team-huddle", // the Team Huddle page for people Babs shared it with (the route itself checks the email list)
   "/api/account/switch", // the account switcher: a Sales member who also has their own account can go back to it
+  "/api/academy", // their own LCCS Academy training
 ];
 
 const under = (path: string, prefixes: string[]) => prefixes.some((p) => path === p || path.startsWith(p + "/"));
@@ -56,7 +57,7 @@ const MAILBOX_APIS = ["/api/inbox", "/api/mail", "/api/schedule", "/api/calendar
 // Team management: owner and admin.
 const TEAM_APIS = ["/api/workspaces"];
 // A viewer may still change their own profile and sign in/out.
-const VIEWER_WRITABLE_APIS = ["/api/profile", "/api/auth", "/api/logout"];
+const VIEWER_WRITABLE_APIS = ["/api/profile", "/api/auth", "/api/logout", "/api/academy"];
 
 export type Verdict = { allow: true } | { allow: false; status: 403; reason: string };
 const ok: Verdict = { allow: true };
@@ -332,13 +333,13 @@ export function memberAccessExpired(permissions: unknown, now: Date = new Date()
 export const NO_DELETE_MESSAGE ="Deleting needs the account owner's permission. Ask them and they will remove it for you.";
 
 // Always open to a restricted member: their own profile, Help, sign-in pages.
-const RESTRICTED_OPEN_PAGES = ["/demo", "/settings", "/help", "/user-guide", "/logout", "/login", "/reset-password", "/forgot-password", "/accept-invite", "/legal", "/api"];
+const RESTRICTED_OPEN_PAGES = ["/demo", "/settings", "/help", "/user-guide", "/academy", "/logout", "/login", "/reset-password", "/forgot-password", "/accept-invite", "/legal", "/api"];
 // APIs open to a restricted member beyond the ones their areas map to (profile, menu order, the small helpers the
 // allowed pages call). Everything else that belongs to no area stays closed to them.
 const RESTRICTED_OPEN_APIS = [
   "/api/me", "/api/profile", "/api/auth", "/api/logout", "/api/nav-order", "/api/version", "/api/feedback", "/api/book",
   "/api/account", "/api/setup", "/api/uploads", "/api/followups", "/api/event-emails", "/api/lbd-summit-emails", "/api/scripts",
-  "/api/support", "/api/workspaces", "/api/integrations", "/api/user-guide",
+  "/api/support", "/api/workspaces", "/api/integrations", "/api/user-guide", "/api/academy",
 ];
 
 /** Where a restricted member lands: their first open area (Tasks first). */

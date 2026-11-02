@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { isAlignmentArchitect, isSuperAdmin, resolveActor, sessionUser, viewedMember } from "@/lib/authz";
 import { assessmentGateLocked } from "@/lib/assessmentGate";
 import { USER_GUIDE_OPEN_TO_ALL, userGuideOpenFor } from "@/lib/userGuide/flag";
+import { academyOpenFor } from "@/lib/academy/flag";
+import { memberOfHouse } from "@/lib/academy/server";
 import { cleanExtras, cleanFeatureMap } from "@/lib/teamRoles";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
@@ -38,6 +40,7 @@ export async function GET() {
         architect: false,
         assessmentsLocked: false,
         userGuide: USER_GUIDE_OPEN_TO_ALL,
+        academy: academyOpenFor(vm.email, false, await memberOfHouse(vm.workspaceId)),
         hasTeam: true,
         teamRole: vm.role,
         features: cleanFeatureMap((vm.permissions as { features?: unknown } | null)?.features),
@@ -63,6 +66,7 @@ export async function GET() {
       architect,
       assessmentsLocked,
       userGuide: userGuideOpenFor(signedIn?.email, architect),
+      academy: academyOpenFor(signedIn?.email, architect, actor.kind === "member" && (await memberOfHouse(actor.workspaceId))),
       hasTeam,
       teamRole: actor.kind === "member" ? actor.role : null,
       features: actor.kind === "member" ? cleanFeatureMap((actor.permissions as unknown as { features?: unknown } | null)?.features) : null,
