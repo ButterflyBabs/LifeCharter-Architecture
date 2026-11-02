@@ -68,9 +68,10 @@ export default function EventPage() {
             {e.kind === "challenge" && <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm"><Sparkles className="h-4 w-4" style={{ color: accent }} />{e.days}-day {dailyAt ? "live workshop" : "challenge"}{e.startsOn ? ` · starts ${new Date(`${e.startsOn}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })}` : " · starts the day after you join"}</span>}
             {e.kind === "challenge" && dailyAt && <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm"><Clock className="h-4 w-4" style={{ color: accent }} />Live daily at {dailyAt} · {e.durationMin} minutes · online</span>}
           </div>
+          {!done && !closed && <a href="#signup" className="mt-5 block rounded-full px-5 py-3 text-center font-semibold lg:hidden" style={{ background: accent, color: ink }}>{e.kind === "live" || dailyAt ? "Save your seat" : "Join the challenge"}</a>}
           {e.description && <div className="mt-6 whitespace-pre-wrap text-[16px] leading-relaxed text-[#2E3A46]">{e.description}</div>}
         </section>
-        <aside className="h-fit rounded-2xl border border-[#E5DDCF] bg-white p-6 shadow-sm">
+        <aside id="signup" className="h-fit scroll-mt-4 rounded-2xl border border-[#E5DDCF] bg-white p-6 shadow-sm">
           {done ? (
             <div role="status">
               <h2 className="text-xl font-semibold">You&apos;re in!</h2>

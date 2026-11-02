@@ -13272,7 +13272,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "tips": [
       "Use your own join link from Zoom, Meet, Teams or any other service.",
       "Choose a Follow-up campaign. It starts when the replay goes out, or when a challenge ends.",
-      "Press Open the page to see what people will see."
+      "Press Open the page to see what people will see. On a phone, a button near the top takes people straight to the sign-up form."
     ],
     "questions": [
       {
