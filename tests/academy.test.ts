@@ -36,6 +36,15 @@ test("lessons are well formed and cite real User Guide entries", () => {
   }
 });
 
+test("every Academy screenshot exists in public", () => {
+  for (const l of L) for (const s of l.sections) if (s.image) assert.ok(fs.existsSync(`public${s.image.src}`), `${l.id}: ${s.image.src}`);
+});
+test("exams have no screenshots, and every screenshot has alt text", () => {
+  for (const l of L) for (const s of l.sections) if (s.image) {
+    assert.notEqual(l.kind, "exam", l.id);
+    assert.ok(s.image.alt.length > 15, `${l.id}: ${s.image.src}`);
+  }
+});
 test("every try-it asks a question", () => {
   for (const l of L) if (l.tryIt) assert.ok(l.tryIt.question.endsWith("?"), l.id);
 });
