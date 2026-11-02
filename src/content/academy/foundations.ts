@@ -111,29 +111,73 @@ export const FOUNDATIONS: Lesson[] = [
     track: "core",
     dimension: "operations",
     title: "Tasks, reminders and projects",
-    minutes: 8,
+    minutes: 18,
     summary: "One list of work, what belongs in a reminder, and how projects group tasks.",
     sources: ["tasks", "reminders", "projects"],
     sections: [
       {
-        heading: "Tasks: one list of everything to do",
-        text: "Tasks sit in Overdue, Today, In Progress, Waiting, Backlog and Done. Overdue fills itself from due dates, so you cannot drag a task into it. Today starts fresh each day: a task left there from an earlier day moves to Backlog.",
+        heading: "Why this comes first",
+        text: "Tasks is the one list of everything you have to do. Work from other pages lands here too, such as reminders and project milestones, so you never have to check several places. It also feeds your health score, so a well-kept list does two jobs: it runs your day and it shows how well your business follows through.",
+      },
+      {
+        heading: "Find your way around the page",
+        text: "Open Tasks from the left menu, under Daily Operations. The box at the top adds a task. The row of counts under it shows how many tasks sit in each list. Press a count to jump to that list, and hover over it to see what it includes. Beside the search box, choose List or Cards. Your choice follows you to every device.",
+        image: { src: "/academy/tasks-page.jpg", alt: "The Tasks page with the add box at the top, a row of counts, the List and Cards buttons, and the Today list below", caption: "The add box, the counts, and your lists underneath. This is a sample account." },
+      },
+      {
+        heading: "Add a task",
+        steps: [
+          "Type what needs doing in the box at the top.",
+          "Choose a priority, and add a due date and a project if you want them.",
+          "Press Add. To add a task from any other page, press the + in the top bar and choose New task.",
+        ],
+        tips: ["A task added from the + with no date goes straight to Today.", "If you add a time, choose Due by this time or Do it at this time."],
+      },
+      {
+        heading: "The six lists",
+        text: "Your tasks sit in Overdue, Today, In Progress, Waiting, Backlog and Done. Drag a task between lists as the work moves. On a phone, use More on the task.",
+        tips: [
+          "Overdue fills itself from due dates, so you cannot drag a task into it. It shows open tasks dated before today, and only when there are some.",
+          "Today starts fresh each day. A task left there from an earlier day moves to Backlog as Earlier Today.",
+          "A dashed row is open work from another page, such as a reminder or project milestone. It opens where it lives, and marking it done here updates that page.",
+        ],
+        image: { src: "/academy/tasks-lists.jpg", alt: "Today, In Progress, Waiting and Backlog lists, with a Waiting task showing Waiting on and Check back fields", caption: "Each list folds. The Waiting task shows who it is waiting on and when to check back." },
       },
       {
         heading: "Waiting on someone",
-        text: "Move the task to Waiting and fill in who you are waiting on and the Check back date.",
+        steps: [
+          "Move the task to Waiting.",
+          "Fill in Waiting on with the person's name.",
+          "Set the Check back date, so the work does not quietly disappear.",
+        ],
       },
       {
         heading: "Why finishing tasks matters",
-        text: "Finished tasks count toward your health score through the Internal Process & Culture pillar. Finished work lifts it and due dates that pass lower it. Tasks with no date never count against you, and archived tasks still count.",
+        text: "Finished tasks count toward your health score through the Internal Process & Culture pillar. Task follow-through looks at work you finished in the last 60 days, open tasks past their due date, and tasks due in the next 14 days. Finished work lifts it and due dates that pass lower it. It needs at least three tasks.",
+        tips: ["Tasks with no date never count against you.", "Archived tasks still count, and you can restore one from Archived at the top of the page.", "Only give a task a date you mean to keep."],
+      },
+      {
+        heading: "Your assistant can help",
+        text: "Press Have my assistant work on this on any open task. It reads the task, checks what it can, prepares what it can and reports back, using your own AI key. Anything it prepares waits for your Approve, and See report on the task opens its report.",
       },
       {
         heading: "Reminders are different",
         text: "A task is work to do. A reminder is a one-off thing you want to be told about at a set time, such as a free trial that renews or a call to return. Reminders do not change your scores.",
+        steps: [
+          "Open Reminders from the left menu, or press the + and choose New reminder.",
+          "Type what it should say, and put the account, link and what to do in the notes so you can act the moment it comes due.",
+          "Press a time under Remind me, or pick a date and time and press Save reminder.",
+          "When it comes due, mark it done or snooze it.",
+        ],
       },
       {
         heading: "Projects group your tasks",
-        text: "A project holds the tasks for one thing you are building, with a Board, List and Timeline. Project tasks are ordinary tasks, so you never enter them twice. They also appear on your Tasks page.",
+        text: "A project holds the tasks for one thing you are building, such as a launch, a client or a program, with a Board, List and Timeline. Project tasks are ordinary tasks, so you never enter them twice. They also appear on your Tasks page, and finishing them on time counts toward follow-through.",
+        steps: [
+          "Open Projects and press New project.",
+          "Under Start from, choose Blank project or a ready-made plan.",
+          "Give it a name, a date and a goal if you want one, then press Create project.",
+        ],
       },
     ],
     tryIt: { label: "Open Tasks", href: "/tasks", task: "Find the Waiting list, then find a project section under the lists if your account has one.", question: "What are you waiting on right now, from whom, and when will you check back?" },

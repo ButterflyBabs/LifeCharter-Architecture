@@ -6,6 +6,7 @@ import { canOpen, academyLearner, memberOfHouse, type Learner } from "@/lib/acad
 import { countsToward, forLearner, gradeQuiz, isLevel, lessonHash, lessonStates, levelViews, pathFor, releasedLessons, reviewState, trackFor, wingsFor, type ProgressRow } from "@/lib/academy/rules";
 import { LEVELS, TRACK_LABELS, WINGS, type LearnerTrack, type ReviewState } from "@/lib/academy/types";
 import { cleanFeatureMap } from "@/lib/teamRoles";
+import { GUIDE_ENTRIES } from "@/lib/userGuide/entries";
 
 export const dynamic = "force-dynamic";
 
@@ -149,6 +150,10 @@ export async function GET(request: Request) {
       questions: (lesson.kind === "exam" ? [...lesson.questions].sort(() => Math.random() - 0.5) : lesson.questions).map(forLearner),
       tryIt: lesson.tryIt ? { ...lesson.tryIt, href: canOpen(l, lesson.tryIt.href) ? lesson.tryIt.href : null } : null,
       answer: answers.get(lessonId) ?? null,
+      links: lesson.kind === "exam" ? [] : Array.from(new Set(lesson.sources)).flatMap((id) => {
+        const e = GUIDE_ENTRIES.find((g) => g.id === id);
+        return e ? [{ name: e.name, where: e.where, href: canOpen(l, e.href) ? e.href : null, guide: `/user-guide/${e.id}` }] : [];
+      }),
       countsToward: countsToward(lesson),
       state,
       bestScore: row?.best_score ?? null,

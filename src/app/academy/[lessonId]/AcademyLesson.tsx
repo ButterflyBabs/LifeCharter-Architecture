@@ -148,11 +148,39 @@ export default function AcademyLesson({ id, track }: { id: string; track: string
         </section>
       )}
 
+      {lesson.links.length > 0 && (
+        <section className={`${guideCard} mt-6 p-5`} aria-labelledby="lesson-links">
+          <h2 id="lesson-links" className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">What this lesson covers</h2>
+          <ul className="mt-2 grid gap-3 md:grid-cols-2">
+            {lesson.links.map((f) => (
+              <li key={f.guide}>
+                <span className="block font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{f.name}</span>
+                <span className={`block text-sm ${muted}`}>{f.where}</span>
+                <span className="mt-1 flex flex-wrap gap-3 text-sm">
+                  {f.href && <a href={f.href} target="_blank" rel="noopener" className="font-medium text-[#1a2b4a] underline dark:text-[#F8F5F0]">Open it</a>}
+                  <a href={f.guide} target="_blank" rel="noopener" className="font-medium text-[#1a2b4a] underline dark:text-[#F8F5F0]">Read the User Guide</a>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {lesson.sections.map((s) => (
         <section key={s.heading} className="mt-6">
           <h2 className="font-serif text-xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{s.heading}</h2>
           {s.text && <p className="mt-1 text-[#1a2b4a] dark:text-[#F8F5F0]">{s.text}</p>}
           {s.steps && <ol className="mt-2 list-decimal space-y-1 pl-6 text-[#1a2b4a] dark:text-[#F8F5F0]">{s.steps.map((t) => <li key={t}>{t}</li>)}</ol>}
+          {s.tips && <ul className="mt-2 list-disc space-y-1 pl-6 text-[#1a2b4a] dark:text-[#F8F5F0]">{s.tips.map((t) => <li key={t}>{t}</li>)}</ul>}
+          {s.image && (
+            <figure className="mt-3">
+              <a href={s.image.src} target="_blank" rel="noopener" aria-label={`Open full size: ${s.image.alt}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={s.image.src} alt={s.image.alt} loading="lazy" className={`${guideCard} w-full`} />
+              </a>
+              {s.image.caption && <figcaption className={`mt-2 text-sm ${muted}`}>{s.image.caption}</figcaption>}
+            </figure>
+          )}
         </section>
       ))}
 

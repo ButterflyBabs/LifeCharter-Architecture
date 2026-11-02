@@ -23,6 +23,8 @@ export interface LessonSection {
   heading: string;
   text?: string;
   steps?: string[];
+  tips?: string[]; // shown as a short list after the steps
+  image?: { src: string; alt: string; caption?: string }; // a screenshot in /public/academy, sample data only
 }
 
 export interface Question {
@@ -83,6 +85,14 @@ export interface ReviewState {
   note: string | null;
 }
 
+// A feature a lesson covers: the page itself (null when this person cannot open it) and its User Guide entry.
+export interface LessonLink {
+  name: string;
+  where: string;
+  href: string | null;
+  guide: string;
+}
+
 export interface QuestionForLearner {
   id: string;
   q: string;
@@ -94,6 +104,7 @@ export interface LessonForLearner extends Omit<Lesson, "questions" | "sources" |
   tryIt: { label: string; href: string | null; task: string; question: string } | null; // href is null when this person cannot open that page
   answer: string | null;
   countsToward: string | null;
+  links: LessonLink[];
   state: LessonState;
   bestScore: number | null;
   attempts: number;
