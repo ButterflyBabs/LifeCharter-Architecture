@@ -13,7 +13,7 @@ export interface ProgressRow {
 /** The team path comes from what the person does; everyone who is not on Babs's team takes the client path. */
 export function trackFor(p: { houseMember: boolean; role: string | null; salesReference: boolean }): LearnerTrack {
   if (!p.houseMember) return "client";
-  return p.role === "sales" || p.salesReference ? "team-sales" : "team-ops";
+  return p.role === "sales" || p.role === "consultant" || p.salesReference ? "team-sales" : "team-ops";
 }
 
 /** One person's lessons in order: the core lessons, their own path, then the level's exam. Levels in order. */

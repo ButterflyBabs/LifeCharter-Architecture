@@ -17,7 +17,7 @@ import { VOLANT_OPEN_TO_ALL } from "@/lib/volant";
 //            sales resources) and the few APIs behind it. Nothing else in the Suite opens, by default.
 export type TeamRole = "admin" | "editor" | "viewer" | "sales" | "consultant";
 
-export const CONSULTANT_PAGES = ["/call-to-close", "/settings"]; // their workspace, and Settings (profile, appearance and security only)
+export const CONSULTANT_PAGES = ["/call-to-close", "/settings", "/academy"]; // their workspace, Settings (profile, appearance and security only) and their LCCS Academy training
 export const CONSULTANT_APIS = [
   "/api/c2c", // their own pipeline board, cards and contacts (the route only ever reaches the board that carries their email)
   "/api/sales/my-calendar", // their own calls and hours
@@ -27,6 +27,7 @@ export const CONSULTANT_APIS = [
   "/api/me", // who they are, so the menu can show only what they have
   "/api/profile", // their own profile in Settings
   "/api/uploads/image", // their own profile photo
+  "/api/academy", // their own LCCS Academy training
 ];
 
 export const SALES_PAGES = ["/sales-reference", "/huddle", "/tasks", "/academy"]; // /tasks: only the tasks assigned to them (the API enforces it) // /huddle: the shared Team Huddle (page-level check: only people Babs added by email)

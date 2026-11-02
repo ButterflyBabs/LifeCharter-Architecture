@@ -839,7 +839,7 @@ export function CollapsibleSidebar() {
   }));
   // A Call to Close consultant has no menu of pages: their workspace is the one page, reached from the logo, and the
   // left bar holds only Settings (profile, appearance and security).
-  const consultantNav = [{ title: "MY ACCOUNT", color: "text-[#c9a227]", items: [{ id: "settings", label: "Settings", icon: Settings2, href: "/settings" }] }];
+  const consultantNav = [{ title: "MY ACCOUNT", color: "text-[#c9a227]", items: [...(academy ? [{ id: "academy", label: "LCCS Academy", icon: GraduationCap, href: "/academy" }] : []), { id: "settings", label: "Settings", icon: Settings2, href: "/settings" }] }];
   const sections = teamRole === "consultant" ? consultantNav : [...(superAdmin && !isDemo ? [...demoOrderedSections, ...architectGroups, efSection] : demoOrderedSections), ...teamExtra, ...mySection]
     .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href) && ((superAdmin && !isDemo) || !ARCHITECT_ONLY_IDS.includes(i.id)) && (i.id !== "team-huddle" || hasTeam) && (i.id !== "user-guide" || userGuide) && (i.id !== "academy" || academy)) }))
     .filter((s) => s.items.length > 0);

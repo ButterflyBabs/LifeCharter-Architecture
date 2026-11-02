@@ -47,12 +47,12 @@ test("a lead list is read however the headers are worded", () => {
   assert.equal(readLeadsCsv("foo,bar\n1,2").unreadable, true);
 });
 
-test("a Call to Close consultant reaches one page and a few APIs, nothing else", () => {
+test("a Call to Close consultant reaches their page, Settings, the Academy and a few APIs, nothing else", () => {
   assert.equal(memberPageRedirect("consultant", "/call-to-close"), null);
   for (const p of ["/", "/contacts", "/sales", "/dm-pipeline", "/sales-reference", "/tasks", "/finance", "/website-review"]) assert.equal(memberPageRedirect("consultant", p), "/call-to-close", p);
   for (const a of CONSULTANT_APIS) assert.equal(memberApiAccess("consultant", a, "POST").allow, true, a);
   for (const a of ["/api/crm/contacts", "/api/dm-pipeline", "/api/sales/contacts", "/api/sales/search-contacts", "/api/sales/lookup-contact", "/api/pipeline", "/api/tasks", "/api/calendars", "/api/billing", "/api/workspaces"]) assert.equal(memberApiAccess("consultant", a, "GET").allow, false, a);
-  assert.deepEqual(CONSULTANT_PAGES, ["/call-to-close", "/settings"]);
+  assert.deepEqual(CONSULTANT_PAGES, ["/call-to-close", "/settings", "/academy"]);
   assert.equal(memberPageRedirect("consultant", "/settings"), null);
   assert.ok(hiddenSettingsTabs("consultant").includes("billing") && !hiddenSettingsTabs("consultant").includes("security") && !hiddenSettingsTabs("consultant").includes("profile"));
 });

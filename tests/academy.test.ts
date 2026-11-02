@@ -67,6 +67,7 @@ test("each person gets the right path, ending in the exam", () => {
   assert.equal(trackFor({ houseMember: true, role: "editor", salesReference: false }), "team-ops");
   assert.equal(trackFor({ houseMember: true, role: "editor", salesReference: true }), "team-sales");
   assert.equal(trackFor({ houseMember: true, role: "sales", salesReference: false }), "team-sales");
+  assert.equal(trackFor({ houseMember: true, role: "consultant", salesReference: false }), "team-sales");
   for (const t of ["client", "team-ops", "team-sales"] as const) {
     const p = pathFor(t, L);
     assert.equal(p[p.length - 1].kind, "exam");
@@ -87,11 +88,10 @@ test("release stages open the Academy in order", () => {
   assert.equal(academyOpenFor("x@y.z", false, false, "all"), true);
 });
 test("every team role can open the Academy and save answers", () => {
-  for (const role of ["sales", "viewer", "editor"]) {
+  for (const role of ["sales", "consultant", "viewer", "editor"]) {
     assert.equal(memberPageRedirect(role, "/academy/f-tasks"), null, role);
     assert.deepEqual(memberApiAccess(role, "/api/academy", "POST"), { allow: true }, role);
   }
-  assert.equal(memberPageRedirect("consultant", "/academy"), "/call-to-close"); // a consultant keeps their one page
   const restricted = { restrict: true };
   assert.equal(restrictedPageRedirect({}, restricted, "/academy"), null);
   assert.deepEqual(extrasApiAccess(restricted, "/api/academy", "POST"), { allow: true });
