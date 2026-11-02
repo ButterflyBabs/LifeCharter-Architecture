@@ -26,6 +26,8 @@ The Academy must never teach something the app no longer does. The app changes f
 - A new feature gets a lesson or a place in an existing one. All four levels are written, so `coverage.ts` stays empty.
 - Changing a lesson's wording shows "Edited since approved" on the page. Tell Babs which lessons need her Approved again.
 
+Lessons are in depth: why it matters, where it is, step by step, tips, and how it affects scores. Screenshots live in `public/academy`, use sample data only, and never show a real client. When a change alters how a page looks, retake every screenshot of that page in the same turn. `npm test` cannot catch this, so check by hand: search `src/content/academy` for the page.
+
 Every try-it has a question. Answers go to the assistant through `buildAssistantKnowledge`. A lesson with a `dimension` lifts that score (`academyLift`), so give a new lesson a dimension only where its work really affects that score.
 
 Babs approves lessons in the Academy. `ACADEMY_STAGE` in `src/lib/academy/flag.ts` is `review`, `team` or `all`. Client announcements go out only at `all`.
