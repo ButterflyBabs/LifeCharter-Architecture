@@ -215,8 +215,8 @@ export const WORKING: Lesson[] = [
     track: "core",
     title: "Tracking time and bringing projects in",
     minutes: 13,
-    summary: "The timer, capacity and rates, and importing a project from another tool.",
-    sources: ["time", "import-a-project"],
+    summary: "The timer, capacity and rates, your team's Work Log, and importing a project from another tool.",
+    sources: ["time", "work-log", "import-a-project"],
     sections: [
       {
         heading: "Why this matters",
@@ -247,6 +247,18 @@ export const WORKING: Lesson[] = [
       {
         heading: "Reading your week",
         text: "Three cards show This week against your weekly hours, Billable hours, and Billable value. Below them are totals By client and By project, then every entry by day. Use the arrows for other weeks, and This week to come back. Untick Only my time to see everyone's entries for that week. Download CSV gives you the week on screen, so choose the week and the Only my time box first.",
+      },
+      {
+        heading: "Work Log for part-time and virtual team members",
+        text: "Time is for your own hours. The Work Log is for your team's. Each person clocks in, lists every thing they did with how many and how long, notes what got in the way and any help they asked for or got, then clocks out and submits the day. You review it. Open Work Log under Daily Operations. Waiting for your review sits at the top, and each day shows its lines, challenges and help. Press Approved, or Send back with a note that says what to change. Choose a person under Show to see just them, and press Download CSV for the week on screen. Each person sees only their own days, and only you see hourly rates and pay. Team members need the Work Log area under Settings > Team > Access. The Work Log does not change your scores.",
+        steps: [
+          "Under Settings > Team > Access, give the person the Work Log area with edit access.",
+          "Open Work Log under Daily Operations. Under Hourly rates, set each person's rate and press Save rate.",
+          "When a day is submitted, read it under Waiting for your review.",
+          "Press Approved, or press Send back and say what to change.",
+          "Check challenges noted and help still waiting in the cards at the top of the week.",
+        ],
+        tips: ["A new rate applies to every day that is not yet approved. Approved days keep the rate they were approved at.", "An approved day can still be sent back if something was wrong."],
       },
       {
         heading: "Importing a project",
@@ -281,6 +293,7 @@ export const WORKING: Lesson[] = [
       { id: "w3-3", q: "You worked for an hour but forgot the timer. What do you do?", right: "Use Add time by hand", wrong: ["Start the timer and wait an hour", "Ask the owner to enter it", "Leave it out, because it cannot be added later"], why: "Add time by hand asks for the date, the time you started, and the hours and minutes." },
       { id: "w3-4", q: "You import a project with an open task due last month. What happens to it?", right: "It counts as slipped until you finish it or change its date", wrong: ["The Suite moves the date forward", "The task is left out of the import", "It never affects your follow-through"], why: "Check the dates before you import. An open task with a past due date counts as slipped." },
       { id: "w3-5", q: "Will importing a project change the projects you already have?", right: "No, it creates one new project and leaves everything else alone", wrong: ["Yes, it merges with your largest project", "Yes, it replaces the project with the same name", "Only if the dates overlap"], why: "Each import creates one new project and leaves everything else alone." },
+      { id: "w3-6", q: "A team member submits a day on the Work Log. Who can see their hourly rate and pay?", right: "Only you, the account owner", wrong: ["Everyone on the team", "The team member who worked the day", "Nobody, because the Work Log has no rates"], why: "Hourly rates and pay estimates are for the account owner only. Team members never see them." },
     ],
   },
   {

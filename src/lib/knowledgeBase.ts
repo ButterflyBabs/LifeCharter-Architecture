@@ -1520,6 +1520,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["time", "time tracking", "timer", "hours", "billable", "hourly rate", "capacity", "timesheet", "track time", "how many hours", "retainer"],
   },
   {
+    id: "work-log",
+    category: "Daily Rhythm",
+    question: "How do my part-time or virtual team members log their hours and what they did?",
+    answer:
+      "Open Work Log in the left menu (Daily Operations, just under Time). A team member presses Clock in when they start, then adds a line for each thing they did: what it was, how many, what they counted (such as DMs or posts), how long it took, and a project or task if it belongs to one. Under Did anything get in the way? they note challenges, and they say who they asked for help and who helped. They press Clock out when they finish, check their lines, and press Submit for review. You see each submitted day under Waiting for your review and press Approved, or Send back with a note saying what to change. Each team member sees only their own days and never any pay. You see everyone's days, week totals for hours, things done, challenges noted, help still waiting and estimated pay, can choose a person under Show, and can Download CSV. Under Hourly rates you set each person's rate; a new rate applies to every day not yet approved, and approved days keep the rate they were approved at. To let someone use it, open Settings > Team > Access and give them the Work Log area with edit access. If someone forgot to clock out, they open Fix clock times on their shift and enter the time they really finished. Your own hours and client billing stay on the Time page.",
+    keywords: ["work log", "clock in", "clock out", "timesheet", "shift", "hours worked", "daily report", "virtual assistant", "part time", "employee hours", "approve hours", "team hours", "what did you do today", "challenges", "help requested"],
+  },
+  {
     id: "out-of-office",
     category: "Account & Settings",
     question: "How do I set my away dates (out of office)?",

@@ -121,6 +121,7 @@ const navigationSections = [
       { id: "assistant-approvals", label: "Waiting for my approval", icon: ClipboardCheck, href: "/assistant-approvals" },
       { id: "projects", label: "Projects", icon: FolderKanban, href: "/projects" },
       { id: "time", label: "Time", icon: Timer, href: "/time" },
+      { id: "work-log", label: "Work Log", icon: ClipboardList, href: "/work-log" },
       { id: "volant", label: "LC Volant", icon: Feather, href: "/volant" },
       { id: "team-huddle", label: "Team Huddle", icon: Users, href: "/team-huddle" },
       { id: "accountability", label: "Accountability Partner", icon: HeartHandshake, href: "/accountability" },
@@ -956,7 +957,7 @@ export function CollapsibleSidebar() {
     const known = saved.filter((id) => byId.has(id));
     // A new item that has a home right after another (Reminders sits under Tasks) goes there, even in an order the
     // client saved before it existed; anything else new goes to the end of its section.
-    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle", "welcome-overview": "starter-guide", payments: "finance", events: "sequences-manager", time: "volant", offers: "dm-pipeline", agreements: "offers", segments: "vault", glossary: "website-review" };
+    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle", "welcome-overview": "starter-guide", payments: "finance", events: "sequences-manager", time: "volant", "work-log": "time", offers: "dm-pipeline", agreements: "offers", segments: "vault", glossary: "website-review" };
     const placed = [...known];
     for (const i of s.items) {
       if (known.includes(i.id) || !NEW_AFTER[i.id]) continue;

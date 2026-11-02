@@ -115,7 +115,7 @@ export function hiddenSettingsTabs(role: string | null): string[] {
 export type FeatureKey =
   | "tasks" | "projects" | "daily_compass" | "content" | "scripts" | "sales_activities" | "pipeline" | "finance"
   | "planning" | "operations" | "testimonials" | "alignment" | "compliance" | "website_review" | "inbox_calendar" | "crm"
-  | "team_huddle" | "volant" | "support_desk" | "calendars" | "campaigns" | "outreach" | "masterclass_results" | "sales_reference" | "executive_home" | "assistant" | "accountability" | "custom_pages";
+  | "team_huddle" | "volant" | "support_desk" | "calendars" | "campaigns" | "outreach" | "masterclass_results" | "sales_reference" | "executive_home" | "assistant" | "accountability" | "custom_pages" | "work_log";
 export type AccessLevel = "none" | "view" | "edit";
 export type FeatureMap = Partial<Record<FeatureKey, AccessLevel>>;
 
@@ -128,6 +128,7 @@ export const FEATURES: { key: FeatureKey; label: string; pages: string[]; apis: 
   { key: "custom_pages", label: "My Pages (custom pages)", pages: ["/my-pages"], apis: ["/api/custom-pages"] },
   { key: "tasks", label: "Tasks", pages: ["/tasks", "/reminders"], apis: ["/api/tasks", "/api/reminders", "/api/recurring-tasks", "/api/quick-wins", "/api/next-moves"] },
   { key: "projects", label: "Projects and Time", pages: ["/projects", "/time"], apis: ["/api/projects", "/api/time"] },
+  { key: "work_log", label: "Work Log (clock in, what they did, challenges and help)", pages: ["/work-log"], apis: ["/api/work-log"] },
   { key: "daily_compass", label: "Daily Compass", pages: ["/daily-compass", "/capture", "/morning-brief"], apis: ["/api/compass-weekly", "/api/compass-insights", "/api/compass-activity"] },
   { key: "content", label: "Content Calendar & Studio", pages: ["/daily-compass/calendar", "/daily-compass/content-studio"], apis: ["/api/content", "/api/social"] },
   { key: "scripts", label: "Scripts", pages: ["/daily-compass/scripts"], apis: ["/api/scripts"] },

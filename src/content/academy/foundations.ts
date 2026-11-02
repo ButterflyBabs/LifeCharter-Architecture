@@ -903,8 +903,8 @@ export const FOUNDATIONS: Lesson[] = [
     dimension: "team",
     title: "How the team runs",
     minutes: 12,
-    summary: "The Team Huddle and how SOPs keep work consistent.",
-    sources: ["team-huddle", "playbook-sops"],
+    summary: "The Team Huddle, the Work Log, and how SOPs keep work consistent.",
+    sources: ["team-huddle", "work-log", "playbook-sops"],
     sections: [
       {
         heading: "Why this matters",
@@ -934,6 +934,22 @@ export const FOUNDATIONS: Lesson[] = [
       {
         heading: "To-dos, transcripts and your scores",
         text: "The account owner and team admins can press the add-to-tasks icon beside a to-do to send it to Tasks. Tasks count toward task follow-through in your Internal Process & Culture pillar. Team Huddle itself does not change your scores. Create summary and to-dos reads a transcript you paste or upload (.txt or .vtt from Zoom) and uses your own AI key. Word and PDF files are not read here. It writes a summary, wins, decisions, hot topics and to-dos, and nothing joins your to-do list until you press Add these to the to-dos. Read the summary before you share it.",
+      },
+      {
+        heading: "Work Log: clock in and log your day",
+        text: "If the account owner has given you the Work Log area, it is where you show what you did and how long it took. It sits under Daily Operations. Press Clock in when you start, and add one line for each thing you did: what it was, how many, what you counted (such as DMs or posts) and how long. Say what got in the way, and who you asked for help and who helped. When you finish, press Clock out, check your lines, and press Submit for review. The owner marks the day Approved, or sends it back with a note. You see your own days and never anyone else's. Pay is never shown to team members. The Work Log does not change scores.",
+        steps: [
+          "Open Work Log from the left menu and press Clock in.",
+          "Under Add what I did, say what you did, how many, what you counted and how long it took.",
+          "Under Did anything get in the way? write what made it harder. Name who you asked for help and who helped.",
+          "Press Add to my log after each thing you finish.",
+          "Press Clock out, add a note about your day if you like, then press Submit for review.",
+        ],
+        tips: [
+          "Forgot to clock out? Open Fix clock times on your shift and enter the time you really finished.",
+          "A day that is sent back shows the owner's note. Change what it asks and submit it again.",
+          "A submitted day is locked until the owner approves it or sends it back.",
+        ],
       },
       {
         heading: "Playbook & SOPs",
@@ -968,6 +984,7 @@ export const FOUNDATIONS: Lesson[] = [
       { id: "t2-2", q: "The minutes badge on the huddle turns red. What should you do?", right: "Trim a section or move a topic to the Parking lot", wrong: ["Start a new huddle", "Mark the huddle done", "Press Start again"], why: "Red means too many minutes are planned. The Parking lot is not timed." },
       { id: "t2-3", q: "You finished running a process and need to run it again. What do you press?", right: "Start a fresh run", wrong: ["Archive", "Edit", "New SOP"], why: "Start a fresh run clears the ticks so the checklist can be used again." },
       { id: "t2-4", q: "Which SOPs count toward the account's scores?", right: "SOPs in use, not drafts or archived ones", wrong: ["Every SOP, including drafts", "Only archived SOPs", "SOPs do not affect scores"], why: "Drafts and archived SOPs do not count. SOPs in use feed the scores." },
+      { id: "t2-5", q: "You forgot to clock out on the Work Log. What do you do?", right: "Open Fix clock times on your shift and enter the time you really finished", wrong: ["Ask a teammate to clock you out", "Leave it, because the Suite fixes it overnight", "Delete the day and start again"], why: "Fix clock times lets you correct a shift's times before you submit it." },
     ],
   },
   {

@@ -1805,6 +1805,130 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     ]
   },
   {
+    "id": "work-log",
+    "name": "Work Log",
+    "area": "Daily Operations",
+    "where": "Daily Operations > Work Log",
+    "href": "/work-log",
+    "what": "Part-time and virtual team members clock in, list each thing they did with how many and how long it took, note what got in the way and any help they asked for or got, then clock out and submit the day. The account owner reviews each day and approves it or sends it back.",
+    "ai": "No AI",
+    "aiNote": "The Work Log has no AI, and your chat assistant does not use it.",
+    "steps": [
+      "Open Work Log from the left menu, under Daily Operations.",
+      "Press Clock in when you start. The date and time are saved for you.",
+      "Under Add what I did, say what you did, how many, what you counted (such as DMs or posts) and how long it took. Choose a project or task if it belongs to one.",
+      "If something got in the way, write it under Did anything get in the way? If you asked someone for help, or got it, say who and what it was about.",
+      "Press Add to my log. Add one line for each thing you did.",
+      "Press Clock out when you finish, and add a short note about your day if you like.",
+      "Check your lines, then press Submit for review. The account owner marks it Approved, or sends it back with a note."
+    ],
+    "health": "This does not change your scores. It records what your team did, how long it took and where they got stuck.",
+    "tips": [
+      "Add a line as you finish each thing, so you are not trying to remember the whole day at the end.",
+      "The page tells you how much of your time on the clock your lines account for.",
+      "Forgot to clock out? Open Fix clock times on your shift and enter the time you really finished.",
+      "A day that is sent back shows the owner's note. Change what it asks, then submit it again."
+    ],
+    "questions": [
+      {
+        "q": "I forgot to clock out. What do I do?",
+        "a": "Open Fix clock times on your shift, enter the time you really finished under Clocked out, and press Save times."
+      },
+      {
+        "q": "Can my teammates see my log?",
+        "a": "No. Only you and the account owner see your days."
+      },
+      {
+        "q": "Where do I see what I am paid?",
+        "a": "Hourly rates and pay estimates are for the account owner only. Team members never see them."
+      },
+      {
+        "q": "What happens after I submit a day?",
+        "a": "It shows Waiting for review and you cannot change it. The owner marks it Approved, or sends it back with a note and you can edit it and submit it again."
+      }
+    ],
+    "related": [
+      "time",
+      "tasks",
+      "projects",
+      "team-huddle"
+    ],
+    "who": "Anyone on a team. Team members need the Work Log area, which the account owner turns on for each person under Settings > Team > Access. Each person sees only their own days. The account owner sees everyone's, with hourly rates and pay estimates.",
+    "keywords": [
+      "work log",
+      "clock in",
+      "clock out",
+      "timesheet",
+      "shift",
+      "hours worked",
+      "daily report",
+      "virtual assistant",
+      "part time",
+      "employee hours",
+      "challenges",
+      "help requested",
+      "approve hours",
+      "what did you do today",
+      "time card"
+    ],
+    "sections": [
+      {
+        "id": "clocking-in-and-out",
+        "title": "Clocking in and out",
+        "body": "Press Clock in to start your day. The Suite saves the date and time, and shows how long you have been on the clock. You can be clocked in once at a time. Press Clock out when you finish. If the times are wrong, open Fix clock times on your shift and change them. A shift can be up to 24 hours long.",
+        "keywords": [
+          "clock in",
+          "clock out",
+          "forgot",
+          "fix times",
+          "shift"
+        ]
+      },
+      {
+        "id": "what-you-log",
+        "title": "What you list for each thing you did",
+        "body": "Each line is one thing you did. It has what you did, how many, what you counted, and how long it took. You can link it to a project or task. Under Did anything get in the way? you write what made it harder. Under Help I asked for and Help I got, you name who you asked, who helped, and what it was about. A line with help asked for but nobody named under Help I got shows as still waiting.",
+        "keywords": [
+          "activity",
+          "how many",
+          "how long",
+          "challenge",
+          "help asked",
+          "help received",
+          "project",
+          "task"
+        ]
+      },
+      {
+        "id": "submit-and-approval",
+        "title": "Submitting and approval",
+        "body": "After you clock out and list at least one thing you did, press Submit for review. The day shows Waiting for review and is locked. The account owner presses Approved, or Send back with a note. A day that is sent back shows the note, and you can edit it and submit it again. Approved days are locked, but the owner can send one back.",
+        "keywords": [
+          "submit",
+          "approved",
+          "send back",
+          "review",
+          "locked"
+        ]
+      },
+      {
+        "id": "owner-view-and-pay",
+        "title": "The owner's view, rates and pay",
+        "body": "The account owner sees everyone's days, a Waiting for your review list at the top, and week totals for hours, things done, challenges noted, help still waiting and estimated pay. Choose a person under Show to see just them. Under Hourly rates the owner sets a rate for each team member. A new rate applies to every day that is not yet approved, and approved days keep the rate they were approved at. Download CSV saves the week on screen, with a row for each thing done.",
+        "keywords": [
+          "rates",
+          "pay",
+          "estimated pay",
+          "csv",
+          "download",
+          "everyone",
+          "reviewer",
+          "hourly rate"
+        ]
+      }
+    ]
+  },
+  {
     "id": "lc-volant",
     "name": "LC Volant",
     "area": "Daily Operations",
