@@ -27,7 +27,9 @@ const team = ctxWith({ workspaces: [{ id: "w1", name: "Main", is_default: true }
 
 test("list_team shows role, invitation state, areas and the last day", async () => {
   const text = await listTeam.read!({}, team);
-  assert.match(text, /Morgan Beach \(morgan@example.com\) \| Editor \| invitation not accepted yet \| Support & client care/);
+  assert.match(text, /Morgan Beach \(morgan@example.com\) \| Editor \| invitation not emailed yet \| Support & client care/);
+  const sent = ctxWith({ workspaces: [{ id: "w1", name: "Main", is_default: true }], workspace_members: [{ ...morgan, invite_sent_at: "2026-11-02T17:20:00Z" }] });
+  assert.match(await listTeam.read!({}, sent), /invitation emailed 2026-11-02, not accepted yet/);
   assert.match(text, /last day /);
   assert.match(text, /Sumbal Khan .* \| Viewer \| active \| Viewer role defaults \| no end date/);
   assert.match(text, /Access presets I can apply: .*bookkeeper/);
