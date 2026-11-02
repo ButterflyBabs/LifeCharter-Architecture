@@ -97,13 +97,15 @@ test("registration form answers are kept by label and blanks are dropped", () =>
   assert.deepEqual(d, { Phone: "555 111 2222", Organization: "Acme", Country: "US", "What do you most want help with?": "Hiring" });
 });
 
-test("the weekly run starts at noon Mountain, skips Nov 25, Dec 23 and Dec 30, and the old dates stay at 5pm", async () => {
+test("the weekly run starts at noon Mountain, skips Nov 18, Nov 25, Dec 23 and Dec 30, and the old dates stay at 5pm", async () => {
   const { startMT } = await import("../src/lib/masterclass/results");
   assert.equal(startMT("2026-10-22").toISOString(), "2026-10-22T23:00:00.000Z"); // Thursday 5pm MDT
   assert.equal(startMT("2026-10-28").toISOString(), "2026-10-28T18:00:00.000Z"); // Wednesday noon MDT
   assert.equal(startMT("2026-11-04").toISOString(), "2026-11-04T19:00:00.000Z"); // Wednesday noon MST
-  const s = computeFunnel(base({ now: new Date("2026-11-18T22:00:00Z") }));
+  const s = computeFunnel(base({ now: new Date("2026-12-02T22:00:00Z") }));
   const dates = s.map((x) => x.date);
-  assert.ok(dates.includes("2026-11-18"));
+  assert.ok(dates.includes("2026-11-11"));
+  assert.ok(dates.includes("2026-12-02"));
+  assert.ok(!dates.includes("2026-11-18"));
   assert.ok(!dates.includes("2026-11-25"));
 });
