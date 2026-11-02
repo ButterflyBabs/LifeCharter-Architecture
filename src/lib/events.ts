@@ -142,7 +142,7 @@ async function sendConfirmation(db: Db, e: EventRow, r: { email: string; first_n
       heading: `Welcome, ${r.first_name || "friend"}!`,
       lines: [
         `You're signed up for <strong>${esc(e.title)}</strong>: ${e.days ?? 0} days.`,
-        `Day 1 arrives by email on ${esc(new Date(`${start}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }))}. Each day also opens on your challenge page, where you can tick it off.`,
+        `Day 1 arrives by email on ${esc(new Date(`${start}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }))}. Each day also opens on your ${e.starts_at ? "workshop" : "challenge"} page, where you can tick it off.`,
         ...(e.starts_at
           ? [
               `We meet live every day, starting ${esc(fmt(e.starts_at, tz))}.`,
@@ -151,7 +151,7 @@ async function sendConfirmation(db: Db, e: EventRow, r: { email: string; first_n
             ]
           : []),
       ],
-      button: { label: "Open my challenge page", url: challengeUrl(e.slug, r.token) },
+      button: { label: e.starts_at ? "Open my workshop page" : "Open my challenge page", url: challengeUrl(e.slug, r.token) },
     });
   }
 }

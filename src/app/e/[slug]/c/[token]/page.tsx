@@ -38,7 +38,7 @@ export default function ChallengePage() {
         <header>
           <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: accent }}>{d.event.host}</p>
           <h1 className="text-3xl font-semibold" style={{ fontFamily: "'EB Garamond', Georgia, serif" }}>{d.event.title}</h1>
-          <p className="mt-1 text-sm text-[#56616E]">{d.firstName ? `${d.firstName}, ` : ""}{d.today < 1 ? `your challenge starts ${d.event.start ? new Date(`${d.event.start}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) : "soon"}.` : `${doneCount} of ${d.event.days} days done.`}</p>
+          <p className="mt-1 text-sm text-[#56616E]">{d.firstName ? `${d.firstName}, ` : ""}{d.today < 1 ? `Day 1 starts ${d.event.start ? new Date(`${d.event.start}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) : "soon"}.` : `${doneCount} of ${d.event.days} days done.`}</p>
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#E5DDCF]"><div className="h-full rounded-full" style={{ width: `${(doneCount / Math.max(1, d.event.days)) * 100}%`, background: accent }} /></div>
         </header>
         <ul className="space-y-2">

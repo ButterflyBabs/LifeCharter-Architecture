@@ -65,7 +65,7 @@ export default function EventPage() {
           <div className="mt-5 flex flex-wrap gap-2 text-sm">
             {e.kind === "live" && when && <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm"><CalendarDays className="h-4 w-4" style={{ color: accent }} />{when}</span>}
             {e.kind === "live" && <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm"><Clock className="h-4 w-4" style={{ color: accent }} />{e.durationMin} minutes · online</span>}
-            {e.kind === "challenge" && <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm"><Sparkles className="h-4 w-4" style={{ color: accent }} />{e.days}-day challenge{e.startsOn ? ` · starts ${new Date(`${e.startsOn}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })}` : " · starts the day after you join"}</span>}
+            {e.kind === "challenge" && <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm"><Sparkles className="h-4 w-4" style={{ color: accent }} />{e.days}-day {dailyAt ? "live workshop" : "challenge"}{e.startsOn ? ` · starts ${new Date(`${e.startsOn}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })}` : " · starts the day after you join"}</span>}
             {e.kind === "challenge" && dailyAt && <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm"><Clock className="h-4 w-4" style={{ color: accent }} />Live daily at {dailyAt} · {e.durationMin} minutes · online</span>}
           </div>
           {e.description && <div className="mt-6 whitespace-pre-wrap text-[16px] leading-relaxed text-[#2E3A46]">{e.description}</div>}
@@ -74,21 +74,21 @@ export default function EventPage() {
           {done ? (
             <div role="status">
               <h2 className="text-xl font-semibold">You&apos;re in!</h2>
-              <p className="mt-2 text-sm text-[#56616E]">{e.kind === "live" ? "Your confirmation is on its way by email, with the join link and a way to add it to your calendar." : "Your welcome email is on its way. Day 1 comes by email, and every day also opens on your challenge page."}</p>
-              {done.challenge && <a href={done.challenge} className="mt-4 inline-block rounded-full px-5 py-2.5 text-sm font-semibold" style={{ background: accent, color: ink }}>Open my challenge page</a>}
+              <p className="mt-2 text-sm text-[#56616E]">{e.kind === "live" ? "Your confirmation is on its way by email, with the join link and a way to add it to your calendar." : dailyAt ? "Your welcome email is on its way, with the join link and a way to add every day to your calendar." : "Your welcome email is on its way. Day 1 comes by email, and every day also opens on your challenge page."}</p>
+              {done.challenge && <a href={done.challenge} className="mt-4 inline-block rounded-full px-5 py-2.5 text-sm font-semibold" style={{ background: accent, color: ink }}>{dailyAt ? "Open my workshop page" : "Open my challenge page"}</a>}
             </div>
           ) : closed ? (
             <div><h2 className="text-xl font-semibold">{e.past ? "This event has happened" : e.full ? "This event is full" : "Registration is closed"}</h2><p className="mt-2 text-sm text-[#56616E]">Thank you for your interest.</p></div>
           ) : (
             <form onSubmit={(ev) => void submit(ev)} className="space-y-3">
-              <h2 className="text-xl font-semibold">{e.kind === "live" ? "Save your seat" : "Join the challenge"}</h2>
+              <h2 className="text-xl font-semibold">{e.kind === "live" || dailyAt ? "Save your seat" : "Join the challenge"}</h2>
               <label className="block text-sm font-semibold">First name<input name="firstName" required autoComplete="given-name" className="mt-1 w-full rounded-xl border border-[#E5DDCF] px-3 py-2.5 outline-none focus:ring-2" /></label>
               <label className="block text-sm font-semibold">Last name<input name="lastName" autoComplete="family-name" className="mt-1 w-full rounded-xl border border-[#E5DDCF] px-3 py-2.5 outline-none focus:ring-2" /></label>
               <label className="block text-sm font-semibold">Email<input name="email" type="email" required autoComplete="email" className="mt-1 w-full rounded-xl border border-[#E5DDCF] px-3 py-2.5 outline-none focus:ring-2" /></label>
               <input name="_hp" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
               {err && <p className="text-sm text-[#8a2f2f]" role="alert">{err}</p>}
               <button disabled={busy} className="w-full rounded-full px-5 py-3 font-semibold disabled:opacity-60" style={{ background: accent, color: ink }}>{busy ? "Saving…" : e.kind === "live" ? "Register free" : "Join free"}</button>
-              <p className="text-center text-xs text-[#9aa3ad]">We&apos;ll email you about this {e.kind === "live" ? "event" : "challenge"}. Unsubscribe any time.</p>
+              <p className="text-center text-xs text-[#9aa3ad]">We&apos;ll email you about this {e.kind === "live" ? "event" : dailyAt ? "workshop" : "challenge"}. Unsubscribe any time.</p>
             </form>
           )}
         </aside>
