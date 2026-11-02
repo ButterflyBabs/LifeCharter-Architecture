@@ -1,6 +1,6 @@
 {
   "f-what-it-is": {
-    "hash": "8b8dcc052d030eec",
+    "hash": "a224323198ced8eb",
     "reviewed": "2026-11-02"
   },
   "f-find-your-way": {
@@ -24,7 +24,7 @@
     "reviewed": "2026-11-02"
   },
   "f-getting-help": {
-    "hash": "1a9022f33afee19e",
+    "hash": "6d494c4a3c633fee",
     "reviewed": "2026-11-02"
   },
   "c-setup": {
@@ -68,7 +68,7 @@
     "reviewed": "2026-11-02"
   },
   "f-exam": {
-    "hash": "5609fae47816d345",
+    "hash": "5b40035d87d7c3bd",
     "reviewed": "2026-11-02"
   },
   "w-start-day": {
@@ -172,7 +172,7 @@
     "reviewed": "2026-11-02"
   },
   "a-read-score": {
-    "hash": "364e528ea788fefb",
+    "hash": "5dbfa67beb3aeea8",
     "reviewed": "2026-11-02"
   },
   "a-keep-current": {
@@ -180,7 +180,7 @@
     "reviewed": "2026-11-02"
   },
   "a-pillars": {
-    "hash": "7121c9bdcbd759b0",
+    "hash": "f2eec5dfde513c46",
     "reviewed": "2026-11-02"
   },
   "a-lead-to-client": {
@@ -248,7 +248,7 @@
     "reviewed": "2026-11-02"
   },
   "a-exam": {
-    "hash": "47cf4e42dcc26418",
+    "hash": "6d4915581c19a1dd",
     "reviewed": "2026-11-02"
   },
   "e-solve": {
@@ -324,7 +324,7 @@
     "reviewed": "2026-11-02"
   },
   "e-final": {
-    "hash": "aeca6cee3edd5390",
+    "hash": "dc515594c0255865",
     "reviewed": "2026-11-02"
   }
 }

@@ -7092,7 +7092,8 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "tips": [
       "One scale everywhere: Survival 0-40, Growth 41-60, Expansion 61-80, Legacy 81-100. A dimension at 72 is in Expansion, just like an overall score of 72.",
       "A suggested schedule keeps scores current: Quick Pulse monthly, Profit quarterly, Brain twice a year and Soul once a year.",
-      "An input with no data yet is not counted as zero. Its weight spreads across the inputs that have data."
+      "An input with no data yet is not counted as zero. Its weight spreads across the inputs that have data.",
+      "LCCS Academy lessons marked counts toward can lift a dimension a little once you pass the lesson and answer its try-it. They never lower a score or create one."
     ],
     "questions": [
       {
@@ -11181,6 +11182,74 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
           "dashboard"
         ]
       }
+    ]
+  },
+  {
+    "id": "lccs-academy",
+    "name": "LCCS Academy",
+    "area": "Getting Started",
+    "where": "Getting Started > LCCS Academy",
+    "href": "/academy",
+    "what": "Training that takes you from your first day to expert, in four levels: Foundations, Working Knowledge, Advanced and Expert. Each lesson explains a part of the Suite, asks you to try it in your own account and ends with a short multiple choice quiz.",
+    "ai": "No AI",
+    "aiNote": "The lessons and quizzes do not use AI or your key. Your assistant reads what you write in each Try it in your account box and can tell you your progress in chat, but it never takes a quiz or answers for you.",
+    "steps": [
+      "Open LCCS Academy from the left menu. It opens once your three assessments are finished.",
+      "Press the first open lesson and read it.",
+      "In Try it in your account, open the page it names, do the task, then answer the question and press Save my answer.",
+      "Answer the quiz and press Check my answers. You need 80% to open the next lesson.",
+      "If you miss some, read why under each one and press Try again.",
+      "Finish a level's exam to earn its Certificate of Completion, then press View your certificate to print it or save it as a PDF."
+    ],
+    "health": "Some lessons say counts toward and name a dimension. When you pass that lesson and answer its try-it, that dimension moves 1.5% of the way toward 100, up to 5% in all. A score of 50 can gain about 3 points. It never lowers a score, and it never creates a score for a dimension that has none.",
+    "tips": [
+      "Your try-it answers are saved, so you can come back and update them.",
+      "Retakes are unlimited, and your best score is the one kept.",
+      "You earn 1 Wing for each lesson you pass, 1 more for answering its try-it, and 5 for each exam.",
+      "Exams show which questions you missed but not why, so go back through the lessons and try again."
+    ],
+    "questions": [
+      {
+        "q": "Why is a lesson locked?",
+        "a": "Lessons open in order. Pass the lesson before it with 80% and it opens."
+      },
+      {
+        "q": "Who can see my try-it answers?",
+        "a": "Your answers go to your account's assistant. A team member's answers go to the assistant of the account they work in, with their name."
+      },
+      {
+        "q": "Can my team take it?",
+        "a": "Yes. Each person signs in with their own login and has their own progress. The account owner and admins can see everyone on the People tab."
+      },
+      {
+        "q": "Is the certificate a license?",
+        "a": "No. It is a record of training completed in the Command Suite, not a license or professional credential."
+      }
+    ],
+    "related": [
+      "first-30-days",
+      "starter-guide",
+      "how-your-scores-work",
+      "help-and-qa"
+    ],
+    "who": "Everyone once the three assessments are finished. Try-it links show only for pages you can open. The People tab is for the account owner and admins.",
+    "keywords": [
+      "academy",
+      "lccs academy",
+      "training",
+      "course",
+      "courses",
+      "lessons",
+      "quiz",
+      "quizzes",
+      "exam",
+      "certificate",
+      "wings",
+      "learn",
+      "learning",
+      "onboarding",
+      "train my team",
+      "try it"
     ]
   },
   {

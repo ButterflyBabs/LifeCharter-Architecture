@@ -221,7 +221,7 @@ export const FOUNDATIONS: Lesson[] = [
     title: "Getting help",
     minutes: 5,
     summary: "Where to look first, and how to reach a person.",
-    sources: ["help-and-qa", "contact-support-and-whats-new", "travel-partner"],
+    sources: ["help-and-qa", "contact-support-and-whats-new", "travel-partner", "lccs-academy"],
     sections: [
       {
         heading: "Fast answers",
@@ -234,6 +234,10 @@ export const FOUNDATIONS: Lesson[] = [
       {
         heading: "Reaching a person",
         text: "Press the lifebuoy in the top bar, or open Help, then Contact Support. Send a request and follow the reply under My requests. You can also email support@lccommandsuite.com. The Command Suite Office Hours card offers live help on Zoom.",
+      },
+      {
+        heading: "Keep learning here",
+        text: "LCCS Academy is where you are now. Each level ends in an exam and a Certificate of Completion. You earn Wings for each lesson, each try-it you answer and each exam. Lessons marked counts toward lift that health score a little once you pass them and answer the try-it.",
       },
       {
         heading: "What changed?",
