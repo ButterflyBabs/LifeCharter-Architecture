@@ -70,5 +70,105 @@
   "f-exam": {
     "hash": "5609fae47816d345",
     "reviewed": "2026-11-02"
+  },
+  "w-start-day": {
+    "hash": "f5370cfa8fecc5fa",
+    "reviewed": "2026-11-02"
+  },
+  "w-routines": {
+    "hash": "d38445b22487f085",
+    "reviewed": "2026-11-02"
+  },
+  "w-time-projects": {
+    "hash": "59b81f35addc1c6c",
+    "reviewed": "2026-11-02"
+  },
+  "w-contacts": {
+    "hash": "f311b2056cacf88c",
+    "reviewed": "2026-11-02"
+  },
+  "w-sales-log": {
+    "hash": "d937b21aed89dede",
+    "reviewed": "2026-11-02"
+  },
+  "w-assistant-work": {
+    "hash": "250540f92a657913",
+    "reviewed": "2026-11-02"
+  },
+  "w-agreements": {
+    "hash": "b0c96551eb8ecb3b",
+    "reviewed": "2026-11-02"
+  },
+  "w-your-settings": {
+    "hash": "78ee3d8cda9593a5",
+    "reviewed": "2026-11-02"
+  },
+  "wc-records": {
+    "hash": "6092f19b591c498a",
+    "reviewed": "2026-11-02"
+  },
+  "wc-month": {
+    "hash": "75f32383df38b14f",
+    "reviewed": "2026-11-02"
+  },
+  "wc-get-paid": {
+    "hash": "1e96236b14501dcb",
+    "reviewed": "2026-11-02"
+  },
+  "wc-plans": {
+    "hash": "ba6b6c040cb919d3",
+    "reviewed": "2026-11-02"
+  },
+  "wc-goals": {
+    "hash": "1e8f910ad8fa1618",
+    "reviewed": "2026-11-02"
+  },
+  "wc-marketing": {
+    "hash": "3a44a9b19d536bcb",
+    "reviewed": "2026-11-02"
+  },
+  "wc-clients": {
+    "hash": "f13c200c31e717e8",
+    "reviewed": "2026-11-02"
+  },
+  "wc-team": {
+    "hash": "7b9e483778e8a35d",
+    "reviewed": "2026-11-02"
+  },
+  "wt-books": {
+    "hash": "39446ec8994695ff",
+    "reviewed": "2026-11-02"
+  },
+  "wt-email": {
+    "hash": "880291cf24017744",
+    "reviewed": "2026-11-02"
+  },
+  "wt-events": {
+    "hash": "2813a69f51403804",
+    "reviewed": "2026-11-02"
+  },
+  "wt-clients": {
+    "hash": "f13c200c31e717e8",
+    "reviewed": "2026-11-02"
+  },
+  "wt-sops": {
+    "hash": "1675b0fdbfa37d03",
+    "reviewed": "2026-11-02"
+  },
+  "ws-qualify": {
+    "hash": "f8e94ef6d3663f5f",
+    "reviewed": "2026-11-02"
+  },
+  "ws-cold-email": {
+    "hash": "ff4bed2aafeecf83",
+    "reviewed": "2026-11-02"
+  },
+  "ws-offers": {
+    "hash": "4d6b99b2e6746223",
+    "reviewed": "2026-11-02"
+  },
+  "w-exam": {
+    "hash": "fee64e418e212f12",
+    "reviewed": "2026-11-02"
   }
 }
