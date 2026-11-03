@@ -215,7 +215,9 @@ export function listUnsubscribeHeaders(unsubApiUrl: string, replyTo: string): st
 
 // links is the account's own destinations; left out, it is Babs's account and her MasterClass and booking page apply.
 export function varsFor(card: { name: string; notes: string | null; link_code: string | null }, nextSession: string, links?: { personal: string; booking: string }): Record<string, string> {
-  const company = (card.notes ?? "").split(" · ")[0]?.trim() ?? "";
+  let company = (card.notes ?? "").split(" · ")[0]?.trim() ?? "";
+  // A solo coach listed under their own name has no company to mention: "your work at Erin Witter" reads wrong.
+  if (company.toLowerCase() === card.name.trim().toLowerCase()) company = "";
   return {
     first_name: firstNameOf(card.name),
     company,

@@ -54,3 +54,10 @@ test("replies, stop requests, auto-replies and bounces are told apart", () => {
   assert.equal(b.kind, "bounce");
   assert.deepEqual(b.kind === "bounce" ? b.addresses : [], ["ghost@nowhere.com"]);
 });
+
+test("a coach listed under their own name gets no 'at <name>' in the greeting", () => {
+  const v = varsFor({ name: "Erin Witter", notes: "Erin Witter · Boulder, CO", link_code: "abc1234" }, "x");
+  assert.equal(v.company, "");
+  assert.equal(v.at_company, "");
+  assert.equal(varsFor({ name: "Jane Doe", notes: "Doe Studio · Denver", link_code: "a" }, "x").at_company, " at Doe Studio");
+});
