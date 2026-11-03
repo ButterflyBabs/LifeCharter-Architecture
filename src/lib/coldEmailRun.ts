@@ -150,7 +150,7 @@ async function sendDue(db: Db, s: Settings, senders: Sender[], ownerId: string, 
   const due: { card: CardRow; step: number }[] = [];
   for (const c of cards) {
     if (!c.email || stopped.has(c.email.toLowerCase())) continue;
-    const step = dueStep(sendsBy.get(c.id) ?? [], steps, now);
+    const step = dueStep(sendsBy.get(c.id) ?? [], steps, now, s.tz);
     if (step !== null) due.push({ card: c, step });
   }
   due.sort((a, b) => b.step - a.step); // finish people already started before beginning new ones

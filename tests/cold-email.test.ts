@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { movesForward } from "../src/lib/dmPipeline";
-import { DEFAULT_STEPS, classifyMessage, dueStep, firstNameOf, inSendWindow, rampCap, render, varsFor } from "../src/lib/coldEmail";
+import { DEFAULT_STEPS, type ColdStep, classifyMessage, dueStep, firstNameOf, inSendWindow, rampCap, render, varsFor } from "../src/lib/coldEmail";
 
 test("the ramp starts small and never goes over the mailbox cap", () => {
   assert.equal(rampCap(0, 30), 5);
@@ -68,4 +68,29 @@ test("Email 2 moves a card from Email 1 sent to the follow-up stage, and a reply
   assert.equal(movesForward("followed_up", "open", "sent"), false);
   assert.equal(movesForward("followed_up", "open", "conversation"), true);
   assert.equal(movesForward("conversation", "open", "followed_up"), false);
+});
+
+test("a dated series squeezes follow-ups to fit before the event and stops after it", () => {
+  const by = "2026-11-13";
+  const steps: ColdStep[] = [
+    { day: 0, subject: "a", body: "a", by },
+    { day: 2, subject: "b", body: "b", by },
+    { day: 4, subject: "c", body: "c", by },
+  ];
+  const at = (iso: string) => new Date(iso);
+  // Email 1 on Mon Nov 9: Email 2 on its normal day 2, Email 3 on day 4 (both before Fri Nov 13).
+  const t0 = at("2026-11-09T17:00:00Z");
+  assert.equal(dueStep([{ step: 0, sentAt: t0 }], steps, at("2026-11-10T17:00:00Z")), null);
+  assert.equal(dueStep([{ step: 0, sentAt: t0 }], steps, at("2026-11-11T17:00:00Z")), 1);
+  const t1 = at("2026-11-11T17:00:00Z");
+  assert.equal(dueStep([{ step: 0, sentAt: t0 }, { step: 1, sentAt: t1 }], steps, at("2026-11-13T17:00:00Z")), 2);
+  // Email 1 on Wed Nov 11: Email 2 on Fri Nov 13 is still in time; Email 3 would be Sun Nov 15, so it is skipped.
+  const w = at("2026-11-11T17:00:00Z");
+  assert.equal(dueStep([{ step: 0, sentAt: w }], steps, at("2026-11-13T17:00:00Z")), 1);
+  assert.equal(dueStep([{ step: 0, sentAt: w }, { step: 1, sentAt: at("2026-11-13T17:00:00Z") }], steps, at("2026-11-20T17:00:00Z")), null);
+  // Email 1 on Thu Nov 12: nothing more fits before the day, so nothing more goes out.
+  assert.equal(dueStep([{ step: 0, sentAt: at("2026-11-12T17:00:00Z") }], steps, at("2026-11-30T17:00:00Z")), null);
+  // After the day, no new person starts the series, until the wording is switched.
+  assert.equal(dueStep([], steps, at("2026-11-14T17:00:00Z")), null);
+  assert.equal(dueStep([], steps, at("2026-11-13T17:00:00Z")), 0);
 });

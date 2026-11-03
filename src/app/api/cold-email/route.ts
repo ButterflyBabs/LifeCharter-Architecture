@@ -78,7 +78,7 @@ export async function POST(request: Request) {
 
   if (b.action === "save") {
     await ensure();
-    const steps = Array.isArray(b.steps) ? (b.steps as ColdStep[]).slice(0, 5).map((x, i) => ({ day: Math.max(0, Math.min(60, Math.round(Number(x.day) || 0))) * (i === 0 ? 0 : 1), subject: clean(x.subject, 200), body: clean(x.body, 4000) })) : null;
+    const steps = Array.isArray(b.steps) ? (b.steps as ColdStep[]).slice(0, 5).map((x, i) => ({ day: Math.max(0, Math.min(60, Math.round(Number(x.day) || 0))) * (i === 0 ? 0 : 1), subject: clean(x.subject, 200), body: clean(x.body, 4000), ...(typeof x.by === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x.by) ? { by: x.by } : {}) })) : null;
     if (steps && steps.some((x) => !x.subject.trim() || !x.body.trim())) return NextResponse.json({ error: "Every email needs a subject and a message." }, { status: 400 });
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (steps) patch.steps = steps;

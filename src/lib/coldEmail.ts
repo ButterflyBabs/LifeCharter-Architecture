@@ -5,7 +5,13 @@ export interface ColdStep {
   day: number; // days after Email 1 (0 for the first)
   subject: string;
   body: string;
+  // The last day (YYYY-MM-DD, in the series' time zone) this email may go out, for a series that points at a dated event.
+  // A follow-up whose normal gap would land after that day goes sooner (never closer than MIN_GAP_DAYS to the one before);
+  // if even that is too late it is skipped, and nothing goes out for it after the day.
+  by?: string;
 }
+
+export const MIN_GAP_DAYS = 2;
 
 export const DEFAULT_STEPS: ColdStep[] = [
   {
@@ -175,14 +181,23 @@ export function daysBetween(fromYmd: string | null, toYmd: string): number {
 }
 
 // Which step goes to this person next, or null (finished, or not yet time). Each step waits for the gap the series sets after the one before.
-export function dueStep(sent: { step: number; sentAt: Date }[], steps: ColdStep[], now: Date): number | null {
+// A step with a `by` day is squeezed to fit before it, or skipped when there is no room (see ColdStep.by).
+export function dueStep(sent: { step: number; sentAt: Date }[], steps: ColdStep[], now: Date, tz = "America/Denver"): number | null {
   if (!steps.length) return null;
-  if (!sent.length) return 0;
+  const today = localParts(now, tz).ymd;
+  if (!sent.length) return steps[0].by && today > steps[0].by ? null : 0;
   const last = sent.reduce((a, b) => (b.step > a.step ? b : a));
-  const next = last.step + 1;
-  if (next >= steps.length) return null;
-  const gapDays = Math.max(1, steps[next].day - steps[last.step].day);
-  return now.getTime() >= last.sentAt.getTime() + gapDays * 86400000 ? next : null;
+  for (let next = last.step + 1; next < steps.length; next++) {
+    const gapDays = Math.max(1, steps[next].day - steps[last.step].day);
+    let dueAt = last.sentAt.getTime() + gapDays * 86400000;
+    const by = steps[next].by;
+    if (by && localParts(new Date(dueAt), tz).ymd > by) {
+      dueAt = last.sentAt.getTime() + Math.min(gapDays, MIN_GAP_DAYS) * 86400000;
+      if (localParts(new Date(dueAt), tz).ymd > by) continue; // no room before the day: skip this one
+    }
+    return now.getTime() >= dueAt ? next : null;
+  }
+  return null;
 }
 
 export const STOP_RE = /\b(unsubscribe|remove me|take me off|stop (emailing|sending|contacting|writing)|do not (contact|email|write)|don'?t (contact|email|write)|no thanks|no thank you|not interested|opt[- ]?out)\b/i;
