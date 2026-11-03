@@ -11315,7 +11315,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "area": "Getting Started",
     "where": "Getting Started > LCCS Academy",
     "href": "/academy",
-    "what": "Training that takes you from your first day to expert, in four levels: Foundations, Working Knowledge, Advanced and Expert. Each lesson explains a part of the Suite, asks you to try it in your own account and ends with a short multiple choice quiz.",
+    "what": "Training that takes you from your first day to expert, in four levels: Foundations, Working Knowledge, Advanced and Expert. Each lesson explains a part of the Suite in depth, with why it matters, where it is, steps, tips, how it affects your scores and screenshots from a sample account. It asks you to try it in your own account and ends with a short multiple choice quiz.",
     "ai": "No AI",
     "aiNote": "The lessons and quizzes do not use AI or your key. Your assistant reads what you write in each Try it in your account box and can tell you your progress in chat, but it never takes a quiz or answers for you.",
     "steps": [
@@ -11331,7 +11331,8 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "Your try-it answers are saved, so you can come back and update them.",
       "Retakes are unlimited, and your best score is the one kept.",
       "You earn 1 Wing for each lesson you pass, 1 more for answering its try-it, and 5 for each exam.",
-      "Exams show which questions you missed but not why, so go back through the lessons and try again."
+      "Exams show which questions you missed but not why, so go back through the lessons and try again.",
+      "Press a screenshot to open it full size."
     ],
     "questions": [
       {
