@@ -20,8 +20,8 @@ const firstName = (full: unknown) => {
 };
 
 async function loadSettings(db: ReturnType<typeof createServerClient>, planId: string) {
-  const { data } = await db.from("volant_settings").select("label, template_names").eq("master_plan_id", planId).maybeSingle();
-  return { label: (data?.label as string) || VOLANT_NAME, templateNames: (data?.template_names as Record<string, string>) ?? {} };
+  const { data } = await db.from("volant_settings").select("label, template_names, copy_new_reports").eq("master_plan_id", planId).maybeSingle();
+  return { label: (data?.label as string) || VOLANT_NAME, templateNames: (data?.template_names as Record<string, string>) ?? {}, copyNewReports: data?.copy_new_reports !== false };
 }
 
 export async function GET(request: Request) {
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     const label = str(b.label, 40);
     const { error } = await db
       .from("volant_settings")
-      .upsert({ master_plan_id: a.planId, label: label && label !== VOLANT_NAME ? label : null, template_names: names, updated_at: now }, { onConflict: "master_plan_id" });
+      .upsert({ master_plan_id: a.planId, label: label && label !== VOLANT_NAME ? label : null, template_names: names, ...(typeof b.copyNewReports === "boolean" ? { copy_new_reports: b.copyNewReports } : {}), updated_at: now }, { onConflict: "master_plan_id" });
     return error ? NextResponse.json({ error: "Couldn't save your names." }, { status: 500 }) : NextResponse.json({ ok: true, settings: await loadSettings(db, a.planId) });
   }
 

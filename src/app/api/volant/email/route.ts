@@ -6,6 +6,7 @@ import { openMailboxes } from "@/lib/mailboxes";
 import * as google from "@/lib/google";
 import * as microsoft from "@/lib/microsoft";
 import { logEvent, EMAIL_RE } from "@/lib/crm";
+import { defaultLook, newPortalToken, portalUrl, type PortalRow } from "@/lib/portal";
 import { buildClientEmail, buildCoachCopy, defaultClientMessage, templateByKey, type ReportEmail, type VolantReport } from "@/lib/volant";
 
 export const dynamic = "force-dynamic";
@@ -46,11 +47,48 @@ export async function POST(request: Request) {
   const t = templateByKey(row.template_key as string);
   const date = fmtDate(row.session_date as string);
   const message = str(b.message, 6000) || defaultClientMessage(report, t, { clientFirst: first(c.first_name), coachFirst, date });
-  const opts = { message, summary: b.summary !== false, clientItems: b.clientItems !== false, coachItems: b.coachItems === true };
+  const wantPortal = b.addToPortal !== false && b.clientItems !== false && report.action_items.some((i) => i.for === "client");
+  // The client's private page: their next steps go there as homework they tick off, and the email links to it. Preview only looks; sending creates.
+  let portalLink: string | undefined;
+  let portalAdded = 0;
+  let portalNote = "";
+  let report2: VolantReport = report;
+  if (wantPortal) {
+    const { data: existing } = await db.from("client_portals").select("id, token, active").eq("contact_id", row.contact_id as string).eq("master_plan_id", a.planId).maybeSingle();
+    if (existing && !existing.active) {
+      portalNote = "This client's portal is switched off, so their steps stay in the email only.";
+    } else if (b.preview === true) {
+      portalLink = existing ? portalUrl(existing.token as string) : `${new URL(request.url).origin}/portal/(their private link)`;
+    } else {
+      let token = existing?.token as string | undefined;
+      let portalId = existing?.id as string | undefined;
+      if (!token) {
+        const made = await db.from("client_portals").insert({ master_plan_id: a.planId, contact_id: row.contact_id, token: newPortalToken(), look: await defaultLook(db, a.planId) }).select("id, token").single();
+        token = made.data?.token as string | undefined;
+        portalId = made.data?.id as string | undefined;
+      }
+      if (token && portalId) {
+        portalLink = portalUrl(token);
+        const todo = report.action_items.filter((i) => i.for === "client" && !i.portal);
+        const { count } = await db.from("portal_items").select("id", { count: "exact", head: true }).eq("contact_id", row.contact_id as string).eq("kind", "homework");
+        const ids = new Map<string, string>();
+        let pos = count ?? 0;
+        for (const it of todo) {
+          const { data: made } = await db.from("portal_items").insert({ master_plan_id: a.planId, contact_id: row.contact_id, kind: "homework", title: it.text.slice(0, 200), body: `From our session: ${row.title as string} (${date}).`, due_on: it.due || null, position: pos++ }).select("id").single();
+          if (made?.id) ids.set(it.id, made.id as string);
+        }
+        portalAdded = ids.size;
+        if (ids.size) report2 = { ...report, action_items: report.action_items.map((i) => (ids.has(i.id) ? { ...i, portal: ids.get(i.id)! } : i)) };
+      } else {
+        portalNote = "Couldn't set up their private page, so their steps are in the email only.";
+      }
+    }
+  }
+  const opts = { message, summary: b.summary !== false, clientItems: b.clientItems !== false, coachItems: b.coachItems === true, portalUrl: portalLink };
   const built = buildClientEmail(report, opts, { title: row.title as string, date, contactName: [c.first_name, c.last_name].filter(Boolean).join(" ") });
   const subject = str(b.subject, 200) || built.subject;
 
-  if (b.preview === true) return NextResponse.json({ to, from: box?.label ?? null, subject, text: built.text, message, canSend: Boolean(box) });
+  if (b.preview === true) return NextResponse.json({ to, from: box?.label ?? null, subject, text: built.text, message, canSend: Boolean(box), portalNote, portalLink: portalLink ?? null, alreadyCopied: report.copied?.status === "sent", portalItems: report.action_items.filter((i) => i.for === "client" && !i.portal).length });
   if (!box) return NextResponse.json({ error: "Connect Gmail or Microsoft 365 in Settings, Integrations, so the email comes from your own address." }, { status: 400 });
 
   let status: ReportEmail["status"] = "sent";
@@ -77,10 +115,10 @@ export async function POST(request: Request) {
     }
   }
   const entry: ReportEmail = { at: new Date().toISOString(), to, subject, status, error, from: box.label, copy };
-  const next: VolantReport = { ...report, emailed: [...(report.emailed ?? []), entry].slice(-20) };
+  const next: VolantReport = { ...report2, emailed: [...(report.emailed ?? []), entry].slice(-20) };
   await db.from("volant_reports").update({ report: next, updated_at: entry.at }).eq("id", row.id).eq("master_plan_id", a.planId);
   if (status === "sent") await logEvent(a.planId, row.contact_id as string, "email", `Emailed the report: ${row.title}`, { volant_report_id: row.id, subject }, db).catch(() => {});
   return status === "sent"
-    ? NextResponse.json({ ok: true, emailStatus: status, to, from: box.label, copy, copyTo: copy === "sent" ? box.email : null, report: next })
+    ? NextResponse.json({ ok: true, emailStatus: status, to, from: box.label, portalAdded, portalNote, copy, copyTo: copy === "sent" ? box.email : null, report: next })
     : NextResponse.json({ ok: false, emailStatus: status, error: `The email did not send: ${error}`, report: next }, { status: 502 });
 }

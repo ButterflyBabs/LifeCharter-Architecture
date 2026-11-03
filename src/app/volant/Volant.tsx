@@ -11,7 +11,7 @@ import { buildClientEmail, groupItems, reportToText, templateName, VOLANT_NAME, 
 type Contact = { first_name: string | null; last_name: string | null; email: string } | null;
 type Row = { id: string; template_key: string; title: string; session_date: string; contact_id: string | null; created_at: string; seq_contacts: Contact; items: number; approved: number };
 type Full = Omit<Row, "items" | "approved"> & { report: VolantReport | null; transcript: string };
-type Settings = { label: string; templateNames: Record<string, string> };
+type Settings = { label: string; templateNames: Record<string, string>; copyNewReports?: boolean };
 
 const field =
   "w-full rounded-lg border border-[#d9d2c0] dark:border-[#34405f] bg-white dark:bg-[#141b33] px-3 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0] placeholder:text-[#8a8f9c] focus:outline-none focus:border-[#c9a227]";
@@ -547,7 +547,7 @@ function AddItem({ reportId, onReport, setMsg }: { reportId: string; onReport: (
 
 // Preview what the client gets, edit the message, and email it from the signed-in person's own mailbox. What the preview shows is exactly what is sent.
 function EmailClient({ r, report, template, onClose, onReport }: { r: Full; report: VolantReport; template: VolantTemplate | null; onClose: () => void; onReport: (r: VolantReport) => void }) {
-  const [info, setInfo] = useState<{ to: string; from: string | null; subject: string; message: string; canSend: boolean } | null>(null);
+  const [info, setInfo] = useState<{ to: string; from: string | null; subject: string; message: string; canSend: boolean; portalNote?: string; portalLink?: string | null; alreadyCopied?: boolean; portalItems?: number } | null>(null);
   const [err, setErr] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -555,6 +555,7 @@ function EmailClient({ r, report, template, onClose, onReport }: { r: Full; repo
   const [clientItems, setClientItems] = useState(true);
   const [coachItems, setCoachItems] = useState(false);
   const [copyToMe, setCopyToMe] = useState(true);
+  const [addToPortal, setAddToPortal] = useState(true);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
   const sorted = groupItems(report.action_items);
@@ -563,6 +564,7 @@ function EmailClient({ r, report, template, onClose, onReport }: { r: Full; repo
     post("/api/volant/email", { id: r.id, preview: true }).then(({ ok, d }) => {
       if (!ok) return setErr(d.error || "Couldn't prepare the email.");
       setInfo(d);
+      if (d.alreadyCopied) setCopyToMe(false);
       setSubject(d.subject);
       setMessage(d.message);
     });
@@ -574,17 +576,17 @@ function EmailClient({ r, report, template, onClose, onReport }: { r: Full; repo
   }, [onClose]);
 
   const built = useMemo(
-    () => buildClientEmail(report, { message, summary, clientItems, coachItems }, { title: r.title, date: fmtDate(r.session_date), contactName: r.seq_contacts ? who(r.seq_contacts) : "" }),
-    [report, message, summary, clientItems, coachItems, r.title, r.session_date, r.seq_contacts]
+    () => buildClientEmail(report, { message, summary, clientItems, coachItems, portalUrl: addToPortal && info?.portalLink ? info.portalLink : undefined }, { title: r.title, date: fmtDate(r.session_date), contactName: r.seq_contacts ? who(r.seq_contacts) : "" }),
+    [report, message, summary, clientItems, coachItems, addToPortal, info?.portalLink, r.title, r.session_date, r.seq_contacts]
   );
 
   async function send() {
     setBusy(true);
     setResult(null);
-    const { ok, d } = await post("/api/volant/email", { id: r.id, subject, message, summary, clientItems, coachItems, copyToMe });
+    const { ok, d } = await post("/api/volant/email", { id: r.id, subject, message, summary, clientItems, coachItems, copyToMe, addToPortal });
     setBusy(false);
     if (d.report) onReport(d.report);
-    setResult({ ok, text: ok ? `Emailed to ${d.to}${d.from ? ` from ${d.from}` : ""}. ${d.copy === "sent" ? `Your own full copy is in your inbox (${d.copyTo}). ` : d.copy === "failed" ? "Your own copy did not send. " : ""}It is on ${r.seq_contacts ? who(r.seq_contacts) : "the contact"}'s timeline with a link back to the report.` : d.error || "The email did not send." });
+    setResult({ ok, text: ok ? `Emailed to ${d.to}${d.from ? ` from ${d.from}` : ""}. ${d.copy === "sent" ? `Your own full copy is in your inbox (${d.copyTo}). ` : d.copy === "failed" ? "Your own copy did not send. " : ""}${d.portalAdded ? `${d.portalAdded} next step${d.portalAdded === 1 ? " is" : "s are"} now on their private client page. ` : ""}It is on ${r.seq_contacts ? who(r.seq_contacts) : "the contact"}'s timeline with a link back to the report.` : d.error || "The email did not send." });
   }
 
   return (
@@ -609,7 +611,8 @@ function EmailClient({ r, report, template, onClose, onReport }: { r: Full; repo
               <div className="space-y-1.5 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
                 <label className="flex items-start gap-2"><input type="checkbox" className="mt-1 h-4 w-4" checked={summary} onChange={(e) => setSummary(e.target.checked)} />Add the session summary</label>
                 <label className="flex items-start gap-2"><input type="checkbox" className="mt-1 h-4 w-4" checked={clientItems} onChange={(e) => setClientItems(e.target.checked)} />Add the client&apos;s next steps ({sorted.client.length})</label>
-                <label className="flex items-start gap-2"><input type="checkbox" className="mt-1 h-4 w-4" checked={copyToMe} onChange={(e) => setCopyToMe(e.target.checked)} />Also send me my own copy: everything, including my private notes and my tasks, with a link back to the report</label>
+                <label className="flex items-start gap-2"><input type="checkbox" className="mt-1 h-4 w-4" checked={addToPortal} disabled={!clientItems || sorted.client.length === 0} onChange={(e) => setAddToPortal(e.target.checked)} />Put their next steps on their private client page as homework they tick off, and link to it in the email{info?.portalNote ? ` (${info.portalNote})` : ""}</label>
+                <label className="flex items-start gap-2"><input type="checkbox" className="mt-1 h-4 w-4" checked={copyToMe} onChange={(e) => setCopyToMe(e.target.checked)} />Also send me my own copy: everything, including my private notes and my tasks, with a link back to the report{info?.alreadyCopied ? " (one was already emailed when the report was written)" : ""}</label>
                 <label className="flex items-start gap-2"><input type="checkbox" className="mt-1 h-4 w-4" checked={coachItems} onChange={(e) => setCoachItems(e.target.checked)} />Add what I will do ({sorted.coach.length}). Off by default, because these are often your own preparation.</label>
               </div>
               {sorted.unsorted.length > 0 && <p className="rounded-lg bg-[#c9a227]/15 p-2 text-xs text-[#7a5d00] dark:text-[#e8c75a]">{sorted.unsorted.length} action item{sorted.unsorted.length === 1 ? " is" : "s are"} not sorted yet, so {sorted.unsorted.length === 1 ? "it is" : "they are"} left out. Close this and press For you or For the client on each.</p>}
@@ -638,10 +641,11 @@ function EmailClient({ r, report, template, onClose, onReport }: { r: Full; repo
 
 function Names({ templates, settings, onSaved }: { templates: VolantTemplate[]; settings: Settings; onSaved: (s: Settings) => void }) {
   const [lbl, setLbl] = useState(settings.label);
+  const [copyNew, setCopyNew] = useState(settings.copyNewReports !== false);
   const [names, setNames] = useState<Record<string, string>>(() => Object.fromEntries(templates.map((t) => [t.key, templateName(t, settings.templateNames)])));
   const [msg, setMsg] = useState("");
   async function save() {
-    const { ok, d } = await post("/api/volant", { action: "settings-save", label: lbl, templateNames: names });
+    const { ok, d } = await post("/api/volant", { action: "settings-save", label: lbl, templateNames: names, copyNewReports: copyNew });
     if (!ok) return setMsg(d.error || "Couldn't save your names.");
     onSaved(d.settings);
   }
@@ -656,6 +660,10 @@ function Names({ templates, settings, onSaved }: { templates: VolantTemplate[]; 
         <input id="v-label" className={field} value={lbl} onChange={(e) => setLbl(e.target.value)} maxLength={40} />
         <p className="mt-1 text-xs text-[#7a8a99]">Shown in your left menu and at the top of this page. Standard: {VOLANT_NAME}.</p>
       </div>
+      <label className="flex max-w-xl items-start gap-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+        <input type="checkbox" className="mt-1 h-4 w-4" checked={copyNew} onChange={(e) => setCopyNew(e.target.checked)} />
+        <span>Email me a full copy of every new report, with my private notes and my tasks, as soon as it is written. It goes to your own inbox from your connected Gmail or Microsoft 365.</span>
+      </label>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {templates.map((t) => (
           <div key={t.key}>

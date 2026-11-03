@@ -404,9 +404,11 @@ export interface ActionItem {
   event?: { id: string; at: string; provider: string } | null;
   /** Added by hand on the report, not by the AI. */
   added?: boolean;
+  /** The homework item on the client's portal made from this one, so it is never added twice. */
+  portal?: string | null;
 }
 export interface ReportEmail { at: string; to: string; subject: string; status: "sent" | "failed"; error: string | null; from: string | null; /** The coach's own full copy: sent to their own inbox, failed, or not asked for. */ copy?: "sent" | "failed" | "off" }
-export interface VolantReport { sections: ReportSection[]; action_items: ActionItem[]; made_at: string; clipped: boolean; /** Each time the report was emailed to the client from the page, newest last. */ emailed?: ReportEmail[] }
+export interface VolantReport { sections: ReportSection[]; action_items: ActionItem[]; made_at: string; clipped: boolean; /** Each time the report was emailed to the client from the page, newest last. */ emailed?: ReportEmail[]; /** The owner's own full copy, emailed to their inbox as the report was written. */ copied?: { at: string; to: string | null; status: "sent" | "failed" } }
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 const s = (v: unknown, n: number) => (typeof v === "string" ? v.slice(0, n) : "");
@@ -546,6 +548,8 @@ export interface ClientEmailOptions {
   clientItems: boolean;
   /** Add what the coach will do (off unless the coach chooses it: these are often private preparation). */
   coachItems: boolean;
+  /** The client's private portal page, where their next steps were put as homework to tick off. Shown only when there are client steps. */
+  portalUrl?: string;
 }
 
 /** The opening message to start from: the report's own recap draft when the template has one, else a short thank-you. */
@@ -569,7 +573,7 @@ export function buildClientEmail(report: VolantReport, o: ClientEmailOptions, ct
     }
   }
   // Only items marked for the client go out. Not-sorted items stay off until the coach sorts them.
-  if (o.clientItems && g.client.length) detail.push(`Your next steps\n${g.client.map(item).join("\n")}`);
+  if (o.clientItems && g.client.length) detail.push(`Your next steps\n${g.client.map(item).join("\n")}${o.portalUrl ? `\n\nThese are also on your private page, where you can tick them off as you finish them:\n${o.portalUrl}` : ""}`);
   if (o.coachItems && g.coach.length) detail.push(`What I will do\n${g.coach.map(item).join("\n")}`);
   if (detail.length) parts.push(`${ctx.title}, ${ctx.date}`, ...detail);
   return { subject: `${ctx.title}: your summary and next steps`.slice(0, 200), text: parts.filter(Boolean).join("\n\n") };

@@ -105,3 +105,13 @@ test("the coach's own copy has everything, including private notes, and a link b
   assert.ok(c.text.includes("https://lccommandsuite.com/volant?report=abc") && c.text.includes("jo@example.com"));
 });
 
+test("the client email links to their private page when their steps were put there, and not otherwise", () => {
+  const t = templateByKey("coaching-sessions")!;
+  const r = cleanReport({ sections: [], action_items: [{ text: "Write the pitch", owner: "Jo", for: "client" }] }, t, false, "2026-11-03T00:00:00Z", "Jo Lee");
+  const ctx = { title: "T", date: "d", contactName: "Jo Lee" };
+  const withLink = buildClientEmail(r, { message: "Hi", summary: true, clientItems: true, coachItems: false, portalUrl: "https://x.test/portal/abc" }, ctx);
+  assert.ok(withLink.text.includes("https://x.test/portal/abc") && withLink.text.includes("tick them off"));
+  assert.ok(!buildClientEmail(r, { message: "Hi", summary: true, clientItems: true, coachItems: false }, ctx).text.includes("portal"));
+  assert.ok(!buildClientEmail(r, { message: "Hi", summary: true, clientItems: false, coachItems: false, portalUrl: "https://x.test/portal/abc" }, ctx).text.includes("portal"));
+});
+
