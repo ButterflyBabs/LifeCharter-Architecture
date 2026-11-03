@@ -1659,7 +1659,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
 ];
 
 // LifeCharter's own tools and closed features, kept out of what clients read and search.
-const NOT_FOR_CLIENTS = ["gs-lc-fledge", "in-poststream", "sms-texts", "cs-connect", "cs-schedule", "ai-content"];
+const NOT_FOR_CLIENTS = ["gs-lc-fledge", "in-poststream", "cs-connect", "cs-schedule", "ai-content"];
 export const CLIENT_KB = KNOWLEDGE_BASE.filter((e) => !NOT_FOR_CLIENTS.includes(e.id));
 
 // Lightweight keyword-overlap retrieval: score each entry against the query and

@@ -9582,6 +9582,95 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     ]
   },
   {
+    "id": "text-messages",
+    "name": "Text messages",
+    "area": "Settings",
+    "where": "Settings > Text messages",
+    "href": "/settings?tab=texts",
+    "what": "Get your own texting number so the Suite can text reminders to people who book with you, and so you can text a contact from their record. It is included in your plan, with a monthly allowance.",
+    "ai": "No AI",
+    "aiNote": "",
+    "steps": [
+      "Open Settings, then Text messages.",
+      "Fill in your business details. US carriers approve every texting number for a real business.",
+      "Press Get my texting number. Approval usually takes 5 to 15 business days, and the page updates on its own. We email you when it is decided.",
+      "Once it is approved, your booking pages show an unticked box. People who tick it get a reminder text the day before and about an hour before.",
+      "Open a contact and use Texts on their record to reply or send a text to someone who has agreed."
+    ],
+    "health": "This does not change your scores. It cuts no-shows and keeps people in touch between calls.",
+    "tips": [
+      "Your allowance is Starter 500 texts a month, Growth 1,000 and VIP 2,500. It starts fresh on the 1st, and texting pauses if you reach it. You are told at 80% and when it is all used.",
+      "Texts go out only between 8 AM and 9 PM in the person's time, and never to anyone who replied STOP.",
+      "Your business name and Reply STOP to opt out are always in the text. You can change the rest of the wording."
+    ],
+    "questions": [
+      {
+        "q": "Does it cost extra?",
+        "a": "No. Texting is included in your plan, with the monthly allowance for your plan. There is no overage charge. Texting pauses if you reach the allowance."
+      },
+      {
+        "q": "Why does approval take so long?",
+        "a": "US carriers check every texting number against a real business. Most are decided in 5 to 15 business days, and an EIN is needed unless you are a sole proprietor."
+      },
+      {
+        "q": "Can I text anyone I like?",
+        "a": "No. People must tick the box on your booking page or text you first. Anyone who replies STOP never gets another text."
+      }
+    ],
+    "related": [
+      "calendars-and-booking-pages",
+      "contact-record",
+      "out-of-office"
+    ],
+    "who": "The account owner and Admins.",
+    "keywords": [
+      "text messages",
+      "sms",
+      "texting",
+      "text reminders",
+      "texting number",
+      "toll-free",
+      "stop",
+      "opt out",
+      "twilio",
+      "reminder text"
+    ],
+    "sections": [
+      {
+        "id": "get-my-texting-number",
+        "title": "Get my texting number",
+        "body": "Fill in your business details and press Get my texting number. The carriers decide in 5 to 15 business days, and you are emailed the result.",
+        "keywords": [
+          "texting number",
+          "toll-free",
+          "approval",
+          "business details"
+        ]
+      },
+      {
+        "id": "reminders-by-text",
+        "title": "Reminders by text",
+        "body": "Once approved, booking pages offer an unticked box. People who tick it get a text the day before and about an hour before.",
+        "keywords": [
+          "booking reminder",
+          "text reminder",
+          "no show"
+        ]
+      },
+      {
+        "id": "your-monthly-allowance",
+        "title": "Your monthly allowance",
+        "body": "Starter has 500 texts a month, Growth 1,000 and VIP 2,500. You are told at 80% and when it is all used.",
+        "keywords": [
+          "how many texts",
+          "limit",
+          "allowance",
+          "cap"
+        ]
+      }
+    ]
+  },
+  {
     "id": "appearance-and-text-size",
     "name": "Appearance and text size",
     "area": "Settings",

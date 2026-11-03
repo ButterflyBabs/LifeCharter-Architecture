@@ -1526,7 +1526,7 @@ export const WORKING: Lesson[] = [
     title: "Your team and your time away",
     minutes: 12,
     summary: "Inviting people, choosing roles, setting a last day and taking time off with cover in place.",
-    sources: ["workspace-and-team", "out-of-office"],
+    sources: ["workspace-and-team", "out-of-office", "text-messages"],
     sections: [
       {
         heading: "Why this matters",
@@ -1586,6 +1586,20 @@ export const WORKING: Lesson[] = [
         ],
       },
       {
+        heading: "Text reminders from your own number",
+        text: "Settings > Text messages gets you your own texting number, included in your plan. Fill in your business details and press Get my texting number. The carriers decide in 5 to 15 business days, and you are emailed the result. Once it is approved, your booking pages show an unticked box, and people who tick it get a reminder the day before and about an hour before. You can also reply to a contact from the Texts section on their record. Your allowance is 500 texts a month on Starter, 1,000 on Growth and 2,500 on VIP. It starts fresh on the 1st, and you are told at 80% and when it is all used.",
+        steps: [
+          "Open Settings, then Text messages.",
+          "Fill in your business details and press Get my texting number.",
+          "Wait for the email that tells you the carriers decided.",
+          "Check that a booking page now shows the unticked text reminder box.",
+        ],
+        tips: [
+          "Texts go only to people who ticked the box or texted you first, between 8 AM and 9 PM in their time, and never after STOP.",
+          "Texting pauses if you use the whole allowance. Replies you receive still arrive.",
+        ],
+      },
+      {
         heading: "Your assistant can help",
         text: "You can also tell your assistant your away dates. It prepares a card and nothing changes until you press Approve. This uses your own AI key.",
       },
@@ -1597,6 +1611,7 @@ export const WORKING: Lesson[] = [
       { id: "wc8-3", q: "A team member's invitation link has expired. What do you do?", right: "Press Send invitation on their card", wrong: ["Delete the workspace", "Give them your password", "Ask them to sign up as a new client"], why: "The link works once and expires in 7 days. Send invitation sends it again." },
       { id: "wc8-4", q: "You are away next week. Do your campaigns stop?", right: "No, campaigns, event emails, booking reminders and Client Care keep running", wrong: ["Yes, everything pauses", "Yes, campaigns pause for the whole month", "Only broadcasts keep running"], why: "Everything your clients signed up for keeps running." },
       { id: "wc8-5", q: "Will Out of office answer email sent straight to your Gmail or Outlook?", right: "No, your inbox needs its own vacation responder", wrong: ["Yes, automatically", "Yes, if you tick Answer portal messages", "Only for Gmail"], why: "The Suite cannot answer email sent straight to your inbox." },
+      { id: "wc8-6", q: "Who gets a reminder text from your booking page?", right: "Only people who tick the unticked box, and never after they reply STOP", wrong: ["Everyone who books", "Everyone on your contact list", "Anyone you pick, once a month"], why: "Texts go only to people who agreed on your booking page or texted you first, and never after STOP." },
     ],
   },
   {
