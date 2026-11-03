@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { CalendarDays, Clock, Loader2, Sparkles } from "lucide-react";
+import { eventConsentText } from "@/lib/workshopTexts";
 
 type Data = {
+  texts?: boolean;
   brand: { name: string; logo: string | null };
   event: { kind: "live" | "challenge"; title: string; subtitle: string | null; description: string | null; host: string; accent: string | null; startsAt: string | null; durationMin: number; timezone: string; days: number | null; startsOn: string | null; status: string; full: boolean; past: boolean };
 };
@@ -23,6 +25,7 @@ export default function EventPage() {
   const [err, setErr] = useState("");
   const [done, setDone] = useState<{ challenge: string | null } | null>(null);
   const [tz, setTz] = useState("America/Denver");
+  const [mobile, setMobile] = useState("");
   useEffect(() => {
     setTz(Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Denver");
     fetch(`/api/e/${slug}`, { cache: "no-store" })
@@ -35,7 +38,8 @@ export default function EventPage() {
     setBusy(true);
     setErr("");
     const f = Object.fromEntries(new FormData(ev.currentTarget).entries()) as Record<string, string>;
-    const r = await fetch(`/api/e/${slug}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...f, timezone: tz }) });
+    const smsOk = f.smsOk === "on" && mobile.trim() !== "";
+    const r = await fetch(`/api/e/${slug}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...f, smsOk, phone: mobile.trim(), timezone: tz }) });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     if (!r.ok) return setErr(j.error || "That didn't work. Please try again.");
@@ -86,6 +90,17 @@ export default function EventPage() {
               <label className="block text-sm font-semibold">First name<input name="firstName" required autoComplete="given-name" className="mt-1 w-full rounded-xl border border-[#E5DDCF] px-3 py-2.5 outline-none focus:ring-2" /></label>
               <label className="block text-sm font-semibold">Last name<input name="lastName" autoComplete="family-name" className="mt-1 w-full rounded-xl border border-[#E5DDCF] px-3 py-2.5 outline-none focus:ring-2" /></label>
               <label className="block text-sm font-semibold">Email<input name="email" type="email" required autoComplete="email" className="mt-1 w-full rounded-xl border border-[#E5DDCF] px-3 py-2.5 outline-none focus:ring-2" /></label>
+              {d.texts && (
+                <>
+                  <label className="block text-sm font-semibold">Mobile number <span className="font-normal text-[#56616E]">(optional, US or Canada)</span><input name="mobile" type="tel" inputMode="tel" value={mobile} onChange={(x) => setMobile(x.target.value)} autoComplete="tel" className="mt-1 w-full rounded-xl border border-[#E5DDCF] px-3 py-2.5 outline-none focus:ring-2" /></label>
+                  {mobile.trim() && (
+                    <label className="flex items-start gap-2 text-sm text-[#1F2B3A]">
+                      <input name="smsOk" type="checkbox" className="mt-1 h-4 w-4" />
+                      <span>{eventConsentText(d.brand.name, e.days ?? 1)}</span>
+                    </label>
+                  )}
+                </>
+              )}
               <input name="_hp" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
               {err && <p className="text-sm text-[#8a2f2f]" role="alert">{err}</p>}
               <button disabled={busy} className="w-full rounded-full px-5 py-3 font-semibold disabled:opacity-60" style={{ background: accent, color: ink }}>{busy ? "Saving…" : e.kind === "live" ? "Register free" : "Join free"}</button>

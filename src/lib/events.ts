@@ -7,6 +7,9 @@ import { EMAIL_RE, logEvent, upsertContact } from "@/lib/crm";
 import { enrolContact, isValidTz } from "@/lib/sequences/engine";
 import { brandFor } from "@/lib/portal";
 import { dayInTz } from "@/lib/tz";
+import { toE164 } from "@/lib/sms";
+import { sendSms } from "@/lib/smsServer";
+import { eventConsentText, eventTextBody } from "@/lib/workshopTexts";
 
 // Event engine for every account (task 1149). A live event (webinar, MasterClass, workshop) or a multi-day challenge:
 // a public sign-up page at /e/<slug> in the account's branding, a confirmation with an add-to-calendar link, reminders
@@ -27,6 +30,7 @@ export interface EventRow {
 export interface RegRow {
   id: string; event_id: string; master_plan_id: string; contact_id: string | null; email: string; first_name: string | null; timezone: string | null; token: string;
   attended: boolean | null; reminded_24h_at: string | null; reminded_1h_at: string | null; challenge_start: string | null; last_day_sent: number; replay_sent_at: string | null; replay_reminded_at: string | null;
+  phone?: string | null; sms_ok?: boolean; sms_last_day?: number;
 }
 
 export const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
@@ -84,7 +88,7 @@ async function mailer(db: Db, planId: string) {
 }
 
 /** Sign someone up (or return their existing sign-up). Sends the confirmation from the account's own address. */
-export async function register(db: Db, e: EventRow, input: { email: string; firstName: string; lastName?: string; timezone?: string | null }): Promise<{ ok: true; token: string; already: boolean } | { ok: false; error: string }> {
+export async function register(db: Db, e: EventRow, input: { email: string; firstName: string; lastName?: string; timezone?: string | null; phone?: string | null; smsOk?: boolean }): Promise<{ ok: true; token: string; already: boolean } | { ok: false; error: string }> {
   const email = input.email.trim().toLowerCase();
   const firstName = input.firstName.trim().slice(0, 80);
   if (!firstName) return { ok: false, error: "Please enter your first name." };
@@ -98,11 +102,14 @@ export async function register(db: Db, e: EventRow, input: { email: string; firs
     if ((count ?? 0) >= e.capacity) return { ok: false, error: "This event is full." };
   }
   const tz = input.timezone && isValidTz(input.timezone) ? input.timezone : e.timezone;
-  const contact = await upsertContact({ masterPlanId: e.master_plan_id, email, firstName, lastName: input.lastName || null, timezone: tz, source: `event:${e.slug}`, tags: [`registered-${e.slug}`, ...e.tags] }, db).catch(() => null);
+  // A mobile number is optional, and texts only ever go to someone who ticked the separate agreement.
+  const mobile = input.smsOk ? toE164(input.phone) : null;
+  const contact = await upsertContact({ masterPlanId: e.master_plan_id, email, firstName, lastName: input.lastName || null, timezone: tz, phone: mobile, source: `event:${e.slug}`, tags: [`registered-${e.slug}`, ...e.tags] }, db).catch(() => null);
   const token = newRegToken();
   const now = new Date().toISOString();
   const { error } = await db.from("event_registrations").insert({
     event_id: e.id, master_plan_id: e.master_plan_id, contact_id: contact?.id ?? null, email, first_name: firstName, timezone: tz, token,
+    phone: mobile, sms_ok: Boolean(mobile),
     challenge_start: e.kind === "challenge" ? startFor(e, now) : null,
   });
   if (error) {
@@ -110,6 +117,7 @@ export async function register(db: Db, e: EventRow, input: { email: string; firs
     return again ? { ok: true, token: again.token as string, already: true } : { ok: false, error: "That didn't save. Please try again." };
   }
   if (contact) await logEvent(e.master_plan_id, contact.id, "form", `Registered for ${e.title}`, { event: e.slug }, db).catch(() => {});
+  if (contact && mobile) await logEvent(e.master_plan_id, contact.id, "form", `Agreed to text reminders for ${e.title}`, { event: e.slug, phone: mobile, agreed: eventConsentText((await brandFor(db, e.master_plan_id).catch(() => null))?.name || "LifeCharter", e.days ?? 1) }, db).catch(() => {});
   // A workshop sign-up moves the person's outreach cards to Registered, which also stops any cold-email follow-ups to them.
   if (e.kind === "challenge") await advanceCards(db, e.master_plan_id, { contactId: contact?.id ?? null, email }, "registered").catch((x) => console.error("event card move:", x));
   await sendConfirmation(db, e, { email, first_name: firstName, timezone: tz, token }).catch((x) => console.error("event confirmation:", x));
@@ -193,7 +201,7 @@ export function replayOpen(e: Pick<EventRow, "replay_url" | "replay_hours" | "re
 
 /** The every-15-minutes job: reminders, challenge days, replay closing reminders, follow-ups after a challenge. */
 export async function runEvents(db: Db): Promise<Record<string, number>> {
-  const out = { r24: 0, r1: 0, days: 0, replayReminders: 0, followUps: 0 };
+  const out = { r24: 0, r1: 0, days: 0, texts: 0, replayReminders: 0, followUps: 0 };
   const { data: events } = await db.from("events").select("*").eq("status", "published").limit(500);
   for (const e of (events ?? []) as EventRow[]) {
     try {
@@ -236,6 +244,13 @@ export async function runEvents(db: Db): Promise<Record<string, number>> {
               });
               await db.from("event_registrations").update({ last_day_sent: n }).eq("id", r.id);
               out.days++;
+            }
+            // A live workshop also texts, once a day, to people who agreed (and only if this account's number is approved).
+            if (e.starts_at && r.sms_ok && r.phone && n >= 1 && n <= e.days && n > (r.sms_last_day ?? 0)) {
+              const time = new Date(e.starts_at).toLocaleTimeString("en-US", { timeZone: r.timezone || e.timezone, hour: "numeric", minute: "2-digit", timeZoneName: "short" });
+              const sent = await sendSms(db, e.master_plan_id, { to: r.phone, body: eventTextBody({ brand: brand.name, title: e.title, day: n, days: e.days, time, joinUrl: e.join_url }), kind: "reminder", contactId: r.contact_id });
+              if (sent.ok || sent.code !== "cap") await db.from("event_registrations").update({ sms_last_day: n }).eq("id", r.id);
+              if (sent.ok) out.texts++;
             }
             // The challenge is over: start the follow-up campaign once.
             if (n > e.days && e.follow_up_key && !r.replay_sent_at) {
