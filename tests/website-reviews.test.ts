@@ -1,4 +1,4 @@
-import { reviewReadyEmail } from "../src/lib/websiteReviewEmail";
+import { reviewEmailLine, reviewReadyEmail } from "../src/lib/websiteReviewEmail";
 import { SEO_SECTION_HEADING, SEO_SECTION_OUTLINE, assistantSectionOutline, hasAssistantSection, hasSeoSection } from "../src/lib/websiteReviews";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -53,5 +53,16 @@ test("the review-ready email names the client and site, links to the Website Rev
   assert.ok(m.html.includes("Connect with Babs"));
   assert.ok(m.text.includes("https://lccommandsuite.com/book/sip-and-soul"));
   assert.equal(reviewReadyEmail({ name: "", website: "", origin: "https://x.test" }).subject, "Your Website Alignment Review is ready");
+});
+
+test("the owner is told whether the ready email went out, to whom and when", () => {
+  const ok = reviewEmailLine({ status: "sent", at: "2026-11-03T19:36:08Z", to: "john@j3te.com", error: null });
+  assert.equal(ok.tone, "ok");
+  assert.ok(ok.text.includes("Emailed to john@j3te.com on Nov 3, 12:36 PM"));
+  const bad = reviewEmailLine({ status: "failed", at: "2026-11-03T19:36:08Z", to: "john@j3te.com", error: "domain not verified" });
+  assert.equal(bad.tone, "bad");
+  assert.ok(bad.text.includes("did not send") && bad.text.includes("domain not verified"));
+  assert.equal(reviewEmailLine({ status: "skipped", at: null, to: null, error: "this client has no email address on file" }).tone, "bad");
+  assert.equal(reviewEmailLine(null).tone, "unknown");
 });
 

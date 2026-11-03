@@ -27,3 +27,14 @@ export function reviewReadyEmail(input: { name: string; website: string; origin:
     text: `${first ? `Hi ${first},\n\n` : ""}Your Website Alignment Review${site ? ` for ${site}` : ""} is ready in your Command Suite account, ${what}.\n\nRead it here: ${link}\n\nWould you like to connect with Babs on what you've learned here? Book a relaxed 30-minute Sip and Soul conversation on Zoom and schedule your connection today: ${connect}\n\nQuestions? Reply, or write to support@lccommandsuite.com.\n\nHead up - Wings out\nBabs 🦋`,
   };
 }
+
+export type ReviewEmailState = { status: "sent" | "failed" | "skipped"; at: string | null; to: string | null; error: string | null } | null;
+
+/** The line the owner reads under a delivered Review: whether the "ready" email went out, to whom and when. Null state = delivered before this was recorded. */
+export function reviewEmailLine(state: ReviewEmailState, tz = "America/Denver"): { text: string; tone: "ok" | "bad" | "unknown" } {
+  if (!state) return { text: "The email was not recorded for this Review (delivered before email tracking). It may or may not have been sent.", tone: "unknown" };
+  const when = state.at ? new Date(state.at).toLocaleString("en-US", { timeZone: tz, month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
+  if (state.status === "sent") return { text: `Emailed${state.to ? ` to ${state.to}` : ""}${when ? ` on ${when}` : ""}. The sending service accepted it.`, tone: "ok" };
+  if (state.status === "skipped") return { text: `Not emailed: ${state.error || "no email address or sending key"}.`, tone: "bad" };
+  return { text: `The email did not send${state.to ? ` to ${state.to}` : ""}${state.error ? `: ${state.error}` : ""}.`, tone: "bad" };
+}

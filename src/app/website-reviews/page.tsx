@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ReviewText } from "@/components/website/ReviewText";
 import ReviewDelivered from "@/components/website/ReviewDelivered";
-import { reviewReadyEmail } from "@/lib/websiteReviewEmail";
+import { reviewEmailLine, reviewReadyEmail, type ReviewEmailState } from "@/lib/websiteReviewEmail";
 import { SEO_SECTION_OUTLINE, assistantSectionOutline, hasAssistantSection, hasSeoSection } from "@/lib/websiteReviewText";
 
 type Client = {
@@ -18,6 +18,7 @@ type Client = {
   website: string;
   assistantName: string;
   review: { status: "draft" | "published"; content: string; published_at: string | null } | null;
+  emailState: ReviewEmailState;
 };
 
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—");
@@ -50,6 +51,20 @@ export default function WebsiteReviewsPage() {
   }, []);
 
   const keyOf = (c: Client) => c.siteId || `${c.masterPlanId}:${c.website}`;
+  async function resend(c: Client) {
+    const line = reviewEmailLine(c.emailState);
+    const warn = line.tone === "ok" ? " It was already sent once, so they will get a second copy." : line.tone === "unknown" ? " It may already have been sent, in which case they will get a second copy." : "";
+    if (!confirm(`Send the "your Review is ready" email to ${c.name || c.email} (${c.email}) now?${warn}`)) return;
+    setBusy(keyOf(c));
+    try {
+      const res = await fetch("/api/website-reviews", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ siteId: c.siteId }) });
+      const d = await res.json().catch(() => ({}));
+      setMsg((m) => ({ ...m, [keyOf(c)]: d.emailStatus === "sent" ? `Emailed to ${d.emailTo}.` : `The email did not send${d.emailError ? `: ${d.emailError}` : ""}.` }));
+      await load();
+    } finally {
+      setBusy(null);
+    }
+  }
   async function save(c: Client, publish: boolean) {
     const body = draft[keyOf(c)] ?? c.review?.content ?? "";
     const missing = publish ? [!hasSeoSection(body) && "Keywords and SEO: getting found", !hasAssistantSection(body) && "Putting this into action with their AI Assistant"].filter(Boolean) : [];
@@ -64,7 +79,7 @@ export default function WebsiteReviewsPage() {
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || "Couldn't save.");
-      setMsg((m) => ({ ...m, [keyOf(c)]: publish ? (d.emailed ? "Published and emailed." : "Published. The email didn't send; let them know yourself.") : "Saved." }));
+      setMsg((m) => ({ ...m, [keyOf(c)]: publish ? (d.emailStatus === "sent" ? `Published and emailed to ${d.emailTo}.` : `Published, but the email did not send${d.emailError ? `: ${d.emailError}` : ""}. Use Send the email again below.`) : "Saved." }));
       await load();
     } catch (e) {
       setMsg((m) => ({ ...m, [keyOf(c)]: (e as Error).message }));
@@ -112,6 +127,17 @@ export default function WebsiteReviewsPage() {
                     )}
                     {" · "}enrolled {fmt(c.enrolledAt)} · due <span className={late ? "font-semibold text-[#b03a2e]" : ""}>{fmt(c.due)}</span>
                   </p>
+                  {s === "Delivered" && c.siteId && (() => {
+                    const line = reviewEmailLine(c.emailState);
+                    return (
+                      <p className={`mt-1 text-sm ${line.tone === "ok" ? "text-[#2f7d55]" : line.tone === "bad" ? "font-medium text-[#b03a2e]" : "text-[#7b6b8d]"}`} role="status">
+                        {line.text}{" "}
+                        <button type="button" disabled={busy === k} onClick={() => void resend(c)} className="font-medium text-[#2E7C83] underline disabled:opacity-50">
+                          {line.tone === "bad" ? "Send the email again" : line.tone === "unknown" ? "Send the email now" : "Send again"}
+                        </button>
+                      </p>
+                    );
+                  })()}
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${s === "Delivered" ? "bg-green-500/10 text-[#2f7d55]" : s === "To write" ? "bg-[#c9a227]/15 text-[#8a6a15]" : "bg-[#7b6b8d]/10 text-[#7b6b8d]"}`}>
