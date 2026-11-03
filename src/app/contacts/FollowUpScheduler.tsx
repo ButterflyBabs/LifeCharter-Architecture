@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -21,7 +21,8 @@ export default function FollowUpScheduler({ contact, setMsg }: { contact: { id: 
   const [purpose, setPurpose] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
-  const [busy, setBusy] = useState<"" | "draft" | "save">("");
+  const [writing, setWriting] = useState(false);
+  const [busy, setBusy] = useState<"" | "draft" | "save" | "send">("");
   const [note, setNote] = useState("");
 
   const draft = async () => {
@@ -41,6 +42,31 @@ export default function FollowUpScheduler({ contact, setMsg }: { contact: { id: 
         setSubject(d.subject || "");
         setBody(d.body);
       }
+    } finally {
+      setBusy("");
+    }
+  };
+
+  // Sends the email in the box right now from the connected mailbox (Microsoft 365 first, then Gmail,
+  // the same way Daily Compass sends a draft). The follow-up is not scheduled; it is a one-off send.
+  const sendNow = async () => {
+    if (!contact.email) return setNote("This contact has no email yet. Add one first.");
+    if (!body.trim()) return setNote("Write the email first.");
+    setBusy("send");
+    setNote("");
+    try {
+      const payload = { to: contact.email, subject: subject.trim() || `Following up, ${contact.name}`, body: body.trim() };
+      const trySend = (provider: string) =>
+        fetch("/api/inbox/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, provider }) });
+      let r = await trySend("microsoft");
+      if (r.status === 401) r = await trySend("google");
+      if (r.status === 401) return setNote("No mailbox is connected. Connect Gmail or Microsoft 365 in Settings, Integrations.");
+      if (!r.ok) return setNote("Couldn't send just now. Nothing went out. Please try again.");
+      setMsg(`Email sent to ${contact.name} ✓`);
+      setPurpose("");
+      setSubject("");
+      setBody("");
+      setWriting(false);
     } finally {
       setBusy("");
     }
@@ -89,11 +115,14 @@ export default function FollowUpScheduler({ contact, setMsg }: { contact: { id: 
           <Input id={`fu-day-${contact.id}`} type="date" value={day} min={localDay()} onChange={(e) => setDay(e.target.value)} className="w-auto" />
         </div>
         <textarea value={purpose} onChange={(e) => setPurpose(e.target.value)} rows={2} placeholder="What's it about? (for example: check in after the proposal)" className={box} aria-label="What the follow-up is about" />
-        {(subject || body) && (
+        {(subject || body || writing) && (
           <div className="space-y-2 rounded-lg border border-[#2E7C83]/30 bg-[#2E7C83]/5 p-3">
             <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" aria-label="Email subject" />
             <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={7} className={box} aria-label="Email draft" />
-            <p className="text-xs text-[#7a8a99]">Edit it however you like. Nothing is sent until you press Send in Daily Compass.{contact.email ? "" : " This contact has no email yet; add one before sending."}</p>
+            <p className="text-xs text-[#7a8a99]">Edit it however you like. Press Send now to email {contact.email || "them"} straight away, or Schedule follow-up to have it waiting in Daily Compass on that day (nothing is sent until you press Send there).{contact.email ? "" : " This contact has no email yet; add one before sending."}</p>
+            <Button onClick={sendNow} disabled={busy !== "" || !body.trim() || !contact.email}>
+              <Send className="w-4 h-4 mr-1" /> {busy === "send" ? "Sending…" : "Send now"}
+            </Button>
           </div>
         )}
         {note && <p role="status" className="text-sm text-[#C76F56]">{note}</p>}
@@ -102,6 +131,9 @@ export default function FollowUpScheduler({ contact, setMsg }: { contact: { id: 
           <Button variant="outline" onClick={draft} disabled={busy !== ""}>
             <Sparkles className="w-4 h-4 mr-1" /> {busy === "draft" ? "Drafting…" : body ? "Draft again" : "Draft the email with AI"}
           </Button>
+          {!(subject || body || writing) && (
+            <Button variant="outline" onClick={() => setWriting(true)} disabled={busy !== ""}>Write the email myself</Button>
+          )}
         </div>
       </div>
     </div>

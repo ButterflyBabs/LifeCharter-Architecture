@@ -3643,7 +3643,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "href": "/contacts",
     "what": "Your address book. Everyone who books, buys or fills in a form lands here, and you can add people yourself. Every touch shows on that person's timeline.",
     "ai": "Has an AI button",
-    "aiNote": "When you schedule a follow-up on a contact, Draft the email with AI writes it using your own AI key. Nothing is sent until you press Send in Daily Compass. Without a key you can still write the email yourself. In chat, your assistant can also find and add contacts, and any change waits behind Approve. The rest of this page does not use AI.",
+    "aiNote": "When you schedule a follow-up on a contact, Draft the email with AI writes it using your own AI key. Press Send now to email it straight away, or schedule it and press Send in Daily Compass on the day. Without a key you can still write the email yourself with Write the email myself. In chat, your assistant can also find and add contacts, and any change waits behind Approve. The rest of this page does not use AI.",
     "steps": [
       "Open Contacts from the left menu.",
       "Search by name or email, or choose a tag in the All tags menu.",
@@ -5214,7 +5214,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "href": "/contacts",
     "what": "Everything about one person, on one page. Their details, tags, pipelines, purchases, agreements, emails, notes and a timeline of every touch.",
     "ai": "Has an AI button",
-    "aiNote": "Draft the email with AI, under Schedule a follow-up, uses your own AI key. Nothing goes out until you press Send in Daily Compass. The rest of the record does not use AI.",
+    "aiNote": "Draft the email with AI, under Schedule a follow-up, uses your own AI key. Nothing goes out until you press Send now, or Send in Daily Compass on the follow-up's day. The rest of the record does not use AI.",
     "steps": [
       "Open Contacts and click a person's name.",
       "Press Edit to change their details, then press Save changes.",
@@ -5367,7 +5367,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       {
         "id": "schedule-a-follow-up",
         "title": "Schedule a follow-up",
-        "body": "Pick a day and say what it is about. Draft the email with AI writes a draft you can edit, or you can write your own. Then press Schedule follow-up.",
+        "body": "Pick a day and say what it is about. Draft the email with AI writes a draft you can edit, or press Write the email myself. Then press Send now to email it right away (from your connected Gmail or Microsoft 365), or Schedule follow-up to have it waiting in Daily Compass on that day.",
         "keywords": [
           "schedule a follow-up",
           "follow up",

@@ -343,7 +343,7 @@ export const FOUNDATIONS: Lesson[] = [
       },
       {
         heading: "The contact record",
-        text: "One page holds a person's details, tags, pipelines, purchases, agreements, notes and a timeline of every touch. Press a person's name in Contacts to open it. Schedule a follow-up here and it becomes a task for that day. If you add an email draft, it waits in Daily Compass.",
+        text: "One page holds a person's details, tags, pipelines, purchases, agreements, notes and a timeline of every touch. Press a person's name in Contacts to open it. Schedule a follow-up here and it becomes a task for that day. If you add an email draft, it waits in Daily Compass, or press Send now to email it right away.",
         steps: [
           "Press Edit to change their details, then press Save changes.",
           "Under Tags, type to add a tag, press the x to remove one, or click a tag to see everyone who has it.",
@@ -387,7 +387,7 @@ export const FOUNDATIONS: Lesson[] = [
       },
       {
         heading: "Your assistant can help",
-        text: "On a contact, Draft the email with AI writes a follow-up email using your own AI key. Nothing is sent until you press Send in Daily Compass, and without a key you can write the email yourself. In chat, your assistant can also find and add contacts and add a deal for you. Anything it changes waits behind Approve. The Pipeline page itself does not use AI.",
+        text: "On a contact, Draft the email with AI writes a follow-up email using your own AI key. Press Send now to email it right away from your connected Gmail or Microsoft 365, or schedule it and press Send in Daily Compass on the day. Without a key you can write the email yourself with Write the email myself. In chat, your assistant can also find and add contacts and add a deal for you. Anything it changes waits behind Approve. The Pipeline page itself does not use AI.",
       },
     ],
     tryIt: { label: "Open Contacts", href: "/contacts", task: "Search for a person, open the record and find the timeline and Schedule a follow-up.", question: "Who is the next person you should follow up with, and what is the next step?" },
@@ -1204,7 +1204,7 @@ export const FOUNDATIONS: Lesson[] = [
           "Type under Add a note and press Save note.",
           "Under Schedule a follow-up, pick the day, say what it is about, and press Schedule follow-up.",
         ],
-        tips: ["Draft the email with AI, under Schedule a follow-up, writes a draft you can edit using your own AI key, or you can write your own. Nothing goes out until you press Send in Daily Compass.", "Use + Add under Calls attended to log a call the Suite did not see.", "Editing a record or adding a note does not change your scores."],
+        tips: ["Draft the email with AI, under Schedule a follow-up, writes a draft you can edit using your own AI key, or you can write your own. Nothing goes out until you press Send now, or Send in Daily Compass on the day. Write the email myself skips the AI.", "Use + Add under Calls attended to log a call the Suite did not see.", "Editing a record or adding a note does not change your scores."],
         image: { src: "/academy/contact-record.jpg", alt: "A contact record beside the contact list, with details, Calls attended and Purchases with + Add buttons, Tags and Tag history", caption: "Notes, follow-ups and the timeline live on the record." },
       },
       {
