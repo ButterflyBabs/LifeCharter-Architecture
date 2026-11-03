@@ -12,3 +12,10 @@ test("a new portal starts from the Command Suite brand board: indigo, ivory, the
   assert.equal(cleanLook({}).font, "brand");
   assert.equal(cleanLook({ font: "brand", accent: "#123456" }).accent, "#123456");
 });
+
+test("the owner's own clients see the product brand in the portal header, not the legal company", async () => {
+  const { HOUSE_PORTAL_NAME, HOUSE_PORTAL_LOGO } = await import("../src/lib/portal");
+  assert.equal(HOUSE_PORTAL_NAME, "LifeCharter Command Suite");
+  assert.equal(HOUSE_PORTAL_LOGO, "/brand/command-suite-logo.png");
+});
+

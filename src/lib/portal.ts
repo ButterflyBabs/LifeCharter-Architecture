@@ -4,6 +4,7 @@ import { accountSender } from "@/lib/email/accountSender";
 import { sendMail } from "@/lib/booking/engine";
 import type { VolantReport } from "@/lib/volant";
 import { cleanLook, headingFor, type PortalLook } from "@/lib/portalLook";
+import { isHousePlan } from "@/lib/housePlan";
 
 // Client portal (task 1147). Each account's own clients get a private link (no password; the unguessable link is the
 // key, like shared project pages) to a page in the account's own branding: package and sessions left, upcoming
@@ -15,6 +16,9 @@ type Db = ReturnType<typeof createServerClient>;
 
 const SITE = () => process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://lccommandsuite.com";
 export const newPortalToken = () => randomBytes(24).toString("base64url");
+/** What the owner's own clients see in the portal header: the product brand, not the legal company. */
+export const HOUSE_PORTAL_NAME = "LifeCharter Command Suite";
+export const HOUSE_PORTAL_LOGO = "/brand/command-suite-logo.png";
 export const portalUrl = (token: string) => `${SITE()}/portal/${token}`;
 export const validToken = (t: string) => /^[A-Za-z0-9_-]{24,64}$/.test(t);
 export const PORTAL_BUCKET = "portal-files";
@@ -85,7 +89,8 @@ export async function countAttendedSession(db: Db, planId: string, bookingId: st
 export async function sendPortalLink(db: Db, portal: PortalRow): Promise<{ ok: boolean; error?: string }> {
   const who = await accountSender(portal.master_plan_id, { marketing: false }, db);
   if (!who.ok) return { ok: false, error: who.reason || "Set up email sending first (Contacts › Email sending). Meanwhile you can copy the link." };
-  const [{ data: c }, brand] = await Promise.all([db.from("seq_contacts").select("email, first_name").eq("id", portal.contact_id).maybeSingle(), brandFor(db, portal.master_plan_id)]);
+  const [{ data: c }, brand0, house] = await Promise.all([db.from("seq_contacts").select("email, first_name").eq("id", portal.contact_id).maybeSingle(), brandFor(db, portal.master_plan_id), isHousePlan(portal.master_plan_id, db)]);
+  const brand = house ? { ...brand0, name: HOUSE_PORTAL_NAME } : brand0;
   if (!c?.email) return { ok: false, error: "This contact has no email address." };
   await sendMail(who, {
     to: c.email as string,
@@ -142,15 +147,21 @@ export async function portalView(db: Db, p: PortalRow) {
   const { data: cals } = calIds.length ? await db.from("booking_calendars").select("id, slug, name, active").in("id", calIds) : { data: [] };
   const calById = new Map(((cals ?? []) as { id: string; slug: string; name: string; active: boolean }[]).map((x) => [x.id, x]));
   const look = cleanLook(p.look ?? {});
+  const house = await isHousePlan(p.master_plan_id, db);
   const assetUrl = (k: "logo" | "banner") => `/api/portal/${p.token}/asset?k=${k}&v=${encodeURIComponent((k === "logo" ? look.logoPath : look.bannerPath) || "").slice(-24)}`;
   const { programsForMember } = await import("@/lib/programs");
-  const programs = await programsForMember(db, p.master_plan_id, p.contact_id, brand.name);
+  const programs = await programsForMember(db, p.master_plan_id, p.contact_id, house ? HOUSE_PORTAL_NAME : brand.name);
   const { awayNow, awayDates, awayNote } = await import("@/lib/awayMode");
   const away = await awayNow(db, p.master_plan_id).catch(() => null);
   return {
     programs,
     away: away ? { dates: awayDates(away), note: awayNote(away) } : null,
-    brand: { name: brand.name, logo: look.useAccountLogo ? brand.logo : look.logoPath ? assetUrl("logo") : null },
+    // Babs's own clients see LifeCharter Command Suite and its official logo (never the company's legal name). A logo chosen for this one portal still wins.
+    brand: (() => {
+      if (look.logoPath) return { name: house ? HOUSE_PORTAL_NAME : brand.name, logo: assetUrl("logo"), wide: false };
+      if (house) return { name: HOUSE_PORTAL_NAME, logo: HOUSE_PORTAL_LOGO, wide: true };
+      return { name: brand.name, logo: look.useAccountLogo ? brand.logo : null, wide: false };
+    })(),
     look: { accent: look.accent, background: look.background, font: look.font, heading: headingFor(look, (c?.first_name as string) || null), banner: look.bannerPath ? assetUrl("banner") : null, sections: look.sections },
     client: { firstName: (c?.first_name as string) || null },
     welcome: p.welcome,

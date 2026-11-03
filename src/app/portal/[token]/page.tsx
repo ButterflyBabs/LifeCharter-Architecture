@@ -11,7 +11,7 @@ type View = {
   viewer?: { signedIn: boolean; canAddToTasks: boolean };
   programs: Program[];
   away: { dates: string; note: string } | null;
-  brand: { name: string; logo: string | null };
+  brand: { name: string; logo: string | null; wide?: boolean };
   look: { accent: string; background: string; font: string; heading: string; banner: string | null; sections: { key: SectionKey; title: string; hidden: boolean }[] };
   client: { firstName: string | null };
   welcome: string | null;
@@ -279,7 +279,7 @@ export default function PortalPage() {
       {look.banner && <div className="h-40 w-full bg-cover bg-center sm:h-56" style={{ backgroundImage: `url("${look.banner}")` }} />}
       <div className="mx-auto max-w-5xl space-y-5 px-4 py-8 sm:px-6">
         <header className="flex flex-wrap items-center gap-4">
-          {v.brand.logo && <img src={v.brand.logo} alt="" className="h-14 w-14 rounded-full bg-white object-contain" />}
+          {v.brand.logo && (v.brand.wide ? <img src={v.brand.logo} alt={v.brand.name} className="h-14 w-auto max-w-[240px] object-contain" /> : <img src={v.brand.logo} alt="" className="h-14 w-14 rounded-full bg-white object-contain" />)}
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: look.accent, ...(brandLook ? { fontFamily: "'Montserrat', system-ui, sans-serif" } : {}) }}>{v.brand.name}</p>
             <h1 className="text-3xl font-semibold [font-family:var(--pf-heading)]">{look.heading}</h1>
