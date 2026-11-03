@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { volantAccount } from "@/lib/volantServer";
+import { sessionUser } from "@/lib/authz";
 import { openMailboxes } from "@/lib/mailboxes";
 import * as google from "@/lib/google";
 import * as microsoft from "@/lib/microsoft";
@@ -37,10 +38,14 @@ export async function POST(request: Request) {
 
   const boxes = await openMailboxes();
   const box = boxes.find((x) => x.provider === "microsoft") ?? boxes[0] ?? null;
+  // The name the email closes with: the signed-in person's own name (the account's own name can be a placeholder such as "Primary").
+  const me = await sessionUser().catch(() => null);
+  const { data: prof } = me?.id ? await db.from("profiles").select("full_name").eq("id", me.id).maybeSingle() : { data: null };
   const { data: plan } = await db.from("client_master_plans").select("client_name").eq("id", a.planId).maybeSingle();
+  const coachFirst = first(prof?.full_name) || (["primary", "demo"].includes(first(plan?.client_name).toLowerCase()) ? "" : first(plan?.client_name));
   const t = templateByKey(row.template_key as string);
   const date = fmtDate(row.session_date as string);
-  const message = str(b.message, 6000) || defaultClientMessage(report, t, { clientFirst: first(c.first_name), coachFirst: first(plan?.client_name), date });
+  const message = str(b.message, 6000) || defaultClientMessage(report, t, { clientFirst: first(c.first_name), coachFirst, date });
   const opts = { message, summary: b.summary !== false, clientItems: b.clientItems !== false, coachItems: b.coachItems === true };
   const built = buildClientEmail(report, opts, { title: row.title as string, date, contactName: [c.first_name, c.last_name].filter(Boolean).join(" ") });
   const subject = str(b.subject, 200) || built.subject;
