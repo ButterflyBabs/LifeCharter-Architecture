@@ -5,8 +5,8 @@
 export const VOLANT_NAME = "LC Volant";
 /** Open to every account since 2026-10-18 (Babs: "open LC Volant to everyone"). false = Babs only. */
 export const VOLANT_OPEN_TO_ALL = true;
-export const VOLANT_MAX_TRANSCRIPT = 200000; // stored
-export const VOLANT_MAX_PROMPT = 60000; // sent to the AI: about 10,000 words, past an hour of talk
+export const VOLANT_MAX_TRANSCRIPT = 360000; // stored: about 60,000 words, several hours of talk
+export const VOLANT_MAX_PROMPT = 360000; // sent to the AI: the WHOLE stored transcript (the model reads about 128,000 tokens)
 
 export type SectionKind = "text" | "actions" | "private" | "draft";
 export interface TemplateSection { title: string; guide: string; kind: SectionKind }

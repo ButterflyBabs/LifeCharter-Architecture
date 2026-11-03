@@ -146,7 +146,7 @@ function NewReport({ templates, settings, onMade }: { templates: VolantTemplate[
     setText(d.text || "");
     setFileName(d.name || file.name);
     setRecordingId("");
-    if (d.cut) setMsg("That transcript is very long, so only the first part was kept.");
+    if (d.cut) setMsg("That transcript is longer than one report can read (about 60,000 words). Only the first part was kept. Split it into two and write a report for each.");
   }
 
   async function make() {
@@ -241,6 +241,7 @@ function ReportView({ id, templates, settings, onChanged, onDeleted }: { id: str
   const [showTranscript, setShowTranscript] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [emailing, setEmailing] = useState(false);
+  const [rewriting, setRewriting] = useState(false);
 
   useEffect(() => {
     fetch(`/api/volant?id=${id}`, { cache: "no-store" })
@@ -262,6 +263,15 @@ function ReportView({ id, templates, settings, onChanged, onDeleted }: { id: str
     setR({ ...r!, title: name.trim() });
     setRenaming(false);
     onChanged();
+  }
+  async function rewrite() {
+    setRewriting(true);
+    setMsg("");
+    const { ok, d } = await post("/api/volant/report", { fromReportId: r!.id });
+    setRewriting(false);
+    if (!ok) return setMsg(d.error || "Couldn't write it again. Try again in a minute.");
+    onChanged();
+    window.location.href = `/volant?report=${d.id}`;
   }
   async function remove() {
     const { ok, d } = await post("/api/volant", { action: "delete", id: r!.id });
@@ -298,7 +308,7 @@ function ReportView({ id, templates, settings, onChanged, onDeleted }: { id: str
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {report && (
-            <button className={btn} disabled={!r.contact_id} title={r.contact_id ? "See what your client gets, then email it from your own address" : "Save this report on a contact first"} onClick={() => setEmailing(true)}><Mail className="h-4 w-4" />Preview &amp; email to client</button>
+            <button className={btn} title="See what your client gets, then email it from your own address" onClick={() => setEmailing(true)}><Mail className="h-4 w-4" />Preview &amp; email to client</button>
           )}
           {report && <button className={btn} onClick={() => void copy(reportToText(r.title, fmtDate(r.session_date), report, actTitle), "Report copied (private notes left out).")}><Copy className="h-4 w-4" />Copy report</button>}
           <button className={btn} onClick={() => setShowTranscript((v) => !v)}><FileText className="h-4 w-4" />{showTranscript ? "Hide transcript" : "Show transcript"}</button>
@@ -311,7 +321,7 @@ function ReportView({ id, templates, settings, onChanged, onDeleted }: { id: str
             <button className={btn} onClick={() => setConfirmDelete(true)}><Trash2 className="h-4 w-4" />Delete</button>
           )}
         </div>
-        {report && !r.contact_id && <p className="mt-2 text-xs text-[#7a8a99]">To email this report to the client, make it from a contact next time, or pick one when you write the report. Their email address is needed.</p>}
+        {report && !r.contact_id && <p className="mt-2 text-xs text-[#7a8a99]">This report is not saved on a contact yet. Press Preview &amp; email to client and pick the client there.</p>}
         {report?.emailed?.length ? (() => {
           const e = report.emailed![report.emailed!.length - 1];
           const at = new Date(e.at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
@@ -319,7 +329,12 @@ function ReportView({ id, templates, settings, onChanged, onDeleted }: { id: str
             ? <p className="mt-2 text-sm text-[#2f7d55]" role="status">Emailed to {e.to} on {at}{e.from ? ` from ${e.from}` : ""}.{e.copy === "sent" ? " Your own copy went to your inbox." : e.copy === "failed" ? " Your own copy did not send." : ""}{report.emailed!.length > 1 ? ` Sent ${report.emailed!.length} times.` : ""}</p>
             : <p className="mt-2 text-sm font-medium text-[#8a2f2f]" role="status">The email to {e.to} did not send ({at}): {e.error || "the mail service refused it"}. Use Preview &amp; email to client to try again.</p>;
         })() : null}
-        {report?.clipped && <p className="mt-2 text-xs text-[#7a8a99]">This transcript was very long, so the report was written from the first part (about 10,000 words).</p>}
+        {report?.clipped && (
+          <p className="mt-2 text-sm text-[#8a2f2f]">
+            This report was written from only the first part of a long transcript.{" "}
+            <button className={small} disabled={rewriting} onClick={() => void rewrite()}>{rewriting ? "Writing… (up to two minutes)" : "Write it again from the whole transcript"}</button>
+          </p>
+        )}
         {msg && <p className="mt-2 text-sm text-[#1F5E63]" role="status">{msg}</p>}
       </section>
 
@@ -370,7 +385,7 @@ function ReportView({ id, templates, settings, onChanged, onDeleted }: { id: str
           ))}
         </>
       )}
-      {emailing && report && <EmailClient r={r} report={report} template={t} onClose={() => setEmailing(false)} onReport={(next) => { setR({ ...r, report: next }); onChanged(); }} />}
+      {emailing && report && <EmailClient r={r} report={report} template={t} onClose={() => setEmailing(false)} onReport={(next) => { setR({ ...r, report: next }); onChanged(); }} onContact={(c) => { setR({ ...r, contact_id: c.id, seq_contacts: c }); onChanged(); }} />}
     </div>
   );
 }
@@ -546,7 +561,7 @@ function AddItem({ reportId, onReport, setMsg }: { reportId: string; onReport: (
 }
 
 // Preview what the client gets, edit the message, and email it from the signed-in person's own mailbox. What the preview shows is exactly what is sent.
-function EmailClient({ r, report, template, onClose, onReport }: { r: Full; report: VolantReport; template: VolantTemplate | null; onClose: () => void; onReport: (r: VolantReport) => void }) {
+function EmailClient({ r, report, template, onClose, onReport, onContact }: { r: Full; report: VolantReport; template: VolantTemplate | null; onClose: () => void; onReport: (r: VolantReport) => void; onContact: (c: { id: string; first_name: string | null; last_name: string | null; email: string }) => void }) {
   const [info, setInfo] = useState<{ to: string; from: string | null; subject: string; message: string; canSend: boolean; portalNote?: string; portalLink?: string | null; alreadyCopied?: boolean; portalItems?: number; brand?: { name: string; logoUrl: string | null } } | null>(null);
   const [err, setErr] = useState("");
   const [subject, setSubject] = useState("");
@@ -560,7 +575,10 @@ function EmailClient({ r, report, template, onClose, onReport }: { r: Full; repo
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
   const sorted = groupItems(report.action_items);
 
+  const hasContact = Boolean(r.contact_id);
   useEffect(() => {
+    if (!hasContact) return;
+    setErr("");
     post("/api/volant/email", { id: r.id, preview: true }).then(({ ok, d }) => {
       if (!ok) return setErr(d.error || "Couldn't prepare the email.");
       setInfo(d);
@@ -568,7 +586,12 @@ function EmailClient({ r, report, template, onClose, onReport }: { r: Full; repo
       setSubject(d.subject);
       setMessage(d.message);
     });
-  }, [r.id]);
+  }, [r.id, hasContact]);
+  async function pick(c: PickedContact) {
+    const { ok, d } = await post("/api/volant", { action: "attach-contact", id: r.id, contactId: c.id });
+    if (!ok) return setErr(d.error || "Couldn't save that.");
+    onContact(d.contact);
+  }
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -605,7 +628,13 @@ function EmailClient({ r, report, template, onClose, onReport }: { r: Full; repo
           <h3 className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Preview &amp; email to your client</h3>
           <button className={`${btn} ml-auto`} onClick={onClose}>Close</button>
         </div>
-        {err ? <p className="mt-3 text-sm text-[#8a2f2f]" role="alert">{err}</p> : !info ? <p className="mt-3 text-sm text-[#7a8a99]">Getting it ready…</p> : (
+        {!hasContact ? (
+          <div className="mt-3 space-y-2">
+            <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">Who is this report for? Pick your client. The report is then saved on their contact record, and the email goes to the address you have for them.</p>
+            <ContactPicker onPick={(c) => void pick(c)} placeholder="Search your contacts by name or email" />
+            {err && <p className="text-sm text-[#8a2f2f]" role="alert">{err}</p>}
+          </div>
+        ) : err ? <p className="mt-3 text-sm text-[#8a2f2f]" role="alert">{err}</p> : !info ? <p className="mt-3 text-sm text-[#7a8a99]">Getting it ready…</p> : (
           <div className="mt-3 grid gap-4 lg:grid-cols-2">
             <div className="space-y-3">
               <p className="text-xs text-[#7a8a99]">Your private notes and the recap draft are never added. The message below is the recap draft when your template has one, so edit it freely.</p>

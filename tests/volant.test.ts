@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { VOLANT_TEMPLATES, buildPrompt, cleanCaptionFile, cleanItemEdit, cleanReport, newItem, docxXmlToText, reportToText, templateByKey, templateName, buildClientEmail, defaultClientMessage, groupItems, inferFor, buildCoachCopy, buildClientEmailHtml, buildCoachCopyHtml } from "../src/lib/volant";
+import { VOLANT_TEMPLATES, buildPrompt, cleanCaptionFile, cleanItemEdit, cleanReport, newItem, docxXmlToText, reportToText, templateByKey, templateName, buildClientEmail, defaultClientMessage, groupItems, inferFor, buildCoachCopy, buildClientEmailHtml, buildCoachCopyHtml, VOLANT_MAX_PROMPT, VOLANT_MAX_TRANSCRIPT } from "../src/lib/volant";
 
 test("all 21 approved templates are there, each with one action list and unique keys", () => {
     assert.equal(VOLANT_TEMPLATES.length, 21);
@@ -26,10 +26,10 @@ test("the report keeps the template's own order and titles, and never trusts the
     assert.equal(cleanReport("nonsense", t, true).clipped, true);
 });
 
-test("the prompt lists every non-action section and the hiring rule, and clips long transcripts", () => {
+test("the prompt lists every non-action section and the hiring rule, and keeps a 70,000-character transcript whole", () => {
     const t = templateByKey("hiring-interviews")!;
     const { system, clipped } = buildPrompt(t, { title: "x", date: "2026-10-17", contactName: "", transcript: "a".repeat(70000) });
-    assert.equal(clipped, true);
+    assert.equal(clipped, false);
     for (const s of t.sections.filter((x) => x.kind !== "actions")) assert.ok(system.includes(s.title), s.title);
     assert.match(system, /must not affect a hiring decision/);
     assert.doesNotMatch(system, /Each one gets its own Approve/);
@@ -132,5 +132,14 @@ test("the branded client email carries the same content as the text, escapes mar
   const mine = buildCoachCopyHtml(r, { title: "T", date: "d", contactName: "Jo Lee", link: "https://x.test/volant?report=abc", sentTo: "jo@x.test" }, brand);
   assert.ok(mine.includes("SECRET") && mine.includes("Private, only you") && mine.includes("Open the report in the Suite") && mine.includes("Send the worksheet"));
   assert.ok(mine.includes("&lt;b&gt;coach&lt;/b&gt;"), "private note markup is escaped too");
+});
+
+test("the whole stored transcript goes to the model, so a long session is never read in part", () => {
+  assert.ok(VOLANT_MAX_PROMPT >= VOLANT_MAX_TRANSCRIPT);
+  const t = templateByKey("coaching-sessions")!;
+  const long = "word ".repeat(40000); // about 200,000 characters, far past the old 60,000
+  const p = buildPrompt(t, { title: "T", date: "2026-11-03", contactName: "Jo", transcript: long });
+  assert.equal(p.clipped, false);
+  assert.ok(p.user.length > 190000);
 });
 

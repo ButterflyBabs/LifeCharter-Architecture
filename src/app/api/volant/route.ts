@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { isHousePlan } from "@/lib/housePlan";
+import { logEvent } from "@/lib/crm";
 import { volantAccount } from "@/lib/volantServer";
 import { cleanItemEdit, newItem, templateByKey, VOLANT_NAME, VOLANT_TEMPLATES, type VolantReport } from "@/lib/volant";
 
@@ -86,6 +87,16 @@ export async function POST(request: Request) {
     if (!title) return NextResponse.json({ error: "Give the report a name." }, { status: 400 });
     const { error } = await db.from("volant_reports").update({ title, updated_at: now }).eq("id", row.id).eq("master_plan_id", a.planId);
     return error ? NextResponse.json({ error: "Couldn't rename the report." }, { status: 500 }) : NextResponse.json({ ok: true });
+  }
+
+  if (action === "attach-contact") {
+    // Save the report on a contact now (a report made without one can then be previewed and emailed to them).
+    const { data: c } = await db.from("seq_contacts").select("id, first_name, last_name, email").eq("id", str(b.contactId, 60)).eq("master_plan_id", a.planId).maybeSingle();
+    if (!c) return NextResponse.json({ error: "That contact could not be found." }, { status: 400 });
+    const { error } = await db.from("volant_reports").update({ contact_id: c.id, updated_at: now }).eq("id", row.id).eq("master_plan_id", a.planId);
+    if (error) return NextResponse.json({ error: "Couldn't save that." }, { status: 500 });
+    await logEvent(a.planId, c.id as string, "note", `LC Volant report: ${row.title}`, { volant_report_id: row.id }, db).catch(() => {});
+    return NextResponse.json({ ok: true, contact: { id: c.id, first_name: c.first_name, last_name: c.last_name, email: c.email } });
   }
 
   const report = (row.report as VolantReport | null) ?? null;

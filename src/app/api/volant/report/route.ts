@@ -25,18 +25,31 @@ export async function POST(request: Request) {
   const a = await volantAccount(request);
   if ("denied" in a) return a.denied;
   const b = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-  const t = templateByKey(str(b.templateKey, 60));
-  if (!t) return NextResponse.json({ error: "Pick a template first." }, { status: 400 });
-  if (b.consent !== true) return NextResponse.json({ error: "Tick the box to confirm everyone agreed to be recorded." }, { status: 400 });
-  const transcript = typeof b.transcript === "string" ? b.transcript.replace(/\u0000/g, "").trim().slice(0, VOLANT_MAX_TRANSCRIPT) : "";
-  if (transcript.length < 200) return NextResponse.json({ error: "Paste or upload the transcript first (it looks too short to make a report)." }, { status: 400 });
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(str(b.date, 10)) ? str(b.date, 10) : new Date().toLocaleDateString("en-CA", { timeZone: "America/Denver" });
-
   const db = createServerClient();
+  // "Write it again from the whole transcript": reuse the transcript, template, name, date and contact of a report already made.
+  type Prior = { transcript: string | null; title: string; session_date: string; contact_id: string | null; template_key: string };
+  let from = null as Prior | null;
+  if (str(b.fromReportId, 60)) {
+    const { data } = await db.from("volant_reports").select("transcript, title, session_date, contact_id, template_key").eq("id", str(b.fromReportId, 60)).eq("master_plan_id", a.planId).maybeSingle();
+    if (!data) return NextResponse.json({ error: "That report could not be found." }, { status: 404 });
+    from = data as Prior;
+  }
+  const t = templateByKey(str(b.templateKey, 60) || from?.template_key || "");
+  if (!t) return NextResponse.json({ error: "Pick a template first." }, { status: 400 });
+  if (b.consent !== true && !from) return NextResponse.json({ error: "Tick the box to confirm everyone agreed to be recorded." }, { status: 400 });
+  const rawText = typeof b.transcript === "string" && b.transcript ? b.transcript : from?.transcript ?? "";
+  const cleaned = rawText.replace(/\u0000/g, "").trim();
+  // The whole transcript is used, never a clipped part: one too long to read in one go is refused so it can be split, not silently cut.
+  if (cleaned.length > VOLANT_MAX_TRANSCRIPT) return NextResponse.json({ error: `This transcript is longer than one report can read (about ${Math.round(VOLANT_MAX_TRANSCRIPT / 6).toLocaleString("en-US")} words). Split it into two and write a report for each.` }, { status: 400 });
+  const transcript = cleaned;
+  if (transcript.length < 200) return NextResponse.json({ error: "Paste or upload the transcript first (it looks too short to make a report)." }, { status: 400 });
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(str(b.date, 10)) ? str(b.date, 10) : from?.session_date ?? new Date().toLocaleDateString("en-CA", { timeZone: "America/Denver" });
+
   let contactId: string | null = null;
   let contactName = "";
-  if (str(b.contactId, 60)) {
-    const { data: c } = await db.from("seq_contacts").select("id, first_name, last_name, email").eq("id", str(b.contactId, 60)).eq("master_plan_id", a.planId).maybeSingle();
+  const wantContact = str(b.contactId, 60) || from?.contact_id || "";
+  if (wantContact) {
+    const { data: c } = await db.from("seq_contacts").select("id, first_name, last_name, email").eq("id", wantContact).eq("master_plan_id", a.planId).maybeSingle();
     if (!c) return NextResponse.json({ error: "That contact could not be found." }, { status: 400 });
     contactId = c.id as string;
     contactName = [c.first_name, c.last_name].filter(Boolean).join(" ") || String(c.email || "");
@@ -49,7 +62,7 @@ export async function POST(request: Request) {
 
   const { data: settings } = await db.from("volant_settings").select("template_names, copy_new_reports").eq("master_plan_id", a.planId).maybeSingle();
   const tName = templateName(t, settings?.template_names as Record<string, string> | null);
-  const title = str(b.title, 160) || (contactName ? `${tName} with ${contactName}` : tName);
+  const title = str(b.title, 160) || (from ? `${from.title} (whole transcript)` : "") || (contactName ? `${tName} with ${contactName}` : tName);
   const { system, user, clipped } = buildPrompt(t, { title, date, contactName, transcript });
 
   try {
@@ -57,7 +70,7 @@ export async function POST(request: Request) {
     const completion = await ai.chat.completions.create({
       model: "gpt-4o",
       messages: [{ role: "system", content: system }, { role: "user", content: user }],
-      max_tokens: 4000,
+      max_tokens: 6000,
       temperature: 0.3,
       response_format: { type: "json_object" },
     });
