@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { movesForward } from "../src/lib/dmPipeline";
 import { DEFAULT_STEPS, classifyMessage, dueStep, firstNameOf, inSendWindow, rampCap, render, varsFor } from "../src/lib/coldEmail";
 
 test("the ramp starts small and never goes over the mailbox cap", () => {
@@ -60,4 +61,11 @@ test("a coach listed under their own name gets no 'at <name>' in the greeting", 
   assert.equal(v.company, "");
   assert.equal(v.at_company, "");
   assert.equal(varsFor({ name: "Jane Doe", notes: "Doe Studio · Denver", link_code: "a" }, "x").at_company, " at Doe Studio");
+});
+
+test("Email 2 moves a card from Email 1 sent to the follow-up stage, and a reply still moves it on", () => {
+  assert.equal(movesForward("sent", "open", "followed_up"), true);
+  assert.equal(movesForward("followed_up", "open", "sent"), false);
+  assert.equal(movesForward("followed_up", "open", "conversation"), true);
+  assert.equal(movesForward("conversation", "open", "followed_up"), false);
 });
