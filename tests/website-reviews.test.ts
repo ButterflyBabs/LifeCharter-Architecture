@@ -49,6 +49,9 @@ test("the review-ready email names the client and site, links to the Website Rev
   assert.ok(m.html.includes("Hi Franc,"));
   assert.ok(!m.html.includes("<b>Godri"));
   assert.ok(m.text.includes("Keywords and SEO"));
+  assert.ok(m.html.includes("https://lccommandsuite.com/book/sip-and-soul"));
+  assert.ok(m.html.includes("Connect with Babs"));
+  assert.ok(m.text.includes("https://lccommandsuite.com/book/sip-and-soul"));
   assert.equal(reviewReadyEmail({ name: "", website: "", origin: "https://x.test" }).subject, "Your Website Alignment Review is ready");
 });
 
