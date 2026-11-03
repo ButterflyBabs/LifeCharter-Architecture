@@ -66,3 +66,41 @@ export async function askForReview(db: Db, review: { id: string; master_plan_id:
     console.error("askForReview:", e);
   }
 }
+
+/** Every Review carries this section, so each client is shown how to get their pages found in search. */
+export const SEO_SECTION_HEADING = "## Keywords and SEO: getting found";
+export const hasSeoSection = (text: string) => text.includes(SEO_SECTION_HEADING);
+
+/** The outline the owner starts from for a client's SEO section (filled in from the site's own title, headings, images and sitemap). */
+export const SEO_SECTION_OUTLINE = `${SEO_SECTION_HEADING}
+
+**What a search engine sees today**
+
+- **Page title:** ...
+- **Headings:** ... (one H1 per page)
+- **Image descriptions:** ... of ... images have no alt text.
+- **Structured data, sitemap and sharing image:** ...
+- **Already good:** ...
+
+**Keywords to target.** A starting list drawn from the client's offers. Check search volume and competition in Google Search Console or Google Keyword Planner before committing to any of it.
+
+- ...
+
+**Where to put them**
+
+- **Title tag** (about 60 characters): ...
+- **H1:** ...
+- **Meta description** (about 150 characters): ...
+- **Alt text:** ...
+- **One page per offer or topic:** ...
+
+**Technical fixes**
+
+- ...
+
+**Content that earns rankings**
+
+- ...
+
+**How to measure it.** In Google Search Console, watch Queries and Pages for these phrases. Expect movement in weeks, not days: check at four and eight weeks.
+`;

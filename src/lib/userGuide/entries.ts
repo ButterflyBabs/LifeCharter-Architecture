@@ -11568,7 +11568,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "area": "Getting Started",
     "where": "Getting Started > Website Review",
     "href": "/website-review",
-    "what": "Your Website Alignment Review. Our team reads your website against the positioning, voice and offer you are building here, then gives you the five changes that matter most. It is included with Command Suite.",
+    "what": "Your Website Alignment Review. Our team reads your website against the positioning, voice and offer you are building here, then gives you the five changes that matter most and a Keywords and SEO section to help your pages get found in search. It is included with Command Suite.",
     "ai": "No AI",
     "aiNote": "Our team writes your Review. There is no AI button on this page.",
     "steps": [
@@ -11576,7 +11576,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "Under What's your website address?, type your address and press Save.",
       "Your Review is being written then shows on the page, with the date to expect it.",
       "Watch your email. We email you when it is ready, and it appears on this page.",
-      "Read your five changes. Write to support@lccommandsuite.com if you want to talk it through."
+      "Read your five changes and your Keywords and SEO section. Write to support@lccommandsuite.com if you want to talk it through."
     ],
     "health": "This does not change your scores. It helps your website match the positioning and offer you are building in the Suite.",
     "tips": [

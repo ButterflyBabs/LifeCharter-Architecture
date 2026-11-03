@@ -1,3 +1,4 @@
+import { SEO_SECTION_HEADING, SEO_SECTION_OUTLINE, hasSeoSection } from "../src/lib/websiteReviews";
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -25,3 +26,10 @@ test("the upgrade note points at the next plan up, and says nothing at the top",
   assert.match(upgradeNote(2), /VIP includes 5/);
   assert.equal(upgradeNote(5), "");
 });
+
+test("every Review is checked for the Keywords and SEO section, and the outline carries its heading", () => {
+  assert.equal(hasSeoSection("## What's working\n\n- ok"), false);
+  assert.equal(hasSeoSection(`## What's working\n\n${SEO_SECTION_OUTLINE}`), true);
+  assert.ok(SEO_SECTION_OUTLINE.startsWith(SEO_SECTION_HEADING));
+});
+

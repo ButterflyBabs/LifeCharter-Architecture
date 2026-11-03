@@ -738,13 +738,13 @@ export const EXPERT: Lesson[] = [
       },
       {
         heading: "Your Website Review",
-        text: "The LifeCharter team reads your website against the positioning, voice and offer you are building, then gives you the five changes that matter most. It is included with Command Suite. Our team writes your Review. There is no AI button on this page.",
+        text: "The LifeCharter team reads your website against the positioning, voice and offer you are building, then gives you the five changes that matter most and a Keywords and SEO section: the phrases to aim for, where to put them and the fixes that help search engines rank your pages. It is included with Command Suite. Our team writes your Review. There is no AI button on this page.",
         steps: [
           "Open Website Review from the left menu.",
           "Under What's your website address?, type your address and press Save.",
           "Your Review is being written, then shows on the page with the date to expect it.",
           "Watch your email. You get an email when it is ready, and it appears on this page.",
-          "Read your five changes. Write to support@lccommandsuite.com if you want to talk it through.",
+          "Read your five changes and your Keywords and SEO section. Write to support@lccommandsuite.com if you want to talk it through.",
         ],
         tips: ["Type the address like yourbusiness.com. You do not need the https part.", "No website yet? Leave it blank and add it whenever you are ready."],
         image: { src: "/academy/website-review.jpg", alt: "The Website Alignment Review page with the box What's your website address, a field showing yourbusiness.com and a Save button", caption: "Website Review, before an address is added. This is a sample account." },
@@ -1228,7 +1228,7 @@ export const EXPERT: Lesson[] = [
       },
       {
         heading: "What about my website?",
-        text: "The Website Alignment Review is included with Command Suite. The team reads the website against the positioning, voice and offer being built, then gives the five changes that matter most. The plan sets how many reviews are included. Our team writes it, and there is no AI button on that page.",
+        text: "The Website Alignment Review is included with Command Suite. The team reads the website against the positioning, voice and offer being built, then gives the five changes that matter most and a Keywords and SEO section. The plan sets how many reviews are included. Our team writes it, and there is no AI button on that page.",
         image: { src: "/academy/website-review.jpg", alt: "The Website Alignment Review page with the box What's your website address, and a Save button", caption: "Website Review. A client types their address and presses Save." },
       },
       {
