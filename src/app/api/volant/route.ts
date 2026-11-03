@@ -123,6 +123,16 @@ export async function POST(request: Request) {
     return error ? NextResponse.json({ error: "Saved, but couldn't mark it on the report." }, { status: 500 }) : NextResponse.json({ ok: true, report: next });
   }
 
+  if (action === "set-for") {
+    // Move an item between the coach's tasks and the client's. Not allowed once it has gone to Tasks, so the two lists never disagree.
+    const f = str(b.for, 10);
+    if (f !== "coach" && f !== "client") return NextResponse.json({ error: "Pick coach or client." }, { status: 400 });
+    if (item.task_id) return NextResponse.json({ error: "This one is already in Tasks. Change it there." }, { status: 400 });
+    const next = { ...report, action_items: report.action_items.map((x, i) => (i === idx ? { ...x, for: f as "coach" | "client" } : x)) };
+    const error = await save(next);
+    return error ? NextResponse.json({ error: "Couldn't save that." }, { status: 500 }) : NextResponse.json({ ok: true, report: next });
+  }
+
   if (action === "edit-item") {
     if (item.task_id) return NextResponse.json({ error: "This one is already in Tasks. Change it there." }, { status: 400 });
     const edit = cleanItemEdit(b.item);
@@ -147,13 +157,14 @@ export async function POST(request: Request) {
     const me = firstName(plan?.client_name).toLowerCase();
     const house = await isHousePlan(a.planId, db);
     const o = item.owner.trim().toLowerCase();
-    const mine = !o || o === me || (house && /^(babs|amilynne)/.test(o));
+    // A client's task is tracked, not done by the account owner; an unsorted one falls back to the owner's name.
+    const mine = item.for === "client" ? false : item.for === "coach" ? true : !o || o === me || (house && /^(babs|amilynne)/.test(o));
     const { data: task, error } = await db
       .from("tasks")
       .insert({
         master_plan_id: a.planId,
         title: item.text.slice(0, 200),
-        description: `From the LC Volant report "${row.title}" (${t?.name ?? "report"}, ${row.session_date}).${item.owner ? ` Owner: ${item.owner}.` : ""}`,
+        description: `From the LC Volant report "${row.title}" (${t?.name ?? "report"}, ${row.session_date}).${item.for === "client" ? " A task for the client, tracked here." : item.for === "coach" ? " A task for the coach." : ""}${item.owner ? ` Owner: ${item.owner}.` : ""}`,
         status: "backlog",
         priority: "medium",
         energy: "medium",

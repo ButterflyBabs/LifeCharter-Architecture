@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     } catch {
       parsed = {};
     }
-    const report = cleanReport(parsed, t, clipped);
+    const report = cleanReport(parsed, t, clipped, undefined, contactName);
     if (!report.sections.some((x) => x.content) && !report.action_items.length) return NextResponse.json({ error: "The report came back empty. Try again." }, { status: 502 });
 
     const who = await sessionUser().catch(() => null);

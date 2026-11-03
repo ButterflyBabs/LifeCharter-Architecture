@@ -1209,14 +1209,16 @@ export const FOUNDATIONS: Lesson[] = [
       },
       {
         heading: "Turn a recording into a report",
-        text: "LC Volant turns a recording or transcript into a report. Open it from Daily Operations in the left menu. Pick one of 21 templates, bring in the conversation, and send each action item to Tasks, a reminder or your calendar. Tick the box that everyone agreed to be recorded first, because it is required. Some states require every person's consent. Nothing goes to Tasks, Reminders or your calendar until you press the button on that item, and nothing is sent to the client.",
+        text: "LC Volant turns a recording or transcript into a report. Open it from Daily Operations in the left menu. Pick one of 21 templates, bring in the conversation, and send each action item to Tasks, a reminder or your calendar. Tick the box that everyone agreed to be recorded first, because it is required. Some states require every person's consent. Nothing goes to Tasks, Reminders or your calendar until you press the button on that item, and nothing is sent to the client until you preview the email and press Send.",
         steps: [
           "Press New report.",
           "Pick a template. The page shows what your report will have.",
           "Add a name and date. If the session was with someone, choose them so the report is saved on their contact record.",
           "Tick the box that everyone agreed to be recorded, then record, upload, or paste your transcript.",
           "Press Write my report.",
+          "Check the action items. They are sorted into Your tasks (the coach) and Tasks for your client. Press For you or For the client to move one.",
           "Send each action item where it belongs with Add to Tasks, Set a reminder or Add to calendar.",
+          "Press Preview & email to client, check what they get, edit your message and press Send.",
         ],
         image: { src: "/academy/volant.jpg", alt: "The LC Volant page with New report, Names and Get help buttons, and a grid of report templates such as Coaching Sessions, Mastermind Sessions, Team Meetings and Consultations", caption: "Step 1 is picking a template. This is a sample account." },
       },
@@ -1225,6 +1227,7 @@ export const FOUNDATIONS: Lesson[] = [
         text: "Record now uses your microphone, and you can also record an online call in another Chrome or Edge tab. You can Pause, Resume or Discard, then press Stop and transcribe. You can upload audio or video up to 2 GB, or upload a .txt, .docx, .pdf, .vtt, .srt or .md transcript, or paste the text. After a recording is transcribed, press Name the voices so each voice shows its first words, then Use this transcript. A recording uploaded or made in the Suite is deleted once it is transcribed, and the text is kept. Each account can transcribe 10 hours of recordings a month. A very long transcript is read up to about 10,000 words, and the report tells you when that happens.",
         tips: [
           "Copy report copies the report without the private notes. Copy draft copies a draft email for you to edit and send yourself.",
+          "Preview & email to client sends from your own Gmail or Microsoft 365. It leaves out your private notes and your own tasks unless you tick them, and the report says when it was emailed. The report must be saved on a contact with an email address.",
           "Edit and Remove work on an action item until it has been sent somewhere. Add to calendar needs your Google or Microsoft calendar connected.",
           "Keep the page open while you use Record now. Once a recording is uploaded you can leave, and the bell tells you when it is ready.",
           "Press Names to call the page and each template whatever fits your business.",
@@ -1232,13 +1235,13 @@ export const FOUNDATIONS: Lesson[] = [
       },
       {
         heading: "Scores and your assistant",
-        text: "LC Volant does not change your scores. An action item you press Add to Tasks on becomes a task, and tasks count toward task follow-through in your Internal Process & Culture pillar. Write my report uses your own AI key. Turning a recording into a transcript does not use your key. Draft emails are never sent for you.",
+        text: "LC Volant does not change your scores. An action item you press Add to Tasks on becomes a task, and tasks count toward task follow-through in your Internal Process & Culture pillar. Write my report uses your own AI key. Turning a recording into a transcript does not use your key. Nothing is emailed to your client until you preview it and press Send.",
       },
     ],
     questions: [
       { id: "s3-1", q: "Why log calls on a deal?", right: "They feed the Sales dimension and set the win rate", wrong: ["They send the person a recap", "They create an invoice", "They are only for your own notes"], why: "Logged calls are sales activities. They feed the Sales dimension, and their outcomes set the win rate." },
       { id: "s3-2", q: "What must you tick before recording in LC Volant?", right: "That everyone agreed to be recorded", wrong: ["That the deal is Won", "That the contact has a tag", "That your AI key is new"], why: "The consent box is required before you record, upload or write a report." },
-      { id: "s3-3", q: "LC Volant writes a report. Does it go to the client?", right: "No, nothing is sent", wrong: ["Yes, automatically", "Yes, after you approve it in chat", "Only if they have a portal"], why: "Nothing is sent. Copy report copies it without the private notes for you to share." },
+      { id: "s3-3", q: "LC Volant writes a report. Does it go to the client?", right: "Only when you preview the email and press Send", wrong: ["Yes, automatically", "Yes, after you approve it in chat", "Only if they have a portal"], why: "The report goes out only when you press Send in Preview & email to client, from your own mailbox. Your private notes are never in it." },
       { id: "s3-4", q: "You want to remember to call someone back on Friday. What should you do on the record?", right: "Schedule a follow-up for Friday, which becomes a task", wrong: ["Add a tag", "Add a custom field", "Change their email"], why: "A scheduled follow-up becomes a task for that day." },
     ],
   },

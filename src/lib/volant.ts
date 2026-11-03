@@ -389,10 +389,14 @@ export const VOLANT_TEMPLATES: VolantTemplate[] = [
 export const templateByKey = (key: string) => VOLANT_TEMPLATES.find((t) => t.key === key) ?? null;
 
 export interface ReportSection { title: string; content: string; kind: SectionKind }
+/** Who has to do an action item: the coach (the account owner running the session) or the client (the person they met with). "" = not sorted yet. */
+export type ItemFor = "coach" | "client" | "";
 export interface ActionItem {
   id: string;
   text: string;
   owner: string;
+  /** The coach's own tasks and the client's tasks are kept apart on the report and in the email to the client. */
+  for?: ItemFor;
   due: string;
   task_id: number | null;
   /** Set when the owner turned this item into a reminder or a calendar event (each item can be all three). */
@@ -401,7 +405,8 @@ export interface ActionItem {
   /** Added by hand on the report, not by the AI. */
   added?: boolean;
 }
-export interface VolantReport { sections: ReportSection[]; action_items: ActionItem[]; made_at: string; clipped: boolean }
+export interface ReportEmail { at: string; to: string; subject: string; status: "sent" | "failed"; error: string | null; from: string | null }
+export interface VolantReport { sections: ReportSection[]; action_items: ActionItem[]; made_at: string; clipped: boolean; /** Each time the report was emailed to the client from the page, newest last. */ emailed?: ReportEmail[] }
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 const s = (v: unknown, n: number) => (typeof v === "string" ? v.slice(0, n) : "");
@@ -446,8 +451,8 @@ export function buildPrompt(t: VolantTemplate, o: { title: string; date: string;
     `Write plainly and warmly, in short sentences. Use "- " at the start of a line for a list. No markdown headings, bold or tables. ` +
     `Quotes are word for word and say who said them. ` +
     (t.rules ? `${t.rules} ` : "") +
-    `Owners are first names as spoken; leave "" if no owner was named. Dates only when a date or weekday was spoken, as YYYY-MM-DD resolved from the session date, otherwise "". ` +
-    `Respond ONLY as strict JSON: {"sections": [{"title": "", "content": ""}], "action_items": [{"text": "start with a verb", "owner": "", "due": ""}]}. ` +
+    `Owners are first names as spoken; leave "" if no owner was named. Every action item also has "for": "coach" when the person running this session (the owner of this account) will do it, "client" when the person or people they met with will do it; use "coach" when there is no one else (a brain dump or planning alone). Dates only when a date or weekday was spoken, as YYYY-MM-DD resolved from the session date, otherwise "". ` +
+    `Respond ONLY as strict JSON: {"sections": [{"title": "", "content": ""}], "action_items": [{"text": "start with a verb", "owner": "", "for": "coach", "due": ""}]}. ` +
     `"sections" has exactly these titles, in this order, each with what to write:\n` +
     textSections.map((x, i) => `${i + 1}. ${x.title}: ${x.guide}`).join("\n") +
     (act ? `\n"action_items" is the "${act.title}" list: ${act.guide.replace(/ Each one gets its own Approve[^.]*\./, "")}` : "");
@@ -458,7 +463,7 @@ export function buildPrompt(t: VolantTemplate, o: { title: string; date: string;
 }
 
 /** Turn the model's JSON into a safe report in the template's order (never trusts shape or length). */
-export function cleanReport(raw: unknown, t: VolantTemplate, clipped: boolean, madeAt = new Date().toISOString()): VolantReport {
+export function cleanReport(raw: unknown, t: VolantTemplate, clipped: boolean, madeAt = new Date().toISOString(), contactName = ""): VolantReport {
   const r = (raw ?? {}) as Record<string, unknown>;
   const got = Array.isArray(r.sections) ? (r.sections as unknown[]) : [];
   const byTitle = new Map<string, string>();
@@ -478,10 +483,25 @@ export function cleanReport(raw: unknown, t: VolantTemplate, clipped: boolean, m
     .map((it) => {
       const i = (it ?? {}) as Record<string, unknown>;
       const due = s(i.due, 10);
-      return { id: uid(), text: s(i.text, 400).trim(), owner: s(i.owner, 60).trim(), due: isDate(due) ? due : "", task_id: null };
+      const owner = s(i.owner, 60).trim();
+      const said = s(i.for, 10).trim().toLowerCase();
+      const forWho: ItemFor = said === "coach" || said === "client" ? said : inferFor(owner, contactName);
+      return { id: uid(), text: s(i.text, 400).trim(), owner, for: forWho, due: isDate(due) ? due : "", task_id: null };
     })
     .filter((i) => i.text);
   return { sections, action_items, made_at: madeAt, clipped };
+}
+
+/** When the AI did not say who an item is for: the contact's first name as owner means the client, otherwise it is not sorted yet. */
+export function inferFor(owner: string, contactName: string): ItemFor {
+  const o = owner.trim().toLowerCase();
+  const c = contactName.trim().split(/\s+/)[0]?.toLowerCase() ?? "";
+  return o && c && o === c ? "client" : "";
+}
+
+/** The items in three groups, in their report order. Not-sorted items (older reports, no clear owner) wait in their own group. */
+export function groupItems(items: ActionItem[]): { coach: ActionItem[]; client: ActionItem[]; unsorted: ActionItem[] } {
+  return { coach: items.filter((i) => i.for === "coach"), client: items.filter((i) => i.for === "client"), unsorted: items.filter((i) => i.for !== "coach" && i.for !== "client") };
 }
 
 /** A new action item typed in by hand on the report. */
@@ -491,10 +511,11 @@ export function newItem(v: unknown): ActionItem | null {
 }
 
 /** Clean an action item edited in the browser. */
-export function cleanItemEdit(v: unknown): Pick<ActionItem, "text" | "owner" | "due"> {
+export function cleanItemEdit(v: unknown): Pick<ActionItem, "text" | "owner" | "due" | "for"> {
   const r = (v ?? {}) as Record<string, unknown>;
   const due = s(r.due, 10);
-  return { text: s(r.text, 400).trim(), owner: s(r.owner, 60).trim(), due: isDate(due) ? due : "" };
+  const f = s(r.for, 10);
+  return { text: s(r.text, 400).trim(), owner: s(r.owner, 60).trim(), due: isDate(due) ? due : "", for: f === "client" ? "client" : "coach" };
 }
 
 /** Plain text of a report, for Copy. */
@@ -504,9 +525,53 @@ export function reportToText(title: string, date: string, report: VolantReport, 
     if (sec.kind === "private") continue;
     lines.push(sec.title, sec.content || "Nothing on this came up.", "");
   }
+  const g = groupItems(report.action_items);
+  const line = (a: ActionItem) => `- ${a.text}${a.owner ? ` [${a.owner}]` : ""}${a.due ? ` (due ${a.due})` : ""}`;
   if (report.action_items.length) {
     lines.push(actionTitle);
-    for (const a of report.action_items) lines.push(`- ${a.text}${a.owner ? ` [${a.owner}]` : ""}${a.due ? ` (due ${a.due})` : ""}`);
+    if (g.coach.length) lines.push("For the coach:", ...g.coach.map(line));
+    if (g.client.length) lines.push("For the client:", ...g.client.map(line));
+    if (g.unsorted.length) lines.push(g.coach.length || g.client.length ? "Not sorted yet:" : "", ...g.unsorted.map(line));
   }
   return lines.join("\n").trim();
 }
+
+// ── The report as the client gets it, by email from the coach's own mailbox ─────────────────────────────────────────────
+export interface ClientEmailOptions {
+  /** The opening message the coach edits. Starts as the template's recap draft, or a short thank-you. */
+  message: string;
+  /** Add the session summary sections (never the coach's private notes or the draft itself). */
+  summary: boolean;
+  /** Add the client's own next steps. */
+  clientItems: boolean;
+  /** Add what the coach will do (off unless the coach chooses it: these are often private preparation). */
+  coachItems: boolean;
+}
+
+/** The opening message to start from: the report's own recap draft when the template has one, else a short thank-you. */
+export function defaultClientMessage(report: VolantReport, t: VolantTemplate | null, o: { clientFirst: string; coachFirst: string; date: string }): string {
+  const draftTitle = t?.sections.find((x) => x.kind === "draft")?.title;
+  const draft = draftTitle ? report.sections.find((x) => x.title === draftTitle)?.content.trim() : "";
+  if (draft && draft !== "Nothing on this came up.") return draft;
+  return `Hi${o.clientFirst ? ` ${o.clientFirst}` : ""},\n\nThank you for our time together on ${o.date}. Below is a summary of what we covered and your next steps.${o.coachFirst ? `\n\n${o.coachFirst}` : ""}`;
+}
+
+/** The plain-text email. It is the whole preview: what is shown is exactly what is sent. */
+export function buildClientEmail(report: VolantReport, o: ClientEmailOptions, ctx: { title: string; date: string; contactName: string }): { subject: string; text: string } {
+  const g = groupItems(report.action_items);
+  const parts: string[] = [o.message.trim()];
+  const item = (a: ActionItem) => `- ${a.text}${a.due ? ` (by ${a.due})` : ""}`;
+  const detail: string[] = [];
+  if (o.summary) {
+    for (const sec of report.sections) {
+      if (sec.kind !== "text" || !sec.content || sec.content === "Nothing on this came up.") continue;
+      detail.push(`${sec.title}\n${sec.content}`);
+    }
+  }
+  // Only items marked for the client go out. Not-sorted items stay off until the coach sorts them.
+  if (o.clientItems && g.client.length) detail.push(`Your next steps\n${g.client.map(item).join("\n")}`);
+  if (o.coachItems && g.coach.length) detail.push(`What I will do\n${g.coach.map(item).join("\n")}`);
+  if (detail.length) parts.push(`${ctx.title}, ${ctx.date}`, ...detail);
+  return { subject: `${ctx.title}: your summary and next steps`.slice(0, 200), text: parts.filter(Boolean).join("\n\n") };
+}
+

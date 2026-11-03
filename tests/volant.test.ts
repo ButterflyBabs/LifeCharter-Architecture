@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { VOLANT_TEMPLATES, buildPrompt, cleanCaptionFile, cleanItemEdit, cleanReport, newItem, docxXmlToText, reportToText, templateByKey, templateName } from "../src/lib/volant";
+import { VOLANT_TEMPLATES, buildPrompt, cleanCaptionFile, cleanItemEdit, cleanReport, newItem, docxXmlToText, reportToText, templateByKey, templateName, buildClientEmail, defaultClientMessage, groupItems, inferFor } from "../src/lib/volant";
 
 test("all 21 approved templates are there, each with one action list and unique keys", () => {
     assert.equal(VOLANT_TEMPLATES.length, 21);
@@ -46,7 +46,7 @@ test("renamed templates, item edits and the copied text", () => {
     const t = templateByKey("brain-dumps")!;
     assert.equal(templateName(t, { "brain-dumps": "  Mind Sweep " }), "Mind Sweep");
     assert.equal(templateName(t, {}), "Brain Dumps");
-    assert.deepEqual(cleanItemEdit({ text: " Do it ", owner: "Me", due: "soon" }), { text: "Do it", owner: "Me", due: "" });
+    assert.deepEqual(cleanItemEdit({ text: " Do it ", owner: "Me", due: "soon" }), { text: "Do it", owner: "Me", due: "", for: "coach" });
     const c = templateByKey("coaching-sessions")!;
     const r = cleanReport({ sections: c.sections.filter((s) => s.kind !== "actions").map((s) => ({ title: s.title, content: `about ${s.title}` })) }, c, false);
     const text = reportToText("Session", "Oct 17", r, "Commitments");
@@ -62,4 +62,35 @@ test("an action item typed in by hand is cleaned and marked as added", () => {
     assert.equal(it.task_id, null);
     assert.equal(it.reminder, null);
     assert.equal(it.event, null);
+});
+
+test("action items are sorted for the coach or the client, and only the client's go in the client email", () => {
+  const t = templateByKey("coaching-sessions")!;
+  const raw = {
+    sections: t.sections.filter((s) => s.kind !== "actions").map((s) => ({ title: s.title, content: s.kind === "private" ? "SECRET coach note" : s.kind === "draft" ? "Hi Jo, great session.\n\nAmi" : `about ${s.title}` })),
+    action_items: [
+      { text: "Send the worksheet", owner: "Ami", for: "coach", due: "" },
+      { text: "Write the pitch", owner: "Jo", for: "client", due: "2026-11-10" },
+      { text: "Think about pricing", owner: "Jo", due: "" },
+      { text: "Book a venue", owner: "", due: "" },
+    ],
+  };
+  const r = cleanReport(raw, t, false, "2026-11-03T00:00:00Z", "Jo Lee");
+  assert.deepEqual(r.action_items.map((i) => i.for), ["coach", "client", "client", ""]);
+  assert.equal(inferFor("jo", "Jo Lee"), "client");
+  assert.equal(inferFor("", "Jo Lee"), "");
+  const g = groupItems(r.action_items);
+  assert.deepEqual([g.coach.length, g.client.length, g.unsorted.length], [1, 2, 1]);
+
+  const msg = defaultClientMessage(r, t, { clientFirst: "Jo", coachFirst: "Ami", date: "Nov 3, 2026" });
+  assert.ok(msg.startsWith("Hi Jo, great session."));
+  const mail = buildClientEmail(r, { message: msg, summary: true, clientItems: true, coachItems: false }, { title: "Coaching with Jo", date: "Nov 3, 2026", contactName: "Jo Lee" });
+  assert.ok(mail.text.includes("Write the pitch (by 2026-11-10)"));
+  assert.ok(mail.text.includes("Think about pricing"));
+  assert.ok(!mail.text.includes("Send the worksheet"), "the coach's own tasks stay off by default");
+  assert.ok(!mail.text.includes("Book a venue"), "unsorted items stay off");
+  assert.ok(!mail.text.includes("SECRET"), "private notes are never sent");
+  const withCoach = buildClientEmail(r, { message: "Hi", summary: false, clientItems: true, coachItems: true }, { title: "T", date: "d", contactName: "" });
+  assert.ok(withCoach.text.includes("What I will do") && withCoach.text.includes("Send the worksheet"));
+  assert.ok(!withCoach.text.includes("about Session snapshot"));
 });

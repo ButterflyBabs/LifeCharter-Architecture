@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { BellRing, CalendarPlus, Check, Copy, FileText, LifeBuoy, ListChecks, Lock, Pencil, Plus, Settings2, Trash2, Upload, X } from "lucide-react";
+import { BellRing, CalendarPlus, Check, Copy, FileText, LifeBuoy, ListChecks, Lock, Mail, Pencil, Plus, Settings2, Trash2, Upload, X } from "lucide-react";
 import Recordings from "./Recordings";
 import ContactPicker, { personName, type PickedContact } from "@/app/contacts/ContactPicker";
 import { localInputValue } from "@/components/reminders/useReminders";
-import { reportToText, templateName, VOLANT_NAME, type ActionItem, type VolantReport, type VolantTemplate } from "@/lib/volant";
+import { buildClientEmail, groupItems, reportToText, templateName, VOLANT_NAME, type ActionItem, type ItemFor, type VolantReport, type VolantTemplate } from "@/lib/volant";
 
 type Contact = { first_name: string | null; last_name: string | null; email: string } | null;
 type Row = { id: string; template_key: string; title: string; session_date: string; contact_id: string | null; created_at: string; seq_contacts: Contact; items: number; approved: number };
@@ -240,6 +240,7 @@ function ReportView({ id, templates, settings, onChanged, onDeleted }: { id: str
   const [name, setName] = useState("");
   const [showTranscript, setShowTranscript] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [emailing, setEmailing] = useState(false);
 
   useEffect(() => {
     fetch(`/api/volant?id=${id}`, { cache: "no-store" })
@@ -296,6 +297,9 @@ function ReportView({ id, templates, settings, onChanged, onDeleted }: { id: str
           {r.contact_id && r.seq_contacts ? <> · <Link className="text-[#2E7C83] hover:underline" href={`/contacts?contact=${r.contact_id}`}>{who(r.seq_contacts)}</Link></> : null}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
+          {report && (
+            <button className={btn} disabled={!r.contact_id} title={r.contact_id ? "See what your client gets, then email it from your own address" : "Save this report on a contact first"} onClick={() => setEmailing(true)}><Mail className="h-4 w-4" />Preview &amp; email to client</button>
+          )}
           {report && <button className={btn} onClick={() => void copy(reportToText(r.title, fmtDate(r.session_date), report, actTitle), "Report copied (private notes left out).")}><Copy className="h-4 w-4" />Copy report</button>}
           <button className={btn} onClick={() => setShowTranscript((v) => !v)}><FileText className="h-4 w-4" />{showTranscript ? "Hide transcript" : "Show transcript"}</button>
           {confirmDelete ? (
@@ -307,6 +311,14 @@ function ReportView({ id, templates, settings, onChanged, onDeleted }: { id: str
             <button className={btn} onClick={() => setConfirmDelete(true)}><Trash2 className="h-4 w-4" />Delete</button>
           )}
         </div>
+        {report && !r.contact_id && <p className="mt-2 text-xs text-[#7a8a99]">To email this report to the client, make it from a contact next time, or pick one when you write the report. Their email address is needed.</p>}
+        {report?.emailed?.length ? (() => {
+          const e = report.emailed![report.emailed!.length - 1];
+          const at = new Date(e.at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+          return e.status === "sent"
+            ? <p className="mt-2 text-sm text-[#2f7d55]" role="status">Emailed to {e.to} on {at}{e.from ? ` from ${e.from}` : ""}.{report.emailed!.length > 1 ? ` Sent ${report.emailed!.length} times.` : ""}</p>
+            : <p className="mt-2 text-sm font-medium text-[#8a2f2f]" role="status">The email to {e.to} did not send ({at}): {e.error || "the mail service refused it"}. Use Preview &amp; email to client to try again.</p>;
+        })() : null}
         {report?.clipped && <p className="mt-2 text-xs text-[#7a8a99]">This transcript was very long, so the report was written from the first part (about 10,000 words).</p>}
         {msg && <p className="mt-2 text-sm text-[#1F5E63]" role="status">{msg}</p>}
       </section>
@@ -323,11 +335,25 @@ function ReportView({ id, templates, settings, onChanged, onDeleted }: { id: str
               <span className="text-xs text-[#7a8a99]">Send each one to Tasks, a reminder or your calendar. Nothing happens until you press a button.</span>
             </div>
             {report.action_items.length === 0 && <p className="text-sm text-[#7a8a99]">No action items came up in this conversation. Add your own below.</p>}
-            <ul className="space-y-2">
-              {report.action_items.map((it) => (
-                <ItemRow key={it.id} it={it} reportId={r.id} reportTitle={r.title} onReport={(next) => { setR({ ...r, report: next }); onChanged(); }} setMsg={setMsg} />
-              ))}
-            </ul>
+            {(() => {
+              const g = groupItems(report.action_items);
+              const clientName = r.seq_contacts ? who(r.seq_contacts) : "";
+              const groups: { key: string; title: string; note: string; items: ActionItem[] }[] = [
+                { key: "coach", title: "Your tasks (the coach)", note: "Things you will do.", items: g.coach },
+                { key: "client", title: clientName ? `Tasks for ${clientName}` : "Tasks for the client", note: "Things your client will do. These go in the email to your client.", items: g.client },
+                { key: "unsorted", title: "Not sorted yet", note: "Press For you or For the client on each one. Only sorted client tasks go in the email.", items: g.unsorted },
+              ];
+              return groups.filter((x) => x.items.length).map((x) => (
+                <div key={x.key} className="mt-3 first:mt-0">
+                  <p className="mb-1 flex flex-wrap items-baseline gap-2 text-sm font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{x.title}<span className="text-xs font-normal text-[#7a8a99]">{x.note}</span></p>
+                  <ul className="space-y-2">
+                    {x.items.map((it) => (
+                      <ItemRow key={it.id} it={it} reportId={r.id} reportTitle={r.title} onReport={(next) => { setR({ ...r, report: next }); onChanged(); }} setMsg={setMsg} />
+                    ))}
+                  </ul>
+                </div>
+              ));
+            })()}
             <AddItem reportId={r.id} onReport={(next) => { setR({ ...r, report: next }); onChanged(); }} setMsg={setMsg} />
           </section>
 
@@ -344,6 +370,7 @@ function ReportView({ id, templates, settings, onChanged, onDeleted }: { id: str
           ))}
         </>
       )}
+      {emailing && report && <EmailClient r={r} report={report} template={t} onClose={() => setEmailing(false)} onReport={(next) => { setR({ ...r, report: next }); onChanged(); }} />}
     </div>
   );
 }
@@ -361,7 +388,7 @@ const startFor = (due: string) => {
 // each on its own press and each shown as done once made. An item can be all three.
 function ItemRow({ it, reportId, reportTitle, onReport, setMsg }: { it: ActionItem; reportId: string; reportTitle: string; onReport: (r: VolantReport) => void; setMsg: (m: string) => void }) {
   const [mode, setMode] = useState<"" | "edit" | "remind" | "event">("");
-  const [edit, setEdit] = useState({ text: it.text, owner: it.owner, due: it.due });
+  const [edit, setEdit] = useState({ text: it.text, owner: it.owner, due: it.due, for: (it.for || "coach") as ItemFor });
   const [when, setWhen] = useState(startFor(it.due));
   const [minutes, setMinutes] = useState(30);
   const [busy, setBusy] = useState(false);
@@ -417,6 +444,12 @@ function ItemRow({ it, reportId, reportTitle, onReport, setMsg }: { it: ActionIt
           <input className={field} value={edit.text} onChange={(e) => setEdit({ ...edit, text: e.target.value })} maxLength={400} aria-label="Action item" />
           <input className={field} value={edit.owner} onChange={(e) => setEdit({ ...edit, owner: e.target.value })} maxLength={60} placeholder="Owner" aria-label="Owner" />
           <input className={field} type="date" value={edit.due} onChange={(e) => setEdit({ ...edit, due: e.target.value })} aria-label="Due date" />
+          <label className="text-xs font-medium text-[#5a6472] dark:text-[#b8c2cf] sm:col-span-3">Who does it
+            <select className={`${field} mt-1 max-w-xs`} value={edit.for || "coach"} onChange={(e) => setEdit({ ...edit, for: e.target.value as ItemFor })}>
+              <option value="coach">I do (the coach)</option>
+              <option value="client">The client does</option>
+            </select>
+          </label>
           <div className="flex gap-2 sm:col-span-3">
             <button className={btnGold} disabled={busy} onClick={() => void run(async () => { if (await act("edit-item", { item: edit })) setMode(""); })}>Save</button>
             <button className={btn} onClick={() => setMode("")}>Cancel</button>
@@ -426,12 +459,14 @@ function ItemRow({ it, reportId, reportTitle, onReport, setMsg }: { it: ActionIt
         <>
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{it.text}</p>
+              <p className="text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]"><span className={`mr-2 rounded-full px-2 py-0.5 align-middle text-[11px] font-semibold ${it.for === "client" ? "bg-[#2E7C83]/15 text-[#1F5E63] dark:text-[#9fd3d6]" : it.for === "coach" ? "bg-[#c9a227]/20 text-[#7a5d00] dark:text-[#e8c75a]" : "bg-[#1a2b4a]/10 text-[#5a6472] dark:text-[#b8c2cf]"}`}>{it.for === "client" ? "For the client" : it.for === "coach" ? "For you" : "Not sorted"}</span>{it.text}</p>
               <p className="text-xs text-[#7a8a99]">{[it.owner && `Owner: ${it.owner}`, it.due && `Due ${fmtDate(it.due)}`, it.added && "Added by you"].filter(Boolean).join(" · ") || "No owner or date named"}</p>
             </div>
             {!sent && (
               <div className="flex flex-wrap items-center gap-3">
-                <button className={small} disabled={busy} onClick={() => { setEdit({ text: it.text, owner: it.owner, due: it.due }); setMode("edit"); }}><Pencil className="h-3 w-3" />Edit</button>
+                <button className={small} disabled={busy} onClick={() => { setEdit({ text: it.text, owner: it.owner, due: it.due, for: (it.for || "coach") as ItemFor }); setMode("edit"); }}><Pencil className="h-3 w-3" />Edit</button>
+                {it.for !== "coach" && <button className={small} disabled={busy} onClick={() => void run(async () => { await act("set-for", { for: "coach" }); })}>For you</button>}
+                {it.for !== "client" && <button className={small} disabled={busy} onClick={() => void run(async () => { await act("set-for", { for: "client" }); })}>For the client</button>}
                 <button className={small} disabled={busy} onClick={() => void run(async () => { await act("remove-item"); })}><X className="h-3 w-3" />Remove</button>
               </div>
             )}
@@ -478,7 +513,7 @@ function ItemRow({ it, reportId, reportTitle, onReport, setMsg }: { it: ActionIt
 // Type in an action item the AI missed; it then gets the same Tasks, reminder and calendar buttons.
 function AddItem({ reportId, onReport, setMsg }: { reportId: string; onReport: (r: VolantReport) => void; setMsg: (m: string) => void }) {
   const [open, setOpen] = useState(false);
-  const [v, setV] = useState({ text: "", owner: "", due: "" });
+  const [v, setV] = useState({ text: "", owner: "", due: "", for: "coach" as ItemFor });
   const [busy, setBusy] = useState(false);
   async function add() {
     if (!v.text.trim()) return setMsg("Type the action item first.");
@@ -487,7 +522,7 @@ function AddItem({ reportId, onReport, setMsg }: { reportId: string; onReport: (
     setBusy(false);
     if (!ok) return setMsg(d.error || "Couldn't add that.");
     onReport(d.report);
-    setV({ text: "", owner: "", due: "" });
+    setV({ text: "", owner: "", due: "", for: "coach" });
     setOpen(false);
   }
   if (!open) return <button className={`${small} mt-3`} onClick={() => setOpen(true)}><Plus className="h-3 w-3" />Add an action item</button>;
@@ -496,9 +531,104 @@ function AddItem({ reportId, onReport, setMsg }: { reportId: string; onReport: (
       <input className={field} value={v.text} onChange={(e) => setV({ ...v, text: e.target.value })} maxLength={400} placeholder="What needs doing" aria-label="New action item" />
       <input className={field} value={v.owner} onChange={(e) => setV({ ...v, owner: e.target.value })} maxLength={60} placeholder="Owner" aria-label="Owner" />
       <input className={field} type="date" value={v.due} onChange={(e) => setV({ ...v, due: e.target.value })} aria-label="Due date" />
+      <label className="text-xs font-medium text-[#5a6472] dark:text-[#b8c2cf] sm:col-span-3">Who does it
+        <select className={`${field} mt-1 max-w-xs`} value={v.for || "coach"} onChange={(e) => setV({ ...v, for: e.target.value as ItemFor })}>
+          <option value="coach">I do (the coach)</option>
+          <option value="client">The client does</option>
+        </select>
+      </label>
       <div className="flex gap-2 sm:col-span-3">
         <button className={btnGold} disabled={busy} onClick={() => void add()}>Add</button>
         <button className={btn} onClick={() => setOpen(false)}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+// Preview what the client gets, edit the message, and email it from the signed-in person's own mailbox. What the preview shows is exactly what is sent.
+function EmailClient({ r, report, template, onClose, onReport }: { r: Full; report: VolantReport; template: VolantTemplate | null; onClose: () => void; onReport: (r: VolantReport) => void }) {
+  const [info, setInfo] = useState<{ to: string; from: string | null; subject: string; message: string; canSend: boolean } | null>(null);
+  const [err, setErr] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [summary, setSummary] = useState(true);
+  const [clientItems, setClientItems] = useState(true);
+  const [coachItems, setCoachItems] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const sorted = groupItems(report.action_items);
+
+  useEffect(() => {
+    post("/api/volant/email", { id: r.id, preview: true }).then(({ ok, d }) => {
+      if (!ok) return setErr(d.error || "Couldn't prepare the email.");
+      setInfo(d);
+      setSubject(d.subject);
+      setMessage(d.message);
+    });
+  }, [r.id]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const built = useMemo(
+    () => buildClientEmail(report, { message, summary, clientItems, coachItems }, { title: r.title, date: fmtDate(r.session_date), contactName: r.seq_contacts ? who(r.seq_contacts) : "" }),
+    [report, message, summary, clientItems, coachItems, r.title, r.session_date, r.seq_contacts]
+  );
+
+  async function send() {
+    setBusy(true);
+    setResult(null);
+    const { ok, d } = await post("/api/volant/email", { id: r.id, subject, message, summary, clientItems, coachItems });
+    setBusy(false);
+    if (d.report) onReport(d.report);
+    setResult({ ok, text: ok ? `Emailed to ${d.to}${d.from ? ` from ${d.from}` : ""}. It is saved in your Sent folder and on ${r.seq_contacts ? who(r.seq_contacts) : "the contact"}'s timeline.` : d.error || "The email did not send." });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Preview and email this report to your client" onClick={onClose}>
+      <div className="my-6 w-full max-w-4xl rounded-2xl bg-[#FAF8F3] p-5 shadow-xl dark:bg-[#14213a]" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-wrap items-center gap-3">
+          <h3 className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Preview &amp; email to your client</h3>
+          <button className={`${btn} ml-auto`} onClick={onClose}>Close</button>
+        </div>
+        {err ? <p className="mt-3 text-sm text-[#8a2f2f]" role="alert">{err}</p> : !info ? <p className="mt-3 text-sm text-[#7a8a99]">Getting it ready…</p> : (
+          <div className="mt-3 grid gap-4 lg:grid-cols-2">
+            <div className="space-y-3">
+              <p className="text-xs text-[#7a8a99]">Your private notes and the recap draft are never added. The message below is the recap draft when your template has one, so edit it freely.</p>
+              <div>
+                <label className={label} htmlFor="ec-subject">Subject</label>
+                <input id="ec-subject" className={field} value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={200} />
+              </div>
+              <div>
+                <label className={label} htmlFor="ec-message">Your message</label>
+                <textarea id="ec-message" className={`${field} min-h-[180px]`} value={message} onChange={(e) => setMessage(e.target.value)} maxLength={6000} />
+              </div>
+              <div className="space-y-1.5 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+                <label className="flex items-start gap-2"><input type="checkbox" className="mt-1 h-4 w-4" checked={summary} onChange={(e) => setSummary(e.target.checked)} />Add the session summary</label>
+                <label className="flex items-start gap-2"><input type="checkbox" className="mt-1 h-4 w-4" checked={clientItems} onChange={(e) => setClientItems(e.target.checked)} />Add the client&apos;s next steps ({sorted.client.length})</label>
+                <label className="flex items-start gap-2"><input type="checkbox" className="mt-1 h-4 w-4" checked={coachItems} onChange={(e) => setCoachItems(e.target.checked)} />Add what I will do ({sorted.coach.length}). Off by default, because these are often your own preparation.</label>
+              </div>
+              {sorted.unsorted.length > 0 && <p className="rounded-lg bg-[#c9a227]/15 p-2 text-xs text-[#7a5d00] dark:text-[#e8c75a]">{sorted.unsorted.length} action item{sorted.unsorted.length === 1 ? " is" : "s are"} not sorted yet, so {sorted.unsorted.length === 1 ? "it is" : "they are"} left out. Close this and press For you or For the client on each.</p>}
+            </div>
+            <div>
+              <p className={label}>What your client gets</p>
+              <dl className="mb-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+                <dt className="text-[#7a8a99]">From</dt><dd>{info.from ?? "No mailbox connected"}</dd>
+                <dt className="text-[#7a8a99]">To</dt><dd>{info.to}</dd>
+                <dt className="text-[#7a8a99]">Subject</dt><dd className="font-medium">{subject || built.subject}</dd>
+              </dl>
+              <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap break-words rounded-xl border border-[#e3dccd] bg-white p-3 font-sans text-sm text-[#1a2b4a] dark:border-[#2b3b5c] dark:bg-[#16233b] dark:text-[#e6e9ef]">{built.text}</pre>
+              {!info.canSend && <p className="mt-2 text-sm text-[#8a2f2f]">Connect Gmail or Microsoft 365 in Settings, Integrations, so it comes from your own address.</p>}
+            </div>
+            <div className="flex flex-wrap items-center gap-3 lg:col-span-2">
+              <button className={btnGold} disabled={busy || !info.canSend || !message.trim()} onClick={() => void send()}><Mail className="h-4 w-4" />{busy ? "Sending…" : `Send to ${info.to}`}</button>
+              <button className={btn} onClick={onClose}>Not now</button>
+              {result && <span className={`text-sm font-medium ${result.ok ? "text-[#2f7d55]" : "text-[#8a2f2f]"}`} role="status">{result.text}</span>}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

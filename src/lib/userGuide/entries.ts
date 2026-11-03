@@ -1934,22 +1934,26 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "area": "Daily Operations",
     "where": "Daily Operations > LC Volant",
     "href": "/volant",
-    "what": "Turn any recording or transcript into a clear report. Pick one of 21 templates, bring in the conversation, and send each action item to Tasks, a reminder or your calendar.",
+    "what": "Turn any recording or transcript into a clear report. Pick one of 21 templates, bring in the conversation, keep your own tasks apart from your client's, and email the report to your client from your own address once you have previewed it.",
     "ai": "AI-powered",
-    "aiNote": "Write my report uses your own AI key. Turning a recording into a transcript does not use your key. Nothing goes to Tasks, Reminders or your calendar until you press the button on that item, and draft emails are never sent for you.",
+    "aiNote": "Write my report uses your own AI key. Turning a recording into a transcript does not use your key. Nothing goes to Tasks, Reminders or your calendar until you press the button on that item, and nothing is emailed to your client until you preview it and press Send.",
     "steps": [
       "Open LC Volant from the left menu and press New report.",
       "Pick a template. The page shows what your report will have.",
       "Add a name and date. If the session was with someone, choose them so the report is saved on their contact record.",
       "Tick the box that everyone agreed to be recorded, then record, upload, or paste your transcript.",
       "Press Write my report.",
-      "Send each action item where it belongs with Add to Tasks, Set a reminder or Add to calendar."
+      "Check the action items. They are sorted into Your tasks (the coach) and Tasks for your client. Press For you or For the client to move one.",
+      "Send each action item where it belongs with Add to Tasks, Set a reminder or Add to calendar.",
+      "Press Preview & email to client to see exactly what they get, edit your message, choose what to include, and press Send."
     ],
     "health": "This does not change your scores. It keeps what was said and decided in one place. An action item you press Add to Tasks on becomes a task, and tasks count toward task follow-through in your Internal Process & Culture pillar.",
     "tips": [
       "The consent box is required before you record, upload or write a report. Some states require every person's consent.",
       "Keep the page open while you use Record now. Once a recording is uploaded you can leave, and the bell tells you when it is ready.",
-      "A very long transcript is read up to about 10,000 words, and the report tells you when that happens."
+      "A very long transcript is read up to about 10,000 words, and the report tells you when that happens.",
+      "The email goes from your own connected Gmail or Microsoft 365, so it shows in your Sent folder and replies come to you. Your private notes are never in it, and your own tasks are left out unless you tick them.",
+      "The report has to be saved on a contact, and that contact needs an email address."
     ],
     "questions": [
       {
@@ -1957,12 +1961,16 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
         "a": "No. A recording uploaded or made in the Suite is deleted once it is transcribed, and the text is kept. Zoom cloud recordings stay in your Zoom."
       },
       {
+        "q": "How do I tell my tasks from my client's tasks?",
+        "a": "Each action item is marked For you or For the client. The report keeps them in separate lists, and only the client's go in the email. An item the report could not sort waits under Not sorted yet until you press For you or For the client."
+      },
+      {
         "q": "How much can I transcribe?",
         "a": "Each account can transcribe 10 hours of recordings a month, with up to 3 in progress at a time. The page shows your hours used. Transcript files and pasted text do not count."
       },
       {
         "q": "Does the report go out to my client?",
-        "a": "No. Nothing is sent. Copy report copies it without the private notes, and Copy draft copies a draft email for you to edit and send yourself."
+        "a": "Only when you press Send. Preview & email to client shows exactly what they get, and you choose what is included. The report says when it was emailed, or why it did not send. Copy report still copies it without the private notes."
       }
     ],
     "related": [
