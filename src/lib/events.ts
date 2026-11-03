@@ -1,3 +1,4 @@
+import { advanceCards } from "@/lib/dmPipeline";
 import { randomBytes } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
 import { accountSender } from "@/lib/email/accountSender";
@@ -109,6 +110,8 @@ export async function register(db: Db, e: EventRow, input: { email: string; firs
     return again ? { ok: true, token: again.token as string, already: true } : { ok: false, error: "That didn't save. Please try again." };
   }
   if (contact) await logEvent(e.master_plan_id, contact.id, "form", `Registered for ${e.title}`, { event: e.slug }, db).catch(() => {});
+  // A workshop sign-up moves the person's outreach cards to Registered, which also stops any cold-email follow-ups to them.
+  if (e.kind === "challenge") await advanceCards(db, e.master_plan_id, { contactId: contact?.id ?? null, email }, "registered").catch((x) => console.error("event card move:", x));
   await sendConfirmation(db, e, { email, first_name: firstName, timezone: tz, token }).catch((x) => console.error("event confirmation:", x));
   return { ok: true, token, already: false };
 }
