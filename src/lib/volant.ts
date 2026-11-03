@@ -554,8 +554,9 @@ export interface ClientEmailOptions {
 
 /** The opening message to start from: the report's own recap draft when the template has one, else a short thank-you. */
 export function defaultClientMessage(report: VolantReport, t: VolantTemplate | null, o: { clientFirst: string; coachFirst: string; date: string }): string {
-  const draftTitle = t?.sections.find((x) => x.kind === "draft")?.title;
-  const draft = draftTitle ? report.sections.find((x) => x.title === draftTitle)?.content.trim() : "";
+  // The recap draft is found from the report's own sections, so it still works when the template was renamed or replaced since the report was made.
+  void t;
+  const draft = report.sections.find((x) => x.kind === "draft")?.content.trim() ?? "";
   if (draft && draft !== "Nothing on this came up.") return draft;
   return `Hi${o.clientFirst ? ` ${o.clientFirst}` : ""},\n\nThank you for our time together on ${o.date}. Below is a summary of what we covered and your next steps.${o.coachFirst ? `\n\n${o.coachFirst}` : ""}`;
 }

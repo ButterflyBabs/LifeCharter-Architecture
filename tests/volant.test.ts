@@ -115,3 +115,8 @@ test("the client email links to their private page when their steps were put the
   assert.ok(!buildClientEmail(r, { message: "Hi", summary: true, clientItems: false, coachItems: false, portalUrl: "https://x.test/portal/abc" }, ctx).text.includes("portal"));
 });
 
+test("the recap draft starts the client email even when the report's template key is no longer known", () => {
+  const r = { sections: [{ title: "Recap for the client (draft)", kind: "draft" as const, content: "Hi Jo, great session.\n\nAmi" }], action_items: [], made_at: "", clipped: false };
+  assert.ok(defaultClientMessage(r, null, { clientFirst: "Jo", coachFirst: "Ami", date: "d" }).startsWith("Hi Jo, great session."));
+});
+
