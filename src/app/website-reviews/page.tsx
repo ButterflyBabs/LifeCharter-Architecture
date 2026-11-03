@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ReviewText } from "@/components/website/ReviewText";
 import ReviewDelivered from "@/components/website/ReviewDelivered";
 import { reviewReadyEmail } from "@/lib/websiteReviewEmail";
-import { SEO_SECTION_OUTLINE, assistantSectionOutline, hasAssistantSection, hasSeoSection } from "@/lib/websiteReviews";
+import { SEO_SECTION_OUTLINE, assistantSectionOutline, hasAssistantSection, hasSeoSection } from "@/lib/websiteReviewText";
 
 type Client = {
   masterPlanId: string;
