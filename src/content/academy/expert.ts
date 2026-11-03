@@ -738,13 +738,13 @@ export const EXPERT: Lesson[] = [
       },
       {
         heading: "Your Website Review",
-        text: "The LifeCharter team reads your website against the positioning, voice and offer you are building, then gives you the five changes that matter most and a Keywords and SEO section: the phrases to aim for, where to put them and the fixes that help search engines rank your pages. It is included with Command Suite. Our team writes your Review. There is no AI button on this page.",
+        text: "The LifeCharter team reads your website against the positioning, voice and offer you are building, then gives you the five changes that matter most and a Keywords and SEO section: the phrases to aim for, where to put them and the fixes that help search engines rank your pages, then shows how your own AI Assistant can help you carry out each change. It is included with Command Suite. Our team writes your Review. There is no AI button on this page.",
         steps: [
           "Open Website Review from the left menu.",
           "Under What's your website address?, type your address and press Save.",
           "Your Review is being written, then shows on the page with the date to expect it.",
           "Watch your email. You get an email when it is ready, and it appears on this page.",
-          "Read your five changes and your Keywords and SEO section. Write to support@lccommandsuite.com if you want to talk it through.",
+          "Read your five changes, your Keywords and SEO section and the section on using your AI Assistant to carry them out. Write to support@lccommandsuite.com if you want to talk it through.",
         ],
         tips: ["Type the address like yourbusiness.com. You do not need the https part.", "No website yet? Leave it blank and add it whenever you are ready."],
         image: { src: "/academy/website-review.jpg", alt: "The Website Alignment Review page with the box What's your website address, a field showing yourbusiness.com and a Save button", caption: "Website Review, before an address is added. This is a sample account." },
@@ -760,7 +760,7 @@ export const EXPERT: Lesson[] = [
       { id: "ec2-2", q: "When are you invited to a Next Chapter Call?", right: "Once you finish all three assessments", wrong: ["On day one", "After 90 days", "After your first payment"], why: "The call goes through what your results show and what to do first." },
       { id: "ec2-3", q: "How much notice does a Client Check-In Call need?", right: "24 hours", wrong: ["12 hours", "One hour", "7 days"], why: "A Welcome Call needs 12 hours. A Check-In Call needs 24." },
       { id: "ec2-4", q: "You added the wrong website, and the Review is still being written. What do you press?", right: "Take this website off my list", wrong: ["Delete account", "Add website twice", "Nothing can be done"], why: "It frees up the place and works until the Review has been delivered." },
-      { id: "ec2-5", q: "Who writes your Website Review?", right: "The LifeCharter team", wrong: ["Your AI assistant", "Your clients", "An outside agency you hire"], why: "There is no AI button on this page, because the team writes your Review." },
+      { id: "ec2-5", q: "Who writes your Website Review?", right: "The LifeCharter team", wrong: ["Your AI assistant", "Your clients", "An outside agency you hire"], why: "There is no AI button on this page, because the team writes your Review. Your own AI Assistant then helps you carry out its changes." },
     ],
   },
   {
@@ -1228,7 +1228,7 @@ export const EXPERT: Lesson[] = [
       },
       {
         heading: "What about my website?",
-        text: "The Website Alignment Review is included with Command Suite. The team reads the website against the positioning, voice and offer being built, then gives the five changes that matter most and a Keywords and SEO section. The plan sets how many reviews are included. Our team writes it, and there is no AI button on that page.",
+        text: "The Website Alignment Review is included with Command Suite. The team reads the website against the positioning, voice and offer being built, then gives the five changes that matter most and a Keywords and SEO section, and shows how the client's own assistant helps carry them out. The plan sets how many reviews are included. Our team writes it, and there is no AI button on that page.",
         image: { src: "/academy/website-review.jpg", alt: "The Website Alignment Review page with the box What's your website address, and a Save button", caption: "Website Review. A client types their address and presses Save." },
       },
       {

@@ -1,4 +1,4 @@
-import { SEO_SECTION_HEADING, SEO_SECTION_OUTLINE, hasSeoSection } from "../src/lib/websiteReviews";
+import { SEO_SECTION_HEADING, SEO_SECTION_OUTLINE, assistantSectionOutline, hasAssistantSection, hasSeoSection } from "../src/lib/websiteReviews";
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -31,5 +31,13 @@ test("every Review is checked for the Keywords and SEO section, and the outline 
   assert.equal(hasSeoSection("## What's working\n\n- ok"), false);
   assert.equal(hasSeoSection(`## What's working\n\n${SEO_SECTION_OUTLINE}`), true);
   assert.ok(SEO_SECTION_OUTLINE.startsWith(SEO_SECTION_HEADING));
+});
+
+test("every Review also carries a section on the client's own AI Assistant, under the name they gave it", () => {
+  assert.equal(hasAssistantSection("## What's working"), false);
+  const out = assistantSectionOutline("CuJo");
+  assert.equal(hasAssistantSection(out), true);
+  assert.ok(out.includes("Putting this into action with CuJo, your AI Assistant"));
+  assert.ok(assistantSectionOutline("").includes("your assistant"));
 });
 

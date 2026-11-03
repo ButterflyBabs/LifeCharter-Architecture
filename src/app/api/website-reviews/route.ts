@@ -15,11 +15,13 @@ export async function GET() {
   if (!(await isAlignmentArchitect())) return NextResponse.json({ error: "not found" }, { status: 404 });
   const supabase = createServerClient();
   const admins = superAdminEmails();
-  const [{ data: plans }, { data: spaces }, { data: reviews }] = await Promise.all([
+  const [{ data: plans }, { data: spaces }, { data: reviews }, { data: profs }] = await Promise.all([
     supabase.from("client_master_plans").select("id, client_name, client_email, user_id, created_at").not("user_id", "is", null).order("created_at", { ascending: false }),
     supabase.from("workspaces").select("master_plan_id, website, is_default"),
     supabase.from("website_reviews").select("id, master_plan_id, website, status, content, published_at, updated_at, created_at").order("created_at", { ascending: true }),
+    supabase.from("profiles").select("id, assistant_name"),
   ]);
+  const assistantOf = new Map(((profs ?? []) as { id: string; assistant_name: string | null }[]).map((x) => [x.id, (x.assistant_name || "").trim()]));
   const site = new Map<string, string>();
   for (const w of (spaces ?? []) as { master_plan_id: string | null; website: string | null; is_default: boolean | null }[]) {
     if (w.master_plan_id && w.website?.trim() && (w.is_default || !site.has(w.master_plan_id))) site.set(w.master_plan_id, w.website.trim());
@@ -28,7 +30,7 @@ export async function GET() {
   const byPlan = new Map<string, Rev[]>();
   for (const r of (reviews ?? []) as Rev[]) byPlan.set(r.master_plan_id, [...(byPlan.get(r.master_plan_id) ?? []), r]);
   // One entry for each website: a client on a bigger plan can have several, each with its own Review.
-  const clients = ((plans ?? []) as { id: string; client_name: string | null; client_email: string | null; created_at: string }[])
+  const clients = ((plans ?? []) as { id: string; client_name: string | null; client_email: string | null; user_id: string | null; created_at: string }[])
     .filter((p) => p.client_name !== DEMO_PLAN_NAME && !admins.includes((p.client_email || "").toLowerCase()))
     .flatMap((p) => {
       const rs = byPlan.get(p.id) ?? [];
@@ -41,15 +43,16 @@ export async function GET() {
         enrolledAt: p.created_at,
         due: new Date(new Date(i === 0 ? p.created_at : r.created_at).getTime() + 14 * 86400_000).toISOString(),
         website: r.website,
+        assistantName: assistantOf.get(p.user_id ?? "") ?? "",
         siteNumber: i + 1,
         siteCount: rs.length,
         review: r.content ? { status: r.status, content: r.content, published_at: r.published_at } : null,
       }));
       // A client whose website is saved but has no row yet (before they opened their page).
       if (main && !rs.some((r) => siteKey(r.website) === siteKey(main))) {
-        entries.unshift({ masterPlanId: p.id, siteId: "", name: p.client_name, email: p.client_email, enrolledAt: p.created_at, due: new Date(new Date(p.created_at).getTime() + 14 * 86400_000).toISOString(), website: main, siteNumber: 1, siteCount: rs.length + 1, review: null });
+        entries.unshift({ masterPlanId: p.id, siteId: "", name: p.client_name, email: p.client_email, enrolledAt: p.created_at, due: new Date(new Date(p.created_at).getTime() + 14 * 86400_000).toISOString(), website: main, assistantName: assistantOf.get(p.user_id ?? "") ?? "", siteNumber: 1, siteCount: rs.length + 1, review: null });
       }
-      if (!entries.length) entries.push({ masterPlanId: p.id, siteId: "", name: p.client_name, email: p.client_email, enrolledAt: p.created_at, due: new Date(new Date(p.created_at).getTime() + 14 * 86400_000).toISOString(), website: "", siteNumber: 1, siteCount: 1, review: null });
+      if (!entries.length) entries.push({ masterPlanId: p.id, siteId: "", name: p.client_name, email: p.client_email, enrolledAt: p.created_at, due: new Date(new Date(p.created_at).getTime() + 14 * 86400_000).toISOString(), website: "", assistantName: assistantOf.get(p.user_id ?? "") ?? "", siteNumber: 1, siteCount: 1, review: null });
       return entries;
     });
   return NextResponse.json({ clients });

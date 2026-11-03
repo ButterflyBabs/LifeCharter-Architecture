@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ReviewText } from "@/components/website/ReviewText";
-import { SEO_SECTION_OUTLINE, hasSeoSection } from "@/lib/websiteReviews";
+import { SEO_SECTION_OUTLINE, assistantSectionOutline, hasAssistantSection, hasSeoSection } from "@/lib/websiteReviews";
 
 type Client = {
   masterPlanId: string;
@@ -14,6 +14,7 @@ type Client = {
   enrolledAt: string;
   due: string;
   website: string;
+  assistantName: string;
   review: { status: "draft" | "published"; content: string; published_at: string | null } | null;
 };
 
@@ -42,8 +43,9 @@ export default function WebsiteReviewsPage() {
   const keyOf = (c: Client) => c.siteId || `${c.masterPlanId}:${c.website}`;
   async function save(c: Client, publish: boolean) {
     const body = draft[keyOf(c)] ?? c.review?.content ?? "";
-    const noSeo = publish && !hasSeoSection(body) ? "\n\nThis Review has no \"Keywords and SEO: getting found\" section. Every Review should include one." : "";
-    if (publish && !confirm(`Publish this Review to ${c.name || c.email} and email them that it's ready?${noSeo}`)) return;
+    const missing = publish ? [!hasSeoSection(body) && "Keywords and SEO: getting found", !hasAssistantSection(body) && "Putting this into action with their AI Assistant"].filter(Boolean) : [];
+    const noSections = missing.length ? `\n\nThis Review is missing: ${missing.join("; ")}. Every Review should include both.` : "";
+    if (publish && !confirm(`Publish this Review to ${c.name || c.email} and email them that it's ready?${noSections}`)) return;
     setBusy(keyOf(c));
     try {
       const res = await fetch("/api/website-reviews", {
@@ -119,7 +121,7 @@ export default function WebsiteReviewsPage() {
                       value={text}
                       onChange={(e) => setDraft((d) => ({ ...d, [k]: e.target.value }))}
                       rows={22}
-                      placeholder={"## What's working\n\n...\n\n## The five changes that matter most\n\n1. ...\n\n## Keywords and SEO: getting found\n\n...\n\nUse ## for headings, - for bullets, **bold**."}
+                      placeholder={"## What's working\n\n...\n\n## The five changes that matter most\n\n1. ...\n\n## Keywords and SEO: getting found\n\n...\n\n## Putting this into action with (their assistant's name)\n\n...\n\nUse ## for headings, - for bullets, **bold**."}
                       className="w-full rounded-lg border border-[#1a2b4a]/20 bg-white p-3 font-mono text-[13px] text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0]"
                     />
                     <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -134,6 +136,11 @@ export default function WebsiteReviewsPage() {
                       {!hasSeoSection(text) && (
                         <button type="button" onClick={() => setDraft((d) => ({ ...d, [k]: `${text.trim()}${text.trim() ? "\n\n" : ""}${SEO_SECTION_OUTLINE}` }))} className="rounded-lg border border-[#c9a227]/50 px-4 py-2 text-sm font-medium text-[#8a6a15] hover:bg-[#c9a227]/10">
                           Add the Keywords and SEO section
+                        </button>
+                      )}
+                      {!hasAssistantSection(text) && (
+                        <button type="button" onClick={() => setDraft((d) => ({ ...d, [k]: `${text.trim()}${text.trim() ? "\n\n" : ""}${assistantSectionOutline(c.assistantName)}` }))} className="rounded-lg border border-[#c9a227]/50 px-4 py-2 text-sm font-medium text-[#8a6a15] hover:bg-[#c9a227]/10">
+                          Add the AI Assistant section
                         </button>
                       )}
                       {msg[k] && <span className="text-xs text-[#7b6b8d]">{msg[k]}</span>}
