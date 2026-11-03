@@ -17,7 +17,7 @@ test("portal look: unknown values fall back, sections keep every section once in
   const l = cleanLook({ accent: "red", background: "#ffffff", font: "comic", heading: "Hi {first}!", sections: [{ key: "messages", title: "Talk to me" }, { key: "nope" }, { key: "sessions", hidden: true }, { key: "messages" }] });
   assert.equal(l.accent, DEFAULT_LOOK.accent);
   assert.equal(l.background, "#ffffff");
-  assert.equal(l.font, "classic");
+  assert.equal(l.font, DEFAULT_LOOK.font);
   assert.deepEqual(l.sections.slice(0, 2), [{ key: "messages", title: "Talk to me", hidden: false }, { key: "sessions", title: "Your sessions", hidden: true }]);
   assert.equal(l.sections.length, 8);
   assert.equal(headingFor(l, "Eloise"), "Hi Eloise!");

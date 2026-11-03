@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { CalendarDays, CheckCircle2, Circle, FileText, Link2, Loader2, MessageCircle, Paperclip, Send, Target } from "lucide-react";
-import { PORTAL_FONTS, onAccent, type SectionKey } from "@/lib/portalLook";
+import { BRAND_GOLD, BRAND_INDIGO, PORTAL_FONTS, onAccent, type SectionKey } from "@/lib/portalLook";
 import ProgramCard, { type Program } from "./ProgramCard";
 
-type Item = { id: string; title: string; body: string | null; url: string | null; fileName: string | null; hasFile: boolean; dueOn: string | null; status: string; doneAt: string | null; fromClient: boolean };
+type Item = { inTasks?: boolean; id: string; title: string; body: string | null; url: string | null; fileName: string | null; hasFile: boolean; dueOn: string | null; status: string; doneAt: string | null; fromClient: boolean };
 type View = {
+  viewer?: { signedIn: boolean; canAddToTasks: boolean };
   programs: Program[];
   away: { dates: string; note: string } | null;
   brand: { name: string; logo: string | null };
@@ -92,6 +93,8 @@ export default function PortalPage() {
   const title = (k: SectionKey) => look.sections.find((x) => x.key === k)?.title ?? k;
   const font = PORTAL_FONTS.find((f) => f.key === look.font) ?? PORTAL_FONTS[0];
   const ink = onAccent(look.accent);
+  // The Command Suite brand look: indigo, a thin gold line, ivory, with the reading text sized up (EB Garamond runs small).
+  const brandLook = look.accent.toLowerCase() === BRAND_INDIGO.toLowerCase();
   const blocks: Record<SectionKey, React.ReactNode> = {
     programs: v.programs.length ? (
           <section className={card}>
@@ -108,7 +111,7 @@ export default function PortalPage() {
                   <span className="font-semibold">{p.name}</span>
                   <span className="text-[#56616E]">{p.left} of {p.total} left</span>
                 </div>
-                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[#E5DDCF]"><div className="h-full rounded-full bg-[var(--pf-accent)]" style={{ width: `${Math.min(100, (p.used / p.total) * 100)}%` }} /></div>
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[#E5DDCF]"><div className="h-full rounded-full" style={{ background: brandLook ? BRAND_GOLD : look.accent, width: `${Math.min(100, (p.used / p.total) * 100)}%` }} /></div>
                 {p.expiresOn && <p className="mt-1 text-xs text-[#56616E]">Use by {day(p.expiresOn)}</p>}
               </div>
             ))}
@@ -149,6 +152,17 @@ export default function PortalPage() {
                       {h.body && <p className="whitespace-pre-wrap text-[#56616E]">{h.body}</p>}
                       {h.url && <a href={h.url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-[var(--pf-accent)] underline">Open the link</a>}
                       {h.dueOn && !done && <p className="text-xs text-[#56616E]">By {day(h.dueOn)}</p>}
+                      {!done && (
+                        h.inTasks ? (
+                          <p className="mt-1 text-xs font-semibold text-[var(--pf-accent)]">In your task list ✓. Tick it here or there and both stay in step.</p>
+                        ) : v.viewer?.canAddToTasks ? (
+                          <button type="button" onClick={() => void post({ action: "add-to-tasks", id: h.id })} className="mt-1 rounded-full border border-[var(--pf-accent)] px-3 py-1 text-xs font-semibold text-[var(--pf-accent)] hover:bg-[var(--pf-accent)] hover:text-[var(--pf-on)]">Add to my task list</button>
+                        ) : v.viewer && !v.viewer.signedIn ? (
+                          <a href={`/login?next=/portal/${token}`} className="mt-1 inline-block text-xs font-semibold text-[var(--pf-accent)] underline">Sign in to add this to your Command Suite task list</a>
+                        ) : v.viewer?.signedIn ? (
+                          <p className="mt-1 text-xs text-[#56616E]">You are signed in with a different email than the one your coach has for you, so this can&apos;t go to that task list.</p>
+                        ) : null
+                      )}
                     </div>
                   </li>
                 );
@@ -257,16 +271,17 @@ export default function PortalPage() {
 
   return (
     <main
-      className="min-h-screen text-[#1F2B3A] [font-family:var(--pf-body)]"
-      style={{ background: look.background, ["--pf-accent" as string]: look.accent, ["--pf-on" as string]: ink, ["--pf-heading" as string]: font.heading, ["--pf-body" as string]: font.body } as React.CSSProperties}
+      className={`min-h-screen text-[#1F2B3A] [font-family:var(--pf-body)] ${look.font === "brand" ? "[&_.text-sm]:text-base [&_.text-xs]:text-sm" : ""}`}
+      style={{ background: look.background, ["--pf-gold" as string]: BRAND_GOLD, ["--pf-accent" as string]: look.accent, ["--pf-on" as string]: ink, ["--pf-heading" as string]: font.heading, ["--pf-body" as string]: font.body } as React.CSSProperties}
     >
       <div className="h-1.5" style={{ background: look.accent }} />
+      {brandLook && <div className="h-0.5" style={{ background: BRAND_GOLD }} />}
       {look.banner && <div className="h-40 w-full bg-cover bg-center sm:h-56" style={{ backgroundImage: `url("${look.banner}")` }} />}
       <div className="mx-auto max-w-5xl space-y-5 px-4 py-8 sm:px-6">
         <header className="flex flex-wrap items-center gap-4">
           {v.brand.logo && <img src={v.brand.logo} alt="" className="h-14 w-14 rounded-full bg-white object-contain" />}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: look.accent }}>{v.brand.name}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: look.accent, ...(brandLook ? { fontFamily: "'Montserrat', system-ui, sans-serif" } : {}) }}>{v.brand.name}</p>
             <h1 className="text-3xl font-semibold [font-family:var(--pf-heading)]">{look.heading}</h1>
           </div>
         </header>

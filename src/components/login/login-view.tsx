@@ -73,7 +73,9 @@ export function LoginView() {
     } catch {
       /* storage unavailable — nothing to clear */
     }
-    router.push(POST_LOGIN_ROUTE);
+    // A client who came from their portal goes back there (only ever a portal address on this site).
+    const back = new URLSearchParams(window.location.search).get("next") || "";
+    router.push(/^\/portal\/[A-Za-z0-9_-]{24,64}$/.test(back) ? back : POST_LOGIN_ROUTE);
     router.refresh();
   }
 

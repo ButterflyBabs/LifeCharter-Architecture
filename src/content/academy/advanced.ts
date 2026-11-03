@@ -1067,7 +1067,7 @@ export const ADVANCED: Lesson[] = [
       },
       {
         heading: "What a client portal is",
-        text: "Open Client Portals from the left menu, under Client Delivery. A portal is a private page for each client, in your name and logo. It shows their sessions left, upcoming bookings, invoices to pay, session notes you share, homework, goals, files and messages. There is no password. The private link is the key. Sections with nothing in them stay out of sight on their own.",
+        text: "Open Client Portals from the left menu, under Client Delivery. A portal is a private page for each client, in your name and logo. It shows their sessions left, upcoming bookings, invoices to pay, session notes you share, homework, goals, files and messages. There is no password. The private link is the key. A new portal starts in the Command Suite brand look. A client with their own Command Suite can press Add to my task list on a homework item, which adds one task to their own task list, and ticking it in either place ticks both. Sections with nothing in them stay out of sight on their own.",
         steps: [
           "Under Add a client, type a name or email and press Open.",
           "Press the Create button for their portal.",

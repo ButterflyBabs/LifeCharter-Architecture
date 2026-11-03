@@ -1,4 +1,4 @@
-import { COLOR_PRESETS, PORTAL_FONTS, type FontKey } from "@/lib/portalLook";
+import { PORTAL_FONTS, type FontKey } from "@/lib/portalLook";
 
 // Simple landing pages (task 1153). Four templates built on what the account already has: an opt-in page on one of
 // its Suite forms, a webinar/event page on one of its Events, a sales page on one of its offers (Buy = the offer's
@@ -35,7 +35,8 @@ export interface Content {
 }
 
 export interface Look { accent: string; background: string; font: FontKey; showLogo: boolean }
-export const DEFAULT_LOOK: Look = { accent: COLOR_PRESETS[0].accent, background: COLOR_PRESETS[0].background, font: "classic", showLogo: true };
+// Landing pages keep their own teal default; only the client portal starts from the Command Suite brand look.
+export const DEFAULT_LOOK: Look = { accent: "#2E7C83", background: "#FBF8F1", font: "classic", showLogo: true };
 
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const HEX = /^#[0-9a-fA-F]{6}$/;

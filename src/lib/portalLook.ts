@@ -19,10 +19,17 @@ export const PORTAL_FONTS = [
   { key: "modern", label: "Modern (clean sans)", heading: "system-ui, -apple-system, 'Segoe UI', sans-serif", body: "system-ui, -apple-system, 'Segoe UI', sans-serif" },
   { key: "warm", label: "Warm (rounded)", heading: "ui-rounded, 'Nunito', 'Trebuchet MS', system-ui, sans-serif", body: "ui-rounded, 'Nunito', 'Trebuchet MS', system-ui, sans-serif" },
   { key: "elegant", label: "Elegant (all serif)", heading: "Georgia, 'Times New Roman', serif", body: "Georgia, 'Times New Roman', serif" },
+  { key: "brand", label: "Command Suite brand (Cormorant headings, EB Garamond text)", heading: "'Cormorant Garamond', 'EB Garamond', Georgia, 'Times New Roman', serif", body: "'EB Garamond', Georgia, 'Times New Roman', serif" },
 ] as const;
 export type FontKey = (typeof PORTAL_FONTS)[number]["key"];
 
+/** The LifeCharter Command Suite brand board (Sept 2026): Indigo #0F1A38, Gold #D4AF63, Ivory #FAF8F3. */
+export const BRAND_INDIGO = "#0F1A38";
+export const BRAND_GOLD = "#D4AF63";
+export const BRAND_IVORY = "#FAF8F3";
+
 export const COLOR_PRESETS = [
+  { name: "Command Suite", accent: BRAND_INDIGO, background: BRAND_IVORY },
   { name: "Teal", accent: "#2E7C83", background: "#FBF8F1" },
   { name: "Indigo", accent: "#2A2F6B", background: "#F7F4EE" },
   { name: "Plum", accent: "#6B3A6B", background: "#FAF6F8" },
@@ -45,9 +52,9 @@ export interface PortalLook {
 }
 
 export const DEFAULT_LOOK: PortalLook = {
-  accent: "#2E7C83",
-  background: "#FBF8F1",
-  font: "classic",
+  accent: BRAND_INDIGO,
+  background: BRAND_IVORY,
+  font: "brand",
   heading: "Welcome, {first}",
   useAccountLogo: true,
   logoPath: null,

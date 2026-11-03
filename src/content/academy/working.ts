@@ -1447,7 +1447,7 @@ export const WORKING: Lesson[] = [
       },
       {
         heading: "Client Portals",
-        text: "Give each client a private page in your own name and logo. It shows their sessions left, upcoming bookings, invoices to pay, session notes you share, homework, goals, files and messages. There is no password. The private link is the key. Sections with nothing in them stay out of sight on their own.",
+        text: "Give each client a private page in your own name and logo. It shows their sessions left, upcoming bookings, invoices to pay, session notes you share, homework, goals, files and messages. There is no password. The private link is the key. A new portal starts in the Command Suite brand look. A client with their own Command Suite can press Add to my task list on a homework item, which adds one task to their own task list, and ticking it in either place ticks both. Sections with nothing in them stay out of sight on their own.",
         image: { src: "/academy/client-portals.jpg", alt: "The Client Portals page with an Add a client box for a name or email, a note that there are no portals yet, and a description of what a portal shows", caption: "Client Portals. No portals have been made in this sample account yet." },
         steps: [
           "Under Add a client, type a name or email and press Open.",
@@ -1902,7 +1902,7 @@ export const WORKING: Lesson[] = [
       },
       {
         heading: "Keeping a portal current",
-        text: "Each client has a private page with the account's name and logo. It shows sessions left, upcoming bookings, invoices to pay, session notes that are shared, homework, goals, files and messages. There is no password. The private link is the key. Sections with nothing in them stay out of sight on their own.",
+        text: "Each client has a private page with the account's name and logo. It shows sessions left, upcoming bookings, invoices to pay, session notes that are shared, homework, goals, files and messages. There is no password. The private link is the key. A new portal starts in the Command Suite brand look. A client with their own Command Suite can press Add to my task list on a homework item, which adds one task to their own task list, and ticking it in either place ticks both. Sections with nothing in them stay out of sight on their own.",
         image: { src: "/academy/client-portals.jpg", alt: "The Client Portals page with an Add a client box for a name or email, a note that there are no portals yet, and a description of what a portal shows", caption: "Client Portals. No portals have been made in this sample account yet." },
         steps: [
           "Under Add a client, type a name or email and press Open.",

@@ -14038,9 +14038,15 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "tips": [
       "Add a note in Note at the top of their portal to make it feel personal.",
       "Press Use as my default for new portals once you love a look.",
-      "Sections with nothing in them stay out of sight on their own."
+      "Sections with nothing in them stay out of sight on their own.",
+      "A new portal starts in the Command Suite brand look: indigo, a thin gold line, ivory and the brand type. Customize changes it for one client, and Use as my default changes it for new portals.",
+      "A client who is signed in to their own Command Suite with the email you have for them sees Add to my task list on each homework item. It is their choice, it adds one task to their own task list, and ticking it in either place ticks it in both."
     ],
     "questions": [
+      {
+        "q": "Can my client keep their homework in their own task list?",
+        "a": "Yes, if they have their own Command Suite. Under each open homework item they press Add to my task list, after signing in with the email you have for them. It adds one task to their own list, never yours. Tick it in the portal or in their tasks and both stay in step. A client without an account just ticks it off in the portal."
+      },
       {
         "q": "How does a session get used?",
         "a": "One is used when you mark their booking Attended in Calendars. Use the minus and plus buttons to adjust it by hand."

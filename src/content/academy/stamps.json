@@ -128,8 +128,8 @@
     "reviewed": "2026-11-02"
   },
   "wc-clients": {
-    "hash": "f13c200c31e717e8",
-    "reviewed": "2026-11-02"
+    "hash": "35c137dac8dc2d18",
+    "reviewed": "2026-11-03"
   },
   "wc-team": {
     "hash": "85c0f686d0ad231e",
@@ -148,8 +148,8 @@
     "reviewed": "2026-11-02"
   },
   "wt-clients": {
-    "hash": "f13c200c31e717e8",
-    "reviewed": "2026-11-02"
+    "hash": "35c137dac8dc2d18",
+    "reviewed": "2026-11-03"
   },
   "wt-sops": {
     "hash": "1675b0fdbfa37d03",
@@ -228,8 +228,8 @@
     "reviewed": "2026-11-02"
   },
   "at-programs": {
-    "hash": "6e6342edb284e38d",
-    "reviewed": "2026-11-02"
+    "hash": "3376d11f2a9a8d69",
+    "reviewed": "2026-11-03"
   },
   "at-tracking": {
     "hash": "192d4eded5bc4851",

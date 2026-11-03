@@ -133,7 +133,7 @@ export async function portalView(db: Db, p: PortalRow) {
     db.from("bookings").select("id, calendar_id, start_at, end_at, meeting_url, status").eq("master_plan_id", p.master_plan_id).eq("status", "confirmed").gte("start_at", now).or(`contact_id.eq.${p.contact_id},invitee_email.eq."${email.replace(/"/g, "")}"`).order("start_at").limit(10),
     db.from("suite_invoices").select("id, description, amount, payment_count, payments_made, status, hosted_url, due_date").eq("contact_id", p.contact_id).eq("master_plan_id", p.master_plan_id).in("status", ["open", "plan_active"]).order("created_at", { ascending: false }),
     db.from("volant_reports").select("id, title, session_date, report").eq("contact_id", p.contact_id).eq("master_plan_id", p.master_plan_id).not("shared_at", "is", null).order("session_date", { ascending: false }).limit(20),
-    db.from("portal_items").select("id, kind, title, body, url, file_name, file_path, due_on, status, done_at, done_by, position, created_at").eq("contact_id", p.contact_id).eq("master_plan_id", p.master_plan_id).order("position").order("created_at"),
+    db.from("portal_items").select("id, kind, title, body, url, file_name, file_path, due_on, status, done_at, done_by, position, created_at, client_task_id").eq("contact_id", p.contact_id).eq("master_plan_id", p.master_plan_id).order("position").order("created_at"),
     db.from("portal_messages").select("id, author, body, created_at").eq("contact_id", p.contact_id).eq("master_plan_id", p.master_plan_id).order("created_at").limit(200),
   ]);
   const pk = (pkgs ?? []) as { id: string; name: string; sessions_total: number; calendar_ids: string[]; starts_on: string; expires_on: string | null; status: string }[];
@@ -172,7 +172,11 @@ export async function portalView(db: Db, p: PortalRow) {
       title: r.title,
       date: r.session_date,
       sections: (r.report?.sections ?? []).filter((s) => s.kind === "text" && (s.content || "").trim()).map((s) => ({ title: s.title, content: s.content })),
-      commitments: (r.report?.action_items ?? []).map((a) => ({ text: a.text, due: a.due ?? null })),
+      // Only the client's own next steps show here once the report has been sorted; the coach's own tasks stay with the coach. An older, unsorted report shows all of its items.
+      commitments: (() => {
+        const all = r.report?.action_items ?? [];
+        return (all.some((a) => a.for) ? all.filter((a) => a.for === "client") : all).map((a) => ({ text: a.text, due: a.due ?? null }));
+      })(),
     })),
     homework: ((items ?? []) as Item[]).filter((i) => i.kind === "homework").map(shapeItem),
     goals: ((items ?? []) as Item[]).filter((i) => i.kind === "goal").map(shapeItem),
@@ -181,5 +185,5 @@ export async function portalView(db: Db, p: PortalRow) {
   };
 }
 
-type Item = { id: string; kind: string; title: string; body: string | null; url: string | null; file_name: string | null; file_path: string | null; due_on: string | null; status: string; done_at: string | null; done_by: string | null; position: number; created_at: string };
-const shapeItem = (i: Item) => ({ id: i.id, title: i.title, body: i.body, url: i.url, fileName: i.file_name, hasFile: Boolean(i.file_path), dueOn: i.due_on, status: i.status, doneAt: i.done_at, doneBy: i.done_by, fromClient: i.done_by === "client" && i.kind === "resource" });
+type Item = { id: string; kind: string; title: string; body: string | null; url: string | null; file_name: string | null; file_path: string | null; due_on: string | null; status: string; done_at: string | null; done_by: string | null; client_task_id?: number | null; position: number; created_at: string };
+const shapeItem = (i: Item) => ({ inTasks: Boolean(i.client_task_id), id: i.id, title: i.title, body: i.body, url: i.url, fileName: i.file_name, hasFile: Boolean(i.file_path), dueOn: i.due_on, status: i.status, doneAt: i.done_at, doneBy: i.done_by, fromClient: i.done_by === "client" && i.kind === "resource" });
