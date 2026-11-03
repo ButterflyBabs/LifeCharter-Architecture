@@ -780,15 +780,17 @@ export default function ContactRecord({
             {events.map((e) => {
               const Icon = ICON[e.kind] ?? FileText;
               const data = (e.detail?.data as Record<string, string> | undefined) ?? null;
+              const reportId = data?.volant_report_id;
               return (
                 <li key={e.id} className="flex gap-3">
                   <Icon className="w-4 h-4 mt-0.5 shrink-0 text-[#c9a227]" />
                   <div className="min-w-0">
                     <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0] whitespace-pre-wrap break-words">{e.title}</p>
+                    {reportId && <a href={`/volant?report=${reportId}`} className="text-xs font-medium text-[#2E7C83] hover:underline">Open the report</a>}
                     {data && (
                       <dl className="mt-1 text-xs text-[#5a6472] space-y-0.5">
                         {Object.entries(data)
-                          .filter(([k]) => !["email", "name"].includes(k))
+                          .filter(([k]) => !["email", "name", "volant_report_id"].includes(k))
                           .map(([k, v]) => (
                             <div key={k}>
                               <dt className="inline font-medium">{k.replace(/_/g, " ")}: </dt>

@@ -405,7 +405,7 @@ export interface ActionItem {
   /** Added by hand on the report, not by the AI. */
   added?: boolean;
 }
-export interface ReportEmail { at: string; to: string; subject: string; status: "sent" | "failed"; error: string | null; from: string | null }
+export interface ReportEmail { at: string; to: string; subject: string; status: "sent" | "failed"; error: string | null; from: string | null; /** The coach's own full copy: sent to their own inbox, failed, or not asked for. */ copy?: "sent" | "failed" | "off" }
 export interface VolantReport { sections: ReportSection[]; action_items: ActionItem[]; made_at: string; clipped: boolean; /** Each time the report was emailed to the client from the page, newest last. */ emailed?: ReportEmail[] }
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -573,5 +573,26 @@ export function buildClientEmail(report: VolantReport, o: ClientEmailOptions, ct
   if (o.coachItems && g.coach.length) detail.push(`What I will do\n${g.coach.map(item).join("\n")}`);
   if (detail.length) parts.push(`${ctx.title}, ${ctx.date}`, ...detail);
   return { subject: `${ctx.title}: your summary and next steps`.slice(0, 200), text: parts.filter(Boolean).join("\n\n") };
+}
+
+/** The coach's own copy of a report, for their own inbox: everything, including the private notes and both task lists, with a link back to it. */
+export function buildCoachCopy(report: VolantReport, ctx: { title: string; date: string; contactName: string; link: string; sentTo: string | null }): { subject: string; text: string } {
+  const g = groupItems(report.action_items);
+  const item = (a: ActionItem) => `- ${a.text}${a.owner ? ` [${a.owner}]` : ""}${a.due ? ` (due ${a.due})` : ""}`;
+  const lines: string[] = [
+    `Your copy of the report: ${ctx.title}`,
+    `${ctx.date}${ctx.contactName ? ` · ${ctx.contactName}` : ""}`,
+    `Open it in the Suite: ${ctx.link}`,
+    ctx.sentTo ? `Emailed to your client at ${ctx.sentTo}.` : "",
+    "",
+  ];
+  for (const sec of report.sections) lines.push(`${sec.title}${sec.kind === "private" ? " (private, only you)" : ""}`, sec.content || "Nothing on this came up.", "");
+  if (report.action_items.length) {
+    lines.push("Action items");
+    if (g.coach.length) lines.push("For you:", ...g.coach.map(item));
+    if (g.client.length) lines.push(`For ${ctx.contactName || "the client"}:`, ...g.client.map(item));
+    if (g.unsorted.length) lines.push("Not sorted yet:", ...g.unsorted.map(item));
+  }
+  return { subject: `Your copy: ${ctx.title}`.slice(0, 200), text: lines.join("\n").trim() };
 }
 

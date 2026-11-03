@@ -1953,7 +1953,8 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "Keep the page open while you use Record now. Once a recording is uploaded you can leave, and the bell tells you when it is ready.",
       "A very long transcript is read up to about 10,000 words, and the report tells you when that happens.",
       "The email goes from your own connected Gmail or Microsoft 365, so it shows in your Sent folder and replies come to you. Your private notes are never in it, and your own tasks are left out unless you tick them.",
-      "The report has to be saved on a contact, and that contact needs an email address."
+      "Leave Also send me my own copy ticked and a full copy, with your private notes and your own tasks, lands in your own inbox with a link back to the report.",
+      "The report has to be saved on a contact, and that contact needs an email address. On their contact record, the report is listed under reports and the timeline links back to it."
     ],
     "questions": [
       {

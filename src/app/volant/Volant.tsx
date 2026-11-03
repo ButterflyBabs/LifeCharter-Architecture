@@ -316,7 +316,7 @@ function ReportView({ id, templates, settings, onChanged, onDeleted }: { id: str
           const e = report.emailed![report.emailed!.length - 1];
           const at = new Date(e.at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
           return e.status === "sent"
-            ? <p className="mt-2 text-sm text-[#2f7d55]" role="status">Emailed to {e.to} on {at}{e.from ? ` from ${e.from}` : ""}.{report.emailed!.length > 1 ? ` Sent ${report.emailed!.length} times.` : ""}</p>
+            ? <p className="mt-2 text-sm text-[#2f7d55]" role="status">Emailed to {e.to} on {at}{e.from ? ` from ${e.from}` : ""}.{e.copy === "sent" ? " Your own copy went to your inbox." : e.copy === "failed" ? " Your own copy did not send." : ""}{report.emailed!.length > 1 ? ` Sent ${report.emailed!.length} times.` : ""}</p>
             : <p className="mt-2 text-sm font-medium text-[#8a2f2f]" role="status">The email to {e.to} did not send ({at}): {e.error || "the mail service refused it"}. Use Preview &amp; email to client to try again.</p>;
         })() : null}
         {report?.clipped && <p className="mt-2 text-xs text-[#7a8a99]">This transcript was very long, so the report was written from the first part (about 10,000 words).</p>}
@@ -554,6 +554,7 @@ function EmailClient({ r, report, template, onClose, onReport }: { r: Full; repo
   const [summary, setSummary] = useState(true);
   const [clientItems, setClientItems] = useState(true);
   const [coachItems, setCoachItems] = useState(false);
+  const [copyToMe, setCopyToMe] = useState(true);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
   const sorted = groupItems(report.action_items);
@@ -580,10 +581,10 @@ function EmailClient({ r, report, template, onClose, onReport }: { r: Full; repo
   async function send() {
     setBusy(true);
     setResult(null);
-    const { ok, d } = await post("/api/volant/email", { id: r.id, subject, message, summary, clientItems, coachItems });
+    const { ok, d } = await post("/api/volant/email", { id: r.id, subject, message, summary, clientItems, coachItems, copyToMe });
     setBusy(false);
     if (d.report) onReport(d.report);
-    setResult({ ok, text: ok ? `Emailed to ${d.to}${d.from ? ` from ${d.from}` : ""}. It is saved in your Sent folder and on ${r.seq_contacts ? who(r.seq_contacts) : "the contact"}'s timeline.` : d.error || "The email did not send." });
+    setResult({ ok, text: ok ? `Emailed to ${d.to}${d.from ? ` from ${d.from}` : ""}. ${d.copy === "sent" ? `Your own full copy is in your inbox (${d.copyTo}). ` : d.copy === "failed" ? "Your own copy did not send. " : ""}It is on ${r.seq_contacts ? who(r.seq_contacts) : "the contact"}'s timeline with a link back to the report.` : d.error || "The email did not send." });
   }
 
   return (
@@ -608,6 +609,7 @@ function EmailClient({ r, report, template, onClose, onReport }: { r: Full; repo
               <div className="space-y-1.5 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
                 <label className="flex items-start gap-2"><input type="checkbox" className="mt-1 h-4 w-4" checked={summary} onChange={(e) => setSummary(e.target.checked)} />Add the session summary</label>
                 <label className="flex items-start gap-2"><input type="checkbox" className="mt-1 h-4 w-4" checked={clientItems} onChange={(e) => setClientItems(e.target.checked)} />Add the client&apos;s next steps ({sorted.client.length})</label>
+                <label className="flex items-start gap-2"><input type="checkbox" className="mt-1 h-4 w-4" checked={copyToMe} onChange={(e) => setCopyToMe(e.target.checked)} />Also send me my own copy: everything, including my private notes and my tasks, with a link back to the report</label>
                 <label className="flex items-start gap-2"><input type="checkbox" className="mt-1 h-4 w-4" checked={coachItems} onChange={(e) => setCoachItems(e.target.checked)} />Add what I will do ({sorted.coach.length}). Off by default, because these are often your own preparation.</label>
               </div>
               {sorted.unsorted.length > 0 && <p className="rounded-lg bg-[#c9a227]/15 p-2 text-xs text-[#7a5d00] dark:text-[#e8c75a]">{sorted.unsorted.length} action item{sorted.unsorted.length === 1 ? " is" : "s are"} not sorted yet, so {sorted.unsorted.length === 1 ? "it is" : "they are"} left out. Close this and press For you or For the client on each.</p>}

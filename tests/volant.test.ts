@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { VOLANT_TEMPLATES, buildPrompt, cleanCaptionFile, cleanItemEdit, cleanReport, newItem, docxXmlToText, reportToText, templateByKey, templateName, buildClientEmail, defaultClientMessage, groupItems, inferFor } from "../src/lib/volant";
+import { VOLANT_TEMPLATES, buildPrompt, cleanCaptionFile, cleanItemEdit, cleanReport, newItem, docxXmlToText, reportToText, templateByKey, templateName, buildClientEmail, defaultClientMessage, groupItems, inferFor, buildCoachCopy } from "../src/lib/volant";
 
 test("all 21 approved templates are there, each with one action list and unique keys", () => {
     assert.equal(VOLANT_TEMPLATES.length, 21);
@@ -94,3 +94,14 @@ test("action items are sorted for the coach or the client, and only the client's
   assert.ok(withCoach.text.includes("What I will do") && withCoach.text.includes("Send the worksheet"));
   assert.ok(!withCoach.text.includes("about Session snapshot"));
 });
+
+test("the coach's own copy has everything, including private notes, and a link back", () => {
+  const t = templateByKey("coaching-sessions")!;
+  const r = cleanReport({ sections: t.sections.filter((s) => s.kind !== "actions").map((s) => ({ title: s.title, content: s.kind === "private" ? "SECRET coach note" : `about ${s.title}` })), action_items: [{ text: "Send the worksheet", owner: "Ami", for: "coach" }, { text: "Write the pitch", owner: "Jo", for: "client" }] }, t, false, "2026-11-03T00:00:00Z", "Jo Lee");
+  const c = buildCoachCopy(r, { title: "Coaching with Jo", date: "Nov 3, 2026", contactName: "Jo Lee", link: "https://lccommandsuite.com/volant?report=abc", sentTo: "jo@example.com" });
+  assert.equal(c.subject, "Your copy: Coaching with Jo");
+  assert.ok(c.text.includes("SECRET coach note") && c.text.includes("(private, only you)"));
+  assert.ok(c.text.includes("For you:") && c.text.includes("For Jo Lee:") && c.text.includes("Send the worksheet") && c.text.includes("Write the pitch"));
+  assert.ok(c.text.includes("https://lccommandsuite.com/volant?report=abc") && c.text.includes("jo@example.com"));
+});
+

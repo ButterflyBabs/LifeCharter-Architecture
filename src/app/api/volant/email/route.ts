@@ -6,7 +6,7 @@ import { openMailboxes } from "@/lib/mailboxes";
 import * as google from "@/lib/google";
 import * as microsoft from "@/lib/microsoft";
 import { logEvent, EMAIL_RE } from "@/lib/crm";
-import { buildClientEmail, defaultClientMessage, templateByKey, type ReportEmail, type VolantReport } from "@/lib/volant";
+import { buildClientEmail, buildCoachCopy, defaultClientMessage, templateByKey, type ReportEmail, type VolantReport } from "@/lib/volant";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -63,11 +63,24 @@ export async function POST(request: Request) {
     error = (e instanceof Error ? e.message : "The mail service refused it.").replace(/\s+/g, " ").slice(0, 300);
     console.error("POST /api/volant/email:", error);
   }
-  const entry: ReportEmail = { at: new Date().toISOString(), to, subject, status, error, from: box.label };
+  // The coach's own full copy (private notes and both task lists, with a link back), to their own inbox. Only after the client's email went.
+  let copy: ReportEmail["copy"] = "off";
+  if (status === "sent" && b.copyToMe !== false && box.email) {
+    const mine = buildCoachCopy(report, { title: row.title as string, date, contactName: [c.first_name, c.last_name].filter(Boolean).join(" "), link: `${new URL(request.url).origin}/volant?report=${row.id}`, sentTo: to });
+    try {
+      if (box.provider === "microsoft") await microsoft.sendEmail(box.token, { to: box.email, subject: mine.subject, body: mine.text });
+      else await google.sendEmail(box.token, { to: box.email, subject: mine.subject, body: mine.text });
+      copy = "sent";
+    } catch (e) {
+      copy = "failed";
+      console.error("POST /api/volant/email copy:", e instanceof Error ? e.message : e);
+    }
+  }
+  const entry: ReportEmail = { at: new Date().toISOString(), to, subject, status, error, from: box.label, copy };
   const next: VolantReport = { ...report, emailed: [...(report.emailed ?? []), entry].slice(-20) };
   await db.from("volant_reports").update({ report: next, updated_at: entry.at }).eq("id", row.id).eq("master_plan_id", a.planId);
   if (status === "sent") await logEvent(a.planId, row.contact_id as string, "email", `Emailed the report: ${row.title}`, { volant_report_id: row.id, subject }, db).catch(() => {});
   return status === "sent"
-    ? NextResponse.json({ ok: true, emailStatus: status, to, from: box.label, report: next })
+    ? NextResponse.json({ ok: true, emailStatus: status, to, from: box.label, copy, copyTo: copy === "sent" ? box.email : null, report: next })
     : NextResponse.json({ ok: false, emailStatus: status, error: `The email did not send: ${error}`, report: next }, { status: 502 });
 }
