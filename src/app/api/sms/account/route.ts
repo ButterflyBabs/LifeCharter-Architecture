@@ -3,7 +3,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crmAccount } from "../../crm/guard";
 import { SMS_OPEN_TO_ALL } from "@/lib/smsFlag";
 import { businessGaps, cleanBusiness, consentText, DEFAULT_1H, DEFAULT_24H, fillReminder, prettyPhone, toE164 } from "@/lib/sms";
-import { registerNumber, sampleReminder, sendSms, smsAccount, smsCap, smsUsed, twilioReady } from "@/lib/smsServer";
+import { registerNumber, sampleReminder, sendSms, smsAccount, smsCap, smsUsed, twilioBalance, twilioReady } from "@/lib/smsServer";
+import { isHousePlan } from "@/lib/housePlan";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -43,6 +44,8 @@ export async function GET() {
       gaps: businessGaps(biz),
       cap,
       used,
+      // The Suite's own Twilio balance is the owner's concern, so only the house account sees it.
+      twilioBalance: (await isHousePlan(a.planId, db)) ? await twilioBalance() : null,
       defaults: { template24h: DEFAULT_24H, template1h: DEFAULT_1H },
       consent: consentText(name),
       preview24h: fillReminder(acct?.template_24h || DEFAULT_24H, { first: "Eloise", business: name, event: "Discovery Call", time: "Tuesday 10:00 AM", date: "October 20" }),

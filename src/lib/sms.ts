@@ -146,3 +146,19 @@ export function businessGaps(b: Business): string[] {
   if (!toE164(b.contactPhone)) gaps.push("contact phone");
   return gaps;
 }
+
+/** How much of the month's text allowance is used: 80% is the heads-up, 100% is the stop. */
+export const SMS_WARN_AT = 0.8;
+export const textsAtWarning = (cap: number) => Math.max(1, Math.ceil(cap * SMS_WARN_AT));
+/** The level a single send crosses, if any: usedBefore is the count before this text. */
+export function usageCrossing(usedBefore: number, cap: number): "warn" | "full" | null {
+  const after = usedBefore + 1;
+  if (cap > 0 && after >= cap && usedBefore < cap) return "full";
+  if (cap > 0 && after >= textsAtWarning(cap) && usedBefore < textsAtWarning(cap)) return "warn";
+  return null;
+}
+
+/** The Suite's own Twilio balance (US dollars) below which the owner is told to add funds. */
+export const SMS_LOW_BALANCE_USD = 10;
+export const balanceIsLow = (balance: number | null, threshold = SMS_LOW_BALANCE_USD) => balance !== null && Number.isFinite(balance) && balance < threshold;
+

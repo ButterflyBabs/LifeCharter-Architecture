@@ -14,6 +14,7 @@ type Data = {
   gaps: string[];
   cap: number;
   used: number;
+  twilioBalance?: number | null;
   defaults: { template24h: string; template1h: string };
   consent: string;
   preview24h: string;
@@ -103,7 +104,8 @@ export default function TextsCard() {
           {st === "rejected" && d.account?.status_note && <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">Note from the carriers: {d.account.status_note}</p>}
           <div>
             <div className="h-2 w-full rounded-full bg-muted"><div className="h-2 rounded-full bg-[#2E7C83]" style={{ width: `${pct}%` }} /></div>
-            <p className="mt-1 text-xs text-muted-foreground">{d.used.toLocaleString()} of {d.cap.toLocaleString()} texts used this month. Starts fresh on the 1st.</p>
+            <p className="mt-1 text-xs text-muted-foreground">{d.used.toLocaleString()} of {d.cap.toLocaleString()} texts used this month. Starts fresh on the 1st. You are told at 80% and when they are all used.</p>
+            {typeof d.twilioBalance === "number" && <p className="mt-1 text-xs text-muted-foreground">Twilio balance for all accounts: ${d.twilioBalance.toFixed(2)}. You are told when it drops below $10.</p>}
           </div>
           {!d.ready && <p className="text-sm text-red-700">Texting isn&apos;t connected on the Suite yet.</p>}
         </CardContent>

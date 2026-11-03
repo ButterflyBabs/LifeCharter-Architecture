@@ -2,8 +2,8 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
 import { isHousePlan } from "@/lib/housePlan";
 import { ALIGNMENT_ARCHITECT_EMAIL } from "@/lib/authz";
-import { notifyOwnerOfTextingDecision } from "@/lib/smsNotify";
-import { SMS_CAP_BY_TIER, SMS_DEFAULT_CAP, consentText, DEFAULT_24H, segmentsOf, toE164, type Business } from "@/lib/sms";
+import { notifyOwnerOfTextingDecision, notifyOwnerOfTextUsage, notifyOwnerOfLowTwilioBalance } from "@/lib/smsNotify";
+import { SMS_CAP_BY_TIER, SMS_DEFAULT_CAP, balanceIsLow, consentText, DEFAULT_24H, segmentsOf, toE164, usageCrossing, type Business } from "@/lib/sms";
 
 // Text messages (task 1151), the server side. Plain Twilio REST (no SDK) with the Suite's own account
 // (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN, set by Babs in Vercel). Each Command Suite account gets its own toll-free
@@ -118,6 +118,8 @@ export async function sendSms(db: Db, planId: string, input: { to: string; body:
     return { ok: false, code: "twilio", error };
   }
   if (row) await db.from("sms_messages").update({ status: String(r.data.status || "queued"), twilio_sid: String(r.data.sid || "") || null }).eq("id", row.id);
+  const crossed = usageCrossing(used, cap);
+  if (crossed) await notifyOwnerOfTextUsage(db, planId, crossed, used + 1, cap).catch(() => {});
   return { ok: true, id: (row?.id as string) || "" };
 }
 
@@ -222,3 +224,26 @@ export async function checkVerifications(db: Db): Promise<number> {
 }
 
 export const sampleReminder = (business: string) => DEFAULT_24H.replace("{business}", business).replace("{event}", "Discovery Call").replace("{time}", "Tuesday 10:00 AM");
+
+/** The Suite's Twilio balance in US dollars, or null when it cannot be read. */
+export async function twilioBalance(): Promise<number | null> {
+  if (!twilioReady()) return null;
+  const r = await twilio("GET", `${API()}/Balance.json`);
+  const n = Number(r.data.balance);
+  return r.ok && Number.isFinite(n) ? n : null;
+}
+
+/** Hourly: tell the house account's owner once a day while the balance is below the line. */
+export async function checkTwilioBalance(db: Db, today: string): Promise<{ balance: number | null; alerted: boolean }> {
+  const balance = await twilioBalance();
+  if (!balanceIsLow(balance)) return { balance, alerted: false };
+  const key = `sms-balance-alert:${today}`;
+  const { data: seen } = await db.from("app_settings").select("key").eq("key", key).maybeSingle();
+  if (seen) return { balance, alerted: false };
+  const { housePlanId } = await import("@/lib/housePlan");
+  const house = await housePlanId(db);
+  if (!house) return { balance, alerted: false };
+  await db.from("app_settings").upsert({ key, value: "1" });
+  await notifyOwnerOfLowTwilioBalance(db, house, balance as number);
+  return { balance, alerted: true };
+}
