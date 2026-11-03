@@ -1,3 +1,4 @@
+import { reviewReadyEmail } from "../src/lib/websiteReviewEmail";
 import { SEO_SECTION_HEADING, SEO_SECTION_OUTLINE, assistantSectionOutline, hasAssistantSection, hasSeoSection } from "../src/lib/websiteReviews";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -39,5 +40,15 @@ test("every Review also carries a section on the client's own AI Assistant, unde
   assert.equal(hasAssistantSection(out), true);
   assert.ok(out.includes("Putting this into action with CuJo, your AI Assistant"));
   assert.ok(assistantSectionOutline("").includes("your assistant"));
+});
+
+test("the review-ready email names the client and site, links to the Website Review page and escapes markup", () => {
+  const m = reviewReadyEmail({ name: "Franc <b>Godri", website: "francgodri.com", origin: "https://lccommandsuite.com" });
+  assert.equal(m.subject, "Your Website Alignment Review for francgodri.com is ready");
+  assert.ok(m.html.includes("https://lccommandsuite.com/website-review"));
+  assert.ok(m.html.includes("Hi Franc,"));
+  assert.ok(!m.html.includes("<b>Godri"));
+  assert.ok(m.text.includes("Keywords and SEO"));
+  assert.equal(reviewReadyEmail({ name: "", website: "", origin: "https://x.test" }).subject, "Your Website Alignment Review is ready");
 });
 

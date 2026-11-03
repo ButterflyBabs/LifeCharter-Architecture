@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Globe } from "lucide-react";
-import { ReviewText } from "@/components/website/ReviewText";
+import ReviewDelivered from "@/components/website/ReviewDelivered";
 import WebsiteQuestion from "@/components/website/WebsiteQuestion";
 
 type Site = { id: string; website: string; status: "published" | "in_progress"; content: string | null; publishedAt: string | null; due: string | null };
@@ -50,7 +50,7 @@ export default function WebsiteReviewPage() {
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Included with Command Suite · written by our team, delivered within 14 days</p>
         <h1 className="mt-2 text-3xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Website Alignment Review</h1>
         <p className="mt-2 text-[15px] text-[#5b5f73] dark:text-[#b8a898]">
-          Your website, read against the positioning, voice and offer you&rsquo;re building here, with the five changes that matter most a Keywords and SEO section to help your pages get found, and how your own AI Assistant can help you carry them out.
+          Your website, read against the positioning, voice and offer you&rsquo;re building here, with the five changes that matter most, a Keywords and SEO section to help your pages get found, and how your own AI Assistant can help you carry them out.
           {d ? ` Your plan includes ${d.limit} website review${d.limit === 1 ? "" : "s"}.` : ""}
         </p>
       </header>
@@ -65,13 +65,7 @@ export default function WebsiteReviewPage() {
             <section key={s.id}>
               {sites.length > 1 && <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#7b6b8d]">Website {i + 1} of {sites.length}</p>}
               {s.status === "published" && s.content ? (
-                <article className="rounded-2xl border border-[#1a2b4a]/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#1a2b4a]/40">
-                  <p className="mb-4 text-xs text-[#7b6b8d]">{[s.website, s.publishedAt ? `Delivered ${fmt(s.publishedAt)}` : ""].filter(Boolean).join(" · ")}</p>
-                  <ReviewText text={s.content} />
-                  <p className="mt-6 border-t border-[#1a2b4a]/10 pt-4 text-sm text-[#5b5f73] dark:border-white/10 dark:text-[#b8a898]">
-                    Questions, or want to talk it through? Write to <a className="text-[#2E7C83] underline" href="mailto:support@lccommandsuite.com">support@lccommandsuite.com</a>.
-                  </p>
-                </article>
+                <ReviewDelivered website={s.website} publishedAt={s.publishedAt} content={s.content} />
               ) : (
                 <div className="rounded-2xl border border-[#1a2b4a]/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#1a2b4a]/40">
                   <p className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{sites.length > 1 ? `Your Review of ${s.website} is being written` : "Your Review is being written"}</p>

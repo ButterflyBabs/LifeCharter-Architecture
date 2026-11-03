@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { ReviewText } from "@/components/website/ReviewText";
+import ReviewDelivered from "@/components/website/ReviewDelivered";
+import { reviewReadyEmail } from "@/lib/websiteReviewEmail";
 import { SEO_SECTION_OUTLINE, assistantSectionOutline, hasAssistantSection, hasSeoSection } from "@/lib/websiteReviews";
 
 type Client = {
@@ -29,6 +31,13 @@ export default function WebsiteReviewsPage() {
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ c: Client; text: string; tab: "page" | "email" } | null>(null);
+  useEffect(() => {
+    if (!preview) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setPreview(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [preview]);
 
   const load = async () => {
     const res = await fetch("/api/website-reviews");
@@ -108,6 +117,11 @@ export default function WebsiteReviewsPage() {
                   <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${s === "Delivered" ? "bg-green-500/10 text-[#2f7d55]" : s === "To write" ? "bg-[#c9a227]/15 text-[#8a6a15]" : "bg-[#7b6b8d]/10 text-[#7b6b8d]"}`}>
                     {s}{s === "Delivered" && c.review?.published_at ? ` ${fmt(c.review.published_at)}` : ""}
                   </span>
+                  {text.trim() && (
+                    <button onClick={() => setPreview({ c, text, tab: "page" })} className="rounded-lg border border-[#2E7C83]/40 px-3 py-1 text-sm font-medium text-[#2E7C83] hover:bg-[#2E7C83]/10">
+                      Preview
+                    </button>
+                  )}
                   <button onClick={() => setOpen(open === k ? null : k)} className="text-sm font-medium text-[#2E7C83] hover:underline">
                     {open === k ? "Close" : c.review ? "Open" : "Write"}
                   </button>
@@ -155,6 +169,49 @@ export default function WebsiteReviewsPage() {
             </section>
           );
         })
+      )}
+      {preview && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Preview of the Review as the client gets it" onClick={() => setPreview(null)}>
+          <div className="my-6 w-full max-w-3xl rounded-2xl bg-[#FAF8F3] p-5 shadow-xl dark:bg-[#14213a]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Preview · nothing has been sent</p>
+              <div className="ml-auto flex gap-1" role="tablist">
+                {([["page", "On their Website Review page"], ["email", "The email they receive"]] as const).map(([t, label]) => (
+                  <button key={t} role="tab" aria-selected={preview.tab === t} onClick={() => setPreview({ ...preview, tab: t })} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${preview.tab === t ? "bg-[#1a2b4a] text-white" : "border border-[#1a2b4a]/20 text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>
+                    {label}
+                  </button>
+                ))}
+                <button onClick={() => setPreview(null)} className="ml-2 rounded-lg border border-[#1a2b4a]/20 px-3 py-1.5 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">Close</button>
+              </div>
+            </div>
+            <p className="mt-2 text-sm text-[#5b5f73] dark:text-[#b8a898]">For {preview.c.name || preview.c.email} · {preview.c.website || "no website yet"}. This is the Review as it is written right now, including any changes you have not saved.</p>
+            <div className="mt-4">
+              {preview.tab === "page" ? (
+                <div className="space-y-4">
+                  <header>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">Included with Command Suite · written by our team, delivered within 14 days</p>
+                    <h1 className="mt-2 text-3xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Website Alignment Review</h1>
+                  </header>
+                  <ReviewDelivered website={preview.c.website} publishedAt={preview.c.review?.published_at ?? new Date().toISOString()} content={preview.text} />
+                </div>
+              ) : (
+                (() => {
+                  const mail = reviewReadyEmail({ name: preview.c.name || "", website: preview.c.website, origin: typeof window === "undefined" ? "" : window.location.origin });
+                  return (
+                    <div>
+                      <dl className="mb-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
+                        <dt className="text-[#7b6b8d]">From</dt><dd>LifeCharter Command Suite &lt;support@lccommandsuite.com&gt;</dd>
+                        <dt className="text-[#7b6b8d]">To</dt><dd>{preview.c.email || "(no email on file)"}</dd>
+                        <dt className="text-[#7b6b8d]">Subject</dt><dd className="font-medium">{mail.subject}</dd>
+                      </dl>
+                      <iframe title="The email the client receives" sandbox="" srcDoc={mail.html} className="h-[520px] w-full rounded-xl border border-[#1a2b4a]/10 bg-white" />
+                    </div>
+                  );
+                })()
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
