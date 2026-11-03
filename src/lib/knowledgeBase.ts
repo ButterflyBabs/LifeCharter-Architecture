@@ -968,7 +968,7 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     category: "Account & Settings",
     question: "How do I set my time zone?",
     answer:
-      "Use the small time zone menu next to the date at the top of your dashboard, or Settings → Profile → Timezone. Your choice is saved to your account and sets your greeting (morning, afternoon, evening), the clock, Today's Schedule, when tasks are due, and where 'this week/month/year' start in the Financial Pulse. Until you choose one, the app uses your browser's time zone.",
+      "Use the small time zone menu next to the date at the top of your dashboard, or Settings → Profile → Timezone. Your choice is saved to your account and sets your greeting (morning, afternoon, evening), the clock, Today's Schedule, when tasks are due, and where 'this week/month/year' start in the Financial Pulse. Until you choose one, the app uses your browser's time zone. Pick the zone for your city, not just one with the same name: Mountain Time (Denver) and Mountain Time (Edmonton, Alberta) can differ by an hour when one of them is on daylight saving time. Canada's Pacific, Mountain, Saskatchewan, Central and Eastern zones are all in the list.",
     keywords: ["time zone", "timezone", "clock", "greeting", "wrong time", "morning", "evening", "local time"],
   },
   {

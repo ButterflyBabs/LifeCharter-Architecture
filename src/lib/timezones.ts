@@ -3,6 +3,11 @@
 export const TIMEZONES: { value: string; label: string }[] = [
   { value: "America/Los_Angeles", label: "Pacific Time (Los Angeles)" },
   { value: "America/Denver", label: "Mountain Time (Denver)" },
+  { value: "America/Vancouver", label: "Pacific Time (Vancouver)" },
+  { value: "America/Edmonton", label: "Mountain Time (Edmonton, Alberta)" },
+  { value: "America/Regina", label: "Saskatchewan (Regina)" },
+  { value: "America/Winnipeg", label: "Central Time (Winnipeg)" },
+  { value: "America/Toronto", label: "Eastern Time (Toronto)" },
   { value: "America/Phoenix", label: "Arizona (Phoenix)" },
   { value: "America/Chicago", label: "Central Time (Chicago)" },
   { value: "America/New_York", label: "Eastern Time (New York)" },
