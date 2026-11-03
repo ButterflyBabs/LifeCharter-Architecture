@@ -562,7 +562,7 @@ function AddItem({ reportId, onReport, setMsg }: { reportId: string; onReport: (
 
 // Preview what the client gets, edit the message, and email it from the signed-in person's own mailbox. What the preview shows is exactly what is sent.
 function EmailClient({ r, report, template, onClose, onReport, onContact }: { r: Full; report: VolantReport; template: VolantTemplate | null; onClose: () => void; onReport: (r: VolantReport) => void; onContact: (c: { id: string; first_name: string | null; last_name: string | null; email: string }) => void }) {
-  const [info, setInfo] = useState<{ to: string; from: string | null; subject: string; message: string; canSend: boolean; portalNote?: string; portalLink?: string | null; alreadyCopied?: boolean; portalItems?: number; brand?: { name: string; logoUrl: string | null } } | null>(null);
+  const [info, setInfo] = useState<{ to: string | null; from: string | null; subject: string; message: string; canSend: boolean; needsClient?: boolean; portalNote?: string; portalLink?: string | null; alreadyCopied?: boolean; portalItems?: number; brand?: { name: string; logoUrl: string | null } } | null>(null);
   const [err, setErr] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -577,7 +577,6 @@ function EmailClient({ r, report, template, onClose, onReport, onContact }: { r:
 
   const hasContact = Boolean(r.contact_id);
   useEffect(() => {
-    if (!hasContact) return;
     setErr("");
     post("/api/volant/email", { id: r.id, preview: true }).then(({ ok, d }) => {
       if (!ok) return setErr(d.error || "Couldn't prepare the email.");
@@ -628,13 +627,13 @@ function EmailClient({ r, report, template, onClose, onReport, onContact }: { r:
           <h3 className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Preview &amp; email to your client</h3>
           <button className={`${btn} ml-auto`} onClick={onClose}>Close</button>
         </div>
-        {!hasContact ? (
-          <div className="mt-3 space-y-2">
-            <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">Who is this report for? Pick your client. The report is then saved on their contact record, and the email goes to the address you have for them.</p>
+        {!hasContact && (
+          <div className="mt-3 space-y-2 rounded-xl border border-[#c9a227]/50 bg-[#c9a227]/10 p-3">
+            <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">This is a preview. To send it, pick your client first: the report is then saved on their contact record and the email goes to the address you have for them.</p>
             <ContactPicker onPick={(c) => void pick(c)} placeholder="Search your contacts by name or email" />
-            {err && <p className="text-sm text-[#8a2f2f]" role="alert">{err}</p>}
           </div>
-        ) : err ? <p className="mt-3 text-sm text-[#8a2f2f]" role="alert">{err}</p> : !info ? <p className="mt-3 text-sm text-[#7a8a99]">Getting it ready…</p> : (
+        )}
+        {err ? <p className="mt-3 text-sm text-[#8a2f2f]" role="alert">{err}</p> : !info ? <p className="mt-3 text-sm text-[#7a8a99]">Getting it ready…</p> : (
           <div className="mt-3 grid gap-4 lg:grid-cols-2">
             <div className="space-y-3">
               <p className="text-xs text-[#7a8a99]">Your private notes and the recap draft are never added. The message below is the recap draft when your template has one, so edit it freely.</p>
@@ -659,14 +658,14 @@ function EmailClient({ r, report, template, onClose, onReport, onContact }: { r:
               <p className={label}>What your client gets</p>
               <dl className="mb-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">
                 <dt className="text-[#7a8a99]">From</dt><dd>{info.from ?? "No mailbox connected"}</dd>
-                <dt className="text-[#7a8a99]">To</dt><dd>{info.to}</dd>
+                <dt className="text-[#7a8a99]">To</dt><dd>{info.to ?? "(pick your client above)"}</dd>
                 <dt className="text-[#7a8a99]">Subject</dt><dd className="font-medium">{subject || built.subject}</dd>
               </dl>
               <iframe title="The email your client gets" sandbox="" srcDoc={previewHtml} className="h-[520px] w-full rounded-xl border border-[#e3dccd] bg-white" />
               {!info.canSend && <p className="mt-2 text-sm text-[#8a2f2f]">Connect Gmail or Microsoft 365 in Settings, Integrations, so it comes from your own address.</p>}
             </div>
             <div className="flex flex-wrap items-center gap-3 lg:col-span-2">
-              <button className={btnGold} disabled={busy || !info.canSend || !message.trim()} onClick={() => void send()}><Mail className="h-4 w-4" />{busy ? "Sending…" : `Send to ${info.to}`}</button>
+              <button className={btnGold} disabled={busy || !hasContact || !info.to || !info.canSend || !message.trim()} onClick={() => void send()}><Mail className="h-4 w-4" />{busy ? "Sending…" : info.to ? `Send to ${info.to}` : "Pick your client to send"}</button>
               <button className={btn} onClick={onClose}>Not now</button>
               {result && <span className={`text-sm font-medium ${result.ok ? "text-[#2f7d55]" : "text-[#8a2f2f]"}`} role="status">{result.text}</span>}
             </div>

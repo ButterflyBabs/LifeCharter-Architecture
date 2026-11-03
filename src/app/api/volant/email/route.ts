@@ -34,9 +34,11 @@ export async function POST(request: Request) {
   const report = (row.report as VolantReport | null) ?? null;
   if (!report) return NextResponse.json({ error: "This report is empty." }, { status: 400 });
   const c = row.seq_contacts as unknown as { first_name: string | null; last_name: string | null; email: string | null } | null;
-  if (!row.contact_id || !c) return NextResponse.json({ error: "This report is not saved on a contact, so there is no one to email. Pick the person it was with first." }, { status: 400 });
-  const to = (c.email || "").trim();
-  if (!EMAIL_RE.test(to)) return NextResponse.json({ error: "This contact has no email address yet. Add one on their record." }, { status: 400 });
+  // A report with no client yet can still be previewed (so the owner sees the email first), but cannot be sent.
+  const noClient = !row.contact_id || !c;
+  if (noClient && b.preview !== true) return NextResponse.json({ error: "This report is not saved on a contact, so there is no one to email. Pick the person it was with first." }, { status: 400 });
+  const to = (c?.email || "").trim();
+  if (!noClient && !EMAIL_RE.test(to)) return NextResponse.json({ error: "This contact has no email address yet. Add one on their record." }, { status: 400 });
 
   const boxes = await openMailboxes();
   const box = boxes.find((x) => x.provider === "microsoft") ?? boxes[0] ?? null;
@@ -52,14 +54,16 @@ export async function POST(request: Request) {
   const brand: EmailBrand = house ? { name: HOUSE_PORTAL_NAME, logoUrl: `${origin}${HOUSE_PORTAL_LOGO}` } : { name: b0?.name || "Your coach", logoUrl: b0?.logo ? (b0.logo.startsWith("http") ? b0.logo : `${origin}${b0.logo}`) : null };
   const t = templateByKey(row.template_key as string);
   const date = fmtDate(row.session_date as string);
-  const message = str(b.message, 6000) || defaultClientMessage(report, t, { clientFirst: first(c.first_name), coachFirst, date });
+  const message = str(b.message, 6000) || defaultClientMessage(report, t, { clientFirst: first(c?.first_name), coachFirst, date });
   const wantPortal = b.addToPortal !== false && b.clientItems !== false && report.action_items.some((i) => i.for === "client");
   // The client's private page: their next steps go there as homework they tick off, and the email links to it. Preview only looks; sending creates.
   let portalLink: string | undefined;
   let portalAdded = 0;
   let portalNote = "";
   let report2: VolantReport = report;
-  if (wantPortal) {
+  if (wantPortal && noClient) {
+    portalLink = `${origin}/portal/(their private link)`;
+  } else if (wantPortal) {
     const { data: existing } = await db.from("client_portals").select("id, token, active").eq("contact_id", row.contact_id as string).eq("master_plan_id", a.planId).maybeSingle();
     if (existing && !existing.active) {
       portalNote = "This client's portal is switched off, so their steps stay in the email only.";
@@ -91,12 +95,12 @@ export async function POST(request: Request) {
     }
   }
   const opts = { message, summary: b.summary !== false, clientItems: b.clientItems !== false, coachItems: b.coachItems === true, portalUrl: portalLink };
-  const built = buildClientEmail(report, opts, { title: row.title as string, date, contactName: [c.first_name, c.last_name].filter(Boolean).join(" ") });
+  const built = buildClientEmail(report, opts, { title: row.title as string, date, contactName: [c?.first_name, c?.last_name].filter(Boolean).join(" ") });
   const subject = str(b.subject, 200) || built.subject;
-  const ctx = { title: row.title as string, date, contactName: [c.first_name, c.last_name].filter(Boolean).join(" ") };
+  const ctx = { title: row.title as string, date, contactName: [c?.first_name, c?.last_name].filter(Boolean).join(" ") };
   const html = buildClientEmailHtml(report, opts, ctx, brand);
 
-  if (b.preview === true) return NextResponse.json({ to, from: box?.label ?? null, subject, text: built.text, message, canSend: Boolean(box), portalNote, portalLink: portalLink ?? null, brand, alreadyCopied: report.copied?.status === "sent", portalItems: report.action_items.filter((i) => i.for === "client" && !i.portal).length });
+  if (b.preview === true) return NextResponse.json({ needsClient: noClient, to: to || null, from: box?.label ?? null, subject, text: built.text, message, canSend: Boolean(box), portalNote, portalLink: portalLink ?? null, brand, alreadyCopied: report.copied?.status === "sent", portalItems: report.action_items.filter((i) => i.for === "client" && !i.portal).length });
   if (!box) return NextResponse.json({ error: "Connect Gmail or Microsoft 365 in Settings, Integrations, so the email comes from your own address." }, { status: 400 });
 
   let status: ReportEmail["status"] = "sent";
@@ -112,7 +116,7 @@ export async function POST(request: Request) {
   // The coach's own full copy (private notes and both task lists, with a link back), to their own inbox. Only after the client's email went.
   let copy: ReportEmail["copy"] = "off";
   if (status === "sent" && b.copyToMe !== false && box.email) {
-    const copyCtx = { title: row.title as string, date, contactName: [c.first_name, c.last_name].filter(Boolean).join(" "), link: `${origin}/volant?report=${row.id}`, sentTo: to };
+    const copyCtx = { title: row.title as string, date, contactName: [c?.first_name, c?.last_name].filter(Boolean).join(" "), link: `${origin}/volant?report=${row.id}`, sentTo: to };
     const mine = buildCoachCopy(report, copyCtx);
     const mineHtml = buildCoachCopyHtml(report, copyCtx, brand);
     try {
