@@ -638,7 +638,7 @@ export async function forwardMessage(
 
 export async function sendEmail(
   accessToken: string,
-  opts: { to: string; subject: string; body: string; attachments?: OutgoingAttachment[] }
+  opts: { to: string; subject: string; body: string; html?: string; attachments?: OutgoingAttachment[] }
 ): Promise<void> {
   const attachments = (opts.attachments ?? []).map((a) => ({
     "@odata.type": "#microsoft.graph.fileAttachment",
@@ -652,7 +652,7 @@ export async function sendEmail(
     body: JSON.stringify({
       message: {
         subject: opts.subject,
-        body: { contentType: "Text", content: opts.body },
+        body: opts.html ? { contentType: "HTML", content: opts.html } : { contentType: "Text", content: opts.body },
         toRecipients: [{ emailAddress: { address: opts.to } }],
         ...(attachments.length ? { attachments } : {}),
       },

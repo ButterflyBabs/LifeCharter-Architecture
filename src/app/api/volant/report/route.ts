@@ -6,8 +6,10 @@ import { aiClient, extractJson } from "@/lib/ai/client";
 import { resolveAiConfig } from "@/lib/ai/config";
 import { memberAiGate } from "@/lib/ai/memberCap";
 import { volantAccount } from "@/lib/volantServer";
-import { buildCoachCopy, buildPrompt, cleanReport, templateByKey, templateName, VOLANT_MAX_TRANSCRIPT } from "@/lib/volant";
+import { buildCoachCopy, buildCoachCopyHtml, buildPrompt, cleanReport, templateByKey, templateName, VOLANT_MAX_TRANSCRIPT } from "@/lib/volant";
 import { openMailboxes } from "@/lib/mailboxes";
+import { isHousePlan } from "@/lib/housePlan";
+import { HOUSE_PORTAL_LOGO, HOUSE_PORTAL_NAME, brandFor } from "@/lib/portal";
 import * as google from "@/lib/google";
 import * as microsoft from "@/lib/microsoft";
 
@@ -88,9 +90,14 @@ export async function POST(request: Request) {
         if (box?.email) {
           const mine = buildCoachCopy(report, { title, date: new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }), contactName, link: `${new URL(request.url).origin}/volant?report=${row.id}`, sentTo: null });
           let status: "sent" | "failed" = "sent";
+          const origin = new URL(request.url).origin;
+          const house = await isHousePlan(a.planId, db);
+          const b0 = house ? null : await brandFor(db, a.planId).catch(() => null);
+          const brand = house ? { name: HOUSE_PORTAL_NAME, logoUrl: `${origin}${HOUSE_PORTAL_LOGO}` } : { name: b0?.name || "Your coach", logoUrl: b0?.logo ? (b0.logo.startsWith("http") ? b0.logo : `${origin}${b0.logo}`) : null };
+          const mineHtml = buildCoachCopyHtml(report, { title, date: new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }), contactName, link: `${origin}/volant?report=${row.id}`, sentTo: null }, brand);
           try {
-            if (box.provider === "microsoft") await microsoft.sendEmail(box.token, { to: box.email, subject: mine.subject, body: mine.text });
-            else await google.sendEmail(box.token, { to: box.email, subject: mine.subject, body: mine.text });
+            if (box.provider === "microsoft") await microsoft.sendEmail(box.token, { to: box.email, subject: mine.subject, body: mine.text, html: mineHtml });
+            else await google.sendEmail(box.token, { to: box.email, subject: mine.subject, body: mine.text, html: mineHtml });
           } catch (e) {
             status = "failed";
             console.error("volant copy to owner:", e instanceof Error ? e.message : e);

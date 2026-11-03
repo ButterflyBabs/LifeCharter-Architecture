@@ -6,7 +6,7 @@ import { BellRing, CalendarPlus, Check, Copy, FileText, LifeBuoy, ListChecks, Lo
 import Recordings from "./Recordings";
 import ContactPicker, { personName, type PickedContact } from "@/app/contacts/ContactPicker";
 import { localInputValue } from "@/components/reminders/useReminders";
-import { buildClientEmail, groupItems, reportToText, templateName, VOLANT_NAME, type ActionItem, type ItemFor, type VolantReport, type VolantTemplate } from "@/lib/volant";
+import { buildClientEmail, buildClientEmailHtml, groupItems, reportToText, templateName, VOLANT_NAME, type ActionItem, type ItemFor, type VolantReport, type VolantTemplate } from "@/lib/volant";
 
 type Contact = { first_name: string | null; last_name: string | null; email: string } | null;
 type Row = { id: string; template_key: string; title: string; session_date: string; contact_id: string | null; created_at: string; seq_contacts: Contact; items: number; approved: number };
@@ -547,7 +547,7 @@ function AddItem({ reportId, onReport, setMsg }: { reportId: string; onReport: (
 
 // Preview what the client gets, edit the message, and email it from the signed-in person's own mailbox. What the preview shows is exactly what is sent.
 function EmailClient({ r, report, template, onClose, onReport }: { r: Full; report: VolantReport; template: VolantTemplate | null; onClose: () => void; onReport: (r: VolantReport) => void }) {
-  const [info, setInfo] = useState<{ to: string; from: string | null; subject: string; message: string; canSend: boolean; portalNote?: string; portalLink?: string | null; alreadyCopied?: boolean; portalItems?: number } | null>(null);
+  const [info, setInfo] = useState<{ to: string; from: string | null; subject: string; message: string; canSend: boolean; portalNote?: string; portalLink?: string | null; alreadyCopied?: boolean; portalItems?: number; brand?: { name: string; logoUrl: string | null } } | null>(null);
   const [err, setErr] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -578,6 +578,15 @@ function EmailClient({ r, report, template, onClose, onReport }: { r: Full; repo
   const built = useMemo(
     () => buildClientEmail(report, { message, summary, clientItems, coachItems, portalUrl: addToPortal && info?.portalLink ? info.portalLink : undefined }, { title: r.title, date: fmtDate(r.session_date), contactName: r.seq_contacts ? who(r.seq_contacts) : "" }),
     [report, message, summary, clientItems, coachItems, addToPortal, info?.portalLink, r.title, r.session_date, r.seq_contacts]
+  );
+
+  // What the client sees, drawn from the same builder the server sends with.
+  const previewHtml = useMemo(
+    () =>
+      info
+        ? buildClientEmailHtml(report, { message, summary, clientItems, coachItems, portalUrl: addToPortal && info.portalLink ? info.portalLink : undefined }, { title: r.title, date: fmtDate(r.session_date), contactName: r.seq_contacts ? who(r.seq_contacts) : "" }, info.brand ?? { name: "", logoUrl: null })
+        : "",
+    [info, report, message, summary, clientItems, coachItems, addToPortal, r.title, r.session_date, r.seq_contacts]
   );
 
   async function send() {
@@ -624,7 +633,7 @@ function EmailClient({ r, report, template, onClose, onReport }: { r: Full; repo
                 <dt className="text-[#7a8a99]">To</dt><dd>{info.to}</dd>
                 <dt className="text-[#7a8a99]">Subject</dt><dd className="font-medium">{subject || built.subject}</dd>
               </dl>
-              <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap break-words rounded-xl border border-[#e3dccd] bg-white p-3 font-sans text-sm text-[#1a2b4a] dark:border-[#2b3b5c] dark:bg-[#16233b] dark:text-[#e6e9ef]">{built.text}</pre>
+              <iframe title="The email your client gets" sandbox="" srcDoc={previewHtml} className="h-[520px] w-full rounded-xl border border-[#e3dccd] bg-white" />
               {!info.canSend && <p className="mt-2 text-sm text-[#8a2f2f]">Connect Gmail or Microsoft 365 in Settings, Integrations, so it comes from your own address.</p>}
             </div>
             <div className="flex flex-wrap items-center gap-3 lg:col-span-2">

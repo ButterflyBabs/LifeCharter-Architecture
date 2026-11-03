@@ -6,8 +6,9 @@ import { openMailboxes } from "@/lib/mailboxes";
 import * as google from "@/lib/google";
 import * as microsoft from "@/lib/microsoft";
 import { logEvent, EMAIL_RE } from "@/lib/crm";
-import { defaultLook, newPortalToken, portalUrl, type PortalRow } from "@/lib/portal";
-import { buildClientEmail, buildCoachCopy, defaultClientMessage, templateByKey, type ReportEmail, type VolantReport } from "@/lib/volant";
+import { HOUSE_PORTAL_LOGO, HOUSE_PORTAL_NAME, brandFor, defaultLook, newPortalToken, portalUrl } from "@/lib/portal";
+import { isHousePlan } from "@/lib/housePlan";
+import { buildClientEmail, buildClientEmailHtml, buildCoachCopy, buildCoachCopyHtml, defaultClientMessage, templateByKey, type EmailBrand, type ReportEmail, type VolantReport } from "@/lib/volant";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -44,6 +45,11 @@ export async function POST(request: Request) {
   const { data: prof } = me?.id ? await db.from("profiles").select("full_name").eq("id", me.id).maybeSingle() : { data: null };
   const { data: plan } = await db.from("client_master_plans").select("client_name").eq("id", a.planId).maybeSingle();
   const coachFirst = first(prof?.full_name) || (["primary", "demo"].includes(first(plan?.client_name).toLowerCase()) ? "" : first(plan?.client_name));
+  // The brand on the email: LifeCharter Command Suite and its logo for the owner's own account, the account's own name and logo for a client account.
+  const origin = new URL(request.url).origin;
+  const house = await isHousePlan(a.planId, db);
+  const b0 = house ? null : await brandFor(db, a.planId).catch(() => null);
+  const brand: EmailBrand = house ? { name: HOUSE_PORTAL_NAME, logoUrl: `${origin}${HOUSE_PORTAL_LOGO}` } : { name: b0?.name || "Your coach", logoUrl: b0?.logo ? (b0.logo.startsWith("http") ? b0.logo : `${origin}${b0.logo}`) : null };
   const t = templateByKey(row.template_key as string);
   const date = fmtDate(row.session_date as string);
   const message = str(b.message, 6000) || defaultClientMessage(report, t, { clientFirst: first(c.first_name), coachFirst, date });
@@ -87,15 +93,17 @@ export async function POST(request: Request) {
   const opts = { message, summary: b.summary !== false, clientItems: b.clientItems !== false, coachItems: b.coachItems === true, portalUrl: portalLink };
   const built = buildClientEmail(report, opts, { title: row.title as string, date, contactName: [c.first_name, c.last_name].filter(Boolean).join(" ") });
   const subject = str(b.subject, 200) || built.subject;
+  const ctx = { title: row.title as string, date, contactName: [c.first_name, c.last_name].filter(Boolean).join(" ") };
+  const html = buildClientEmailHtml(report, opts, ctx, brand);
 
-  if (b.preview === true) return NextResponse.json({ to, from: box?.label ?? null, subject, text: built.text, message, canSend: Boolean(box), portalNote, portalLink: portalLink ?? null, alreadyCopied: report.copied?.status === "sent", portalItems: report.action_items.filter((i) => i.for === "client" && !i.portal).length });
+  if (b.preview === true) return NextResponse.json({ to, from: box?.label ?? null, subject, text: built.text, message, canSend: Boolean(box), portalNote, portalLink: portalLink ?? null, brand, alreadyCopied: report.copied?.status === "sent", portalItems: report.action_items.filter((i) => i.for === "client" && !i.portal).length });
   if (!box) return NextResponse.json({ error: "Connect Gmail or Microsoft 365 in Settings, Integrations, so the email comes from your own address." }, { status: 400 });
 
   let status: ReportEmail["status"] = "sent";
   let error: string | null = null;
   try {
-    if (box.provider === "microsoft") await microsoft.sendEmail(box.token, { to, subject, body: built.text });
-    else await google.sendEmail(box.token, { to, subject, body: built.text });
+    if (box.provider === "microsoft") await microsoft.sendEmail(box.token, { to, subject, body: built.text, html });
+    else await google.sendEmail(box.token, { to, subject, body: built.text, html });
   } catch (e) {
     status = "failed";
     error = (e instanceof Error ? e.message : "The mail service refused it.").replace(/\s+/g, " ").slice(0, 300);
@@ -104,10 +112,12 @@ export async function POST(request: Request) {
   // The coach's own full copy (private notes and both task lists, with a link back), to their own inbox. Only after the client's email went.
   let copy: ReportEmail["copy"] = "off";
   if (status === "sent" && b.copyToMe !== false && box.email) {
-    const mine = buildCoachCopy(report, { title: row.title as string, date, contactName: [c.first_name, c.last_name].filter(Boolean).join(" "), link: `${new URL(request.url).origin}/volant?report=${row.id}`, sentTo: to });
+    const copyCtx = { title: row.title as string, date, contactName: [c.first_name, c.last_name].filter(Boolean).join(" "), link: `${origin}/volant?report=${row.id}`, sentTo: to };
+    const mine = buildCoachCopy(report, copyCtx);
+    const mineHtml = buildCoachCopyHtml(report, copyCtx, brand);
     try {
-      if (box.provider === "microsoft") await microsoft.sendEmail(box.token, { to: box.email, subject: mine.subject, body: mine.text });
-      else await google.sendEmail(box.token, { to: box.email, subject: mine.subject, body: mine.text });
+      if (box.provider === "microsoft") await microsoft.sendEmail(box.token, { to: box.email, subject: mine.subject, body: mine.text, html: mineHtml });
+      else await google.sendEmail(box.token, { to: box.email, subject: mine.subject, body: mine.text, html: mineHtml });
       copy = "sent";
     } catch (e) {
       copy = "failed";

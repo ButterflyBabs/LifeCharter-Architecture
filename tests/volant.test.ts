@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { VOLANT_TEMPLATES, buildPrompt, cleanCaptionFile, cleanItemEdit, cleanReport, newItem, docxXmlToText, reportToText, templateByKey, templateName, buildClientEmail, defaultClientMessage, groupItems, inferFor, buildCoachCopy } from "../src/lib/volant";
+import { VOLANT_TEMPLATES, buildPrompt, cleanCaptionFile, cleanItemEdit, cleanReport, newItem, docxXmlToText, reportToText, templateByKey, templateName, buildClientEmail, defaultClientMessage, groupItems, inferFor, buildCoachCopy, buildClientEmailHtml, buildCoachCopyHtml } from "../src/lib/volant";
 
 test("all 21 approved templates are there, each with one action list and unique keys", () => {
     assert.equal(VOLANT_TEMPLATES.length, 21);
@@ -118,5 +118,19 @@ test("the client email links to their private page when their steps were put the
 test("the recap draft starts the client email even when the report's template key is no longer known", () => {
   const r = { sections: [{ title: "Recap for the client (draft)", kind: "draft" as const, content: "Hi Jo, great session.\n\nAmi" }], action_items: [], made_at: "", clipped: false };
   assert.ok(defaultClientMessage(r, null, { clientFirst: "Jo", coachFirst: "Ami", date: "d" }).startsWith("Hi Jo, great session."));
+});
+
+test("the branded client email carries the same content as the text, escapes markup, and leaves out private notes", () => {
+  const t = templateByKey("coaching-sessions")!;
+  const r = cleanReport({ sections: t.sections.filter((s) => s.kind !== "actions").map((s) => ({ title: s.title, content: s.kind === "private" ? "SECRET <b>coach</b> note" : `about ${s.title} <script>` })), action_items: [{ text: "Write the pitch", owner: "Jo", for: "client", due: "2026-11-10" }, { text: "Send the worksheet", owner: "Ami", for: "coach" }] }, t, false, "2026-11-03T00:00:00Z", "Jo Lee");
+  const brand = { name: "LifeCharter Command Suite", logoUrl: "https://x.test/brand/command-suite-logo.png" };
+  const html = buildClientEmailHtml(r, { message: "Hi Jo,\n\nGreat session <3", summary: true, clientItems: true, coachItems: false, portalUrl: "https://x.test/portal/abc" }, { title: "Coaching with Jo", date: "Nov 3, 2026", contactName: "Jo Lee" }, brand);
+  assert.ok(html.includes("https://x.test/brand/command-suite-logo.png") && html.includes("#D4AF63") && html.includes("#0F1A38"));
+  assert.ok(html.includes("Write the pitch") && html.includes("Open my private page") && html.includes("https://x.test/portal/abc"));
+  assert.ok(!html.includes("SECRET") && !html.includes("Send the worksheet"));
+  assert.ok(!html.includes("<script>") && html.includes("&lt;script&gt;"), "markup in the content is escaped");
+  const mine = buildCoachCopyHtml(r, { title: "T", date: "d", contactName: "Jo Lee", link: "https://x.test/volant?report=abc", sentTo: "jo@x.test" }, brand);
+  assert.ok(mine.includes("SECRET") && mine.includes("Private, only you") && mine.includes("Open the report in the Suite") && mine.includes("Send the worksheet"));
+  assert.ok(mine.includes("&lt;b&gt;coach&lt;/b&gt;"), "private note markup is escaped too");
 });
 

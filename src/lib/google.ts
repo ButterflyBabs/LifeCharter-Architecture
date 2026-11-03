@@ -713,11 +713,37 @@ function buildRawMessage(opts: {
   to: string;
   subject: string;
   body: string;
+  html?: string;
   attachments?: OutgoingAttachment[];
   extraHeaders?: string[];
 }): string {
   const attachments = opts.attachments ?? [];
   const baseHeaders = [`To: ${opts.to}`, `Subject: ${opts.subject}`, ...(opts.extraHeaders ?? [])];
+  if (attachments.length === 0 && opts.html) {
+    // A branded email: the HTML, with the plain text behind it for readers that cannot show it.
+    const alt = `----=_lc_alt_${Date.now().toString(36)}`;
+    const enc = (s: string) => Buffer.from(s, "utf-8").toString("base64").replace(/(.{76})/g, "$1\r\n");
+    return base64Url(
+      [
+        ...baseHeaders,
+        "MIME-Version: 1.0",
+        `Content-Type: multipart/alternative; boundary="${alt}"`,
+        "",
+        `--${alt}`,
+        'Content-Type: text/plain; charset="UTF-8"',
+        "Content-Transfer-Encoding: base64",
+        "",
+        enc(opts.body),
+        `--${alt}`,
+        'Content-Type: text/html; charset="UTF-8"',
+        "Content-Transfer-Encoding: base64",
+        "",
+        enc(opts.html),
+        `--${alt}--`,
+        "",
+      ].join("\r\n")
+    );
+  }
   if (attachments.length === 0) {
     return base64Url(
       [...baseHeaders, "MIME-Version: 1.0", 'Content-Type: text/plain; charset="UTF-8"', "", opts.body].join(
@@ -783,12 +809,13 @@ export async function sendReply(
 // Compose and send a brand-new email (not a reply — no thread, subject as-is).
 export async function sendEmail(
   accessToken: string,
-  opts: { to: string; subject: string; body: string; attachments?: OutgoingAttachment[]; extraHeaders?: string[] }
+  opts: { to: string; subject: string; body: string; html?: string; attachments?: OutgoingAttachment[]; extraHeaders?: string[] }
 ): Promise<{ id: string; threadId: string }> {
   const raw = buildRawMessage({
     to: opts.to,
     subject: opts.subject,
     body: opts.body,
+    html: opts.html,
     attachments: opts.attachments,
     extraHeaders: opts.extraHeaders,
   });

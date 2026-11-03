@@ -601,3 +601,59 @@ export function buildCoachCopy(report: VolantReport, ctx: { title: string; date:
   return { subject: `Your copy: ${ctx.title}`.slice(0, 200), text: lines.join("\n").trim() };
 }
 
+// ── The same emails, branded (HTML) ─────────────────────────────────────────────────────────────────────────────────────
+export interface EmailBrand { name: string; logoUrl: string | null }
+
+const hx = (v: string) => v.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+const SERIF = "Georgia,'Times New Roman',serif";
+const SANS = "Montserrat,Arial,Helvetica,sans-serif";
+const paras = (t: string) => t.split(/\n{2,}/).filter((x) => x.trim()).map((x) => `<p style="margin:0 0 14px;font-family:${SERIF};font-size:16px;line-height:1.65;color:#1F2B3A">${hx(x.trim()).replace(/\n/g, "<br>")}</p>`).join("");
+const h3 = (t: string, note = "") => `<p style="margin:22px 0 6px;padding-left:10px;border-left:3px solid #D4AF63;font-family:${SANS};font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#0F1A38">${hx(t)}${note ? ` <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#7a8a99">${hx(note)}</span>` : ""}</p>`;
+const list = (items: ActionItem[], due: (a: ActionItem) => string) => `<ul style="margin:0 0 14px;padding-left:20px;font-family:${SERIF};font-size:16px;line-height:1.6;color:#1F2B3A">${items.map((a) => `<li style="margin:0 0 6px">${hx(a.text)}${due(a)}</li>`).join("")}</ul>`;
+const button = (label: string, url: string) => `<p style="margin:14px 0 6px"><a href="${hx(url)}" style="display:inline-block;background:#0F1A38;color:#FAF8F3;font-family:${SANS};font-weight:700;font-size:14px;text-decoration:none;padding:12px 24px;border-radius:999px">${hx(label)}</a></p>`;
+
+/** The branded frame: ivory page, white card, the brand's logo and name over a thin gold line. */
+export function emailShell(brand: EmailBrand, inner: string, footer: string): string {
+  const head = brand.logoUrl
+    ? `<img src="${hx(brand.logoUrl)}" alt="${hx(brand.name)}" style="display:block;margin:0 auto;max-height:56px;max-width:240px;height:auto">`
+    : `<p style="margin:0;text-align:center;font-family:${SANS};font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#0F1A38">${hx(brand.name)}</p>`;
+  return `<!doctype html><html><body style="margin:0;background:#FAF8F3"><table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F3;padding:28px 12px"><tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid #E8E0D4;border-radius:16px"><tr><td style="padding:26px 30px 0">${head}<div style="height:2px;background:#D4AF63;margin:18px 0 22px"></div></td></tr><tr><td style="padding:0 30px 26px">${inner}</td></tr><tr><td style="padding:0 30px 22px"><p style="margin:0;border-top:1px solid #E8E0D4;padding-top:14px;font-family:${SANS};font-size:11px;color:#7a8a99;text-align:center">${hx(footer)}</p></td></tr></table></td></tr></table></body></html>`;
+}
+
+/** The client's email in the brand's look. It carries exactly what buildClientEmail's text carries. */
+export function buildClientEmailHtml(report: VolantReport, o: ClientEmailOptions, ctx: { title: string; date: string; contactName: string }, brand: EmailBrand): string {
+  const g = groupItems(report.action_items);
+  const dueText = (a: ActionItem) => (a.due ? ` <span style="color:#7a8a99">(by ${hx(a.due)})</span>` : "");
+  const parts: string[] = [paras(o.message)];
+  const detail: string[] = [];
+  if (o.summary) {
+    for (const sec of report.sections) {
+      if (sec.kind !== "text" || !sec.content || sec.content === "Nothing on this came up.") continue;
+      detail.push(`${h3(sec.title)}${paras(sec.content)}`);
+    }
+  }
+  if (o.clientItems && g.client.length) {
+    detail.push(`${h3("Your next steps")}${list(g.client, dueText)}${o.portalUrl ? `<p style="margin:0 0 4px;font-family:${SERIF};font-size:15px;color:#5a6472">These are also on your private page, where you can tick them off as you finish them.</p>${button("Open my private page", o.portalUrl)}` : ""}`);
+  }
+  if (o.coachItems && g.coach.length) detail.push(`${h3("What I will do")}${list(g.coach, dueText)}`);
+  if (detail.length) parts.push(`<div style="height:1px;background:#E8E0D4;margin:6px 0 18px"></div><p style="margin:0 0 2px;font-family:${SERIF};font-size:20px;color:#0F1A38">${hx(ctx.title)}</p><p style="margin:0;font-family:${SANS};font-size:12px;color:#7a8a99">${hx(ctx.date)}</p>`, ...detail);
+  return emailShell(brand, parts.join(""), `${brand.name} · Reply to this email any time.`);
+}
+
+/** The coach's own copy in the same look: everything, private notes marked, with a button back to the report. */
+export function buildCoachCopyHtml(report: VolantReport, ctx: { title: string; date: string; contactName: string; link: string; sentTo: string | null }, brand: EmailBrand): string {
+  const g = groupItems(report.action_items);
+  const item = (a: ActionItem) => ` <span style="color:#7a8a99">${a.owner ? `[${hx(a.owner)}] ` : ""}${a.due ? `(due ${hx(a.due)})` : ""}</span>`;
+  const inner = [
+    `<p style="margin:0 0 2px;font-family:${SERIF};font-size:22px;color:#0F1A38">${hx(ctx.title)}</p>`,
+    `<p style="margin:0 0 10px;font-family:${SANS};font-size:12px;color:#7a8a99">${hx(ctx.date)}${ctx.contactName ? ` · ${hx(ctx.contactName)}` : ""} · your own copy</p>`,
+    ctx.sentTo ? `<p style="margin:0 0 6px;font-family:${SERIF};font-size:15px;color:#5a6472">Emailed to your client at ${hx(ctx.sentTo)}.</p>` : "",
+    button("Open the report in the Suite", ctx.link),
+    ...report.sections.map((sec) => `${h3(sec.title, sec.kind === "private" ? "Private, only you" : sec.kind === "draft" ? "Draft" : "")}${paras(sec.content || "Nothing on this came up.")}`),
+    report.action_items.length
+      ? `${h3("Action items")}${g.coach.length ? `<p style="margin:0 0 4px;font-family:${SANS};font-size:12px;color:#7a8a99">For you</p>${list(g.coach, item)}` : ""}${g.client.length ? `<p style="margin:0 0 4px;font-family:${SANS};font-size:12px;color:#7a8a99">For ${hx(ctx.contactName || "the client")}</p>${list(g.client, item)}` : ""}${g.unsorted.length ? `<p style="margin:0 0 4px;font-family:${SANS};font-size:12px;color:#7a8a99">Not sorted yet</p>${list(g.unsorted, item)}` : ""}`
+      : "",
+  ].join("");
+  return emailShell(brand, inner, `${brand.name} · Your own copy`);
+}
+
