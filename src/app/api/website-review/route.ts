@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { crossOriginBlocked } from "@/lib/security";
-import { isWebsiteAddress, siteKey, upgradeNote, websiteReviewCap } from "@/lib/websiteReviews";
+import { askForReview, isWebsiteAddress, siteKey, upgradeNote, websiteReviewCap } from "@/lib/websiteReviews";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +30,7 @@ async function rows(a: Acct): Promise<Row[]> {
 async function ensureMain(a: Acct, list: Row[]): Promise<Row[]> {
   if (!a.website || list.some((r) => siteKey(r.website) === siteKey(a.website))) return list;
   const { data } = await a.supabase.from("website_reviews").insert({ master_plan_id: a.masterPlanId, website: a.website }).select(COLS).maybeSingle();
+  if (data) await askForReview(a.supabase, { ...(data as Row), master_plan_id: a.masterPlanId });
   return data ? [...list, data as Row] : list;
 }
 
@@ -80,8 +81,9 @@ export async function POST(request: Request) {
     const up = upgradeNote(cap);
     return NextResponse.json({ error: `Your plan includes ${cap} website review${cap === 1 ? "" : "s"}, and you are using ${list.length === 1 ? "it" : "all of them"}.${up ? ` ${up}` : ""}`, limitReached: true }, { status: 403 });
   }
-  const { error } = await a.supabase.from("website_reviews").insert({ master_plan_id: a.masterPlanId, website });
+  const { data: made, error } = await a.supabase.from("website_reviews").insert({ master_plan_id: a.masterPlanId, website }).select(COLS).maybeSingle();
   if (error) return NextResponse.json({ error: "Couldn't save. Please try again." }, { status: 500 });
+  if (made) await askForReview(a.supabase, { ...(made as Row), master_plan_id: a.masterPlanId });
   // The first website a client adds is also their workspace website, so Settings agrees.
   if (!a.website && a.workspaceId) await a.supabase.from("workspaces").update({ website }).eq("id", a.workspaceId);
   return NextResponse.json({ ok: true, website });
