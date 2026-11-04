@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import {
   ArrowLeft,
@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { SCRIPT_CATEGORIES, SCRIPT_CHANNELS, SCRIPT_PLATFORMS, platformsForChannel } from "@/lib/scriptsSeed";
+import { PLATFORM_NAMES, PLATFORM_ORDER, scriptPlatform, stepOrder } from "@/lib/dmSteps";
 
 const PLATFORM_LABEL: Record<string, string> = Object.fromEntries(SCRIPT_PLATFORMS.map((p) => [p.id, p.label]));
 import { SCRIPT_LIBRARY, extractFields, fillFields } from "@/lib/scriptLibrary";
@@ -110,6 +111,31 @@ const EMPTY_FORM: FormState = {
   content: "",
   tags: "",
 };
+
+// DM scripts are listed by platform (LinkedIn, Facebook, Instagram, WhatsApp, then every platform) and, inside each
+// platform, in pipeline order: 1 Opener, 2 Invite ... 8, then Nurture 1 to 5. Everything else keeps its old order.
+type ListItem = { id: string; title: string; channel: string; platforms: string[]; status?: "draft" | "approved" };
+function dmGroupRank(s: ListItem): number {
+  if (s.channel !== "dm") return 99;
+  const p = scriptPlatform(s.platforms);
+  return p ? PLATFORM_ORDER.indexOf(p) : PLATFORM_ORDER.length;
+}
+function groupLabel(s: ListItem, isLib: boolean): string | null {
+  if (isLib) return null;
+  const r = dmGroupRank(s);
+  if (r === 99) return "Scripts & templates";
+  if (r === PLATFORM_ORDER.length) return "DMs for every platform";
+  return `${PLATFORM_NAMES[PLATFORM_ORDER[r]]} DMs`;
+}
+function groupedForList<T extends ListItem>(list: T[], isLib: boolean): T[] {
+  if (isLib || !list.some((s) => s.channel === "dm")) return [...list].sort((a, b) => (a.status === "draft" ? 0 : 1) - (b.status === "draft" ? 0 : 1));
+  return [...list].sort((a, b) => {
+    const g = dmGroupRank(a) - dmGroupRank(b);
+    if (g) return g;
+    if (dmGroupRank(a) === 99) return (a.status === "draft" ? 0 : 1) - (b.status === "draft" ? 0 : 1);
+    return stepOrder(a.title) - stepOrder(b.title) || a.title.localeCompare(b.title);
+  });
+}
 
 export default function ScriptsPage() {
   const [scripts, setScripts] = useState<Script[]>([]);
@@ -612,8 +638,12 @@ export default function ScriptsPage() {
         </p>
       ) : (
         <div className="space-y-3">
-          {[...filtered].sort((a, b) => (a.status === "draft" ? 0 : 1) - (b.status === "draft" ? 0 : 1)).map((s) => (
-            <Card key={s.id} className={!isLib && s.status === "draft" ? "border-2 border-[#b4730b]/60 bg-[#b4730b]/[0.04]" : undefined}>
+          {groupedForList(filtered, isLib).map((s, i, arr) => (
+            <Fragment key={s.id}>
+            {groupLabel(s, isLib) !== (i > 0 ? groupLabel(arr[i - 1], isLib) : null) && groupLabel(s, isLib) && (
+              <h2 className={`${i > 0 ? "mt-6 " : ""}border-b border-[#1a2b4a]/15 pb-1 text-sm font-semibold uppercase tracking-wide text-[#2E7C83]`}>{groupLabel(s, isLib)}</h2>
+            )}
+            <Card className={!isLib && s.status === "draft" ? "border-2 border-[#b4730b]/60 bg-[#b4730b]/[0.04]" : undefined}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -736,6 +766,7 @@ export default function ScriptsPage() {
                 </div>
               </CardContent>
             </Card>
+            </Fragment>
           ))}
         </div>
       )}

@@ -18,7 +18,25 @@ export async function GET(request: Request, { params }: { params: { code: string
   const own = (board?.personal_link_url as string | null) ?? "";
   if (card && !own && !(await isHousePlan(card.master_plan_id as string, db))) return new NextResponse("This link is not set up yet.", { status: 404 });
   if (card) await db.from("dm_cards").update({ link_clicks: Number(card.link_clicks ?? 0) + 1, link_clicked_at: new Date().toISOString() }).eq("id", card.id);
-  if (own) return NextResponse.redirect(own);
+  if (own) {
+    // A link that points at one of our own event pages carries the card code (so the sign-up moves the card to Registered)
+    // and says which platform the DM went out on.
+    try {
+      const u = new URL(own);
+      if (card && u.origin === origin && u.pathname.startsWith("/e/")) {
+        u.searchParams.set("c", code);
+        const src = { LI: "linkedin", FB: "facebook", IG: "instagram", WA: "whatsapp" }[(card.platform as string) ?? ""];
+        if (src && !u.searchParams.has("utm_source")) {
+          u.searchParams.set("utm_source", src);
+          u.searchParams.set("utm_medium", "dm");
+        }
+        return NextResponse.redirect(u.toString());
+      }
+    } catch {
+      /* not a full address: send it as it is */
+    }
+    return NextResponse.redirect(own);
+  }
   const utm = card?.platform === "FB" ? "&utm_source=facebook&utm_medium=dm&utm_campaign=masterclass" : "";
   return NextResponse.redirect(`${origin}/masterclass-signup${card ? `?c=${code}${utm}` : ""}`);
 }

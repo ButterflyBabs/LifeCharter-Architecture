@@ -39,7 +39,7 @@ export default function EventPage() {
     setErr("");
     const f = Object.fromEntries(new FormData(ev.currentTarget).entries()) as Record<string, string>;
     const smsOk = f.smsOk === "on" && mobile.trim() !== "";
-    const r = await fetch(`/api/e/${slug}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...f, smsOk, phone: mobile.trim(), timezone: tz }) });
+    const r = await fetch(`/api/e/${slug}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...f, smsOk, phone: mobile.trim(), timezone: tz, c: new URLSearchParams(window.location.search).get("c") || "" }) });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     if (!r.ok) return setErr(j.error || "That didn't work. Please try again.");

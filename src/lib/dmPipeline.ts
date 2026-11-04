@@ -217,10 +217,10 @@ async function bookDeal(db: Db, planId: string, card: Card, boardName: string): 
   return (data?.id as string) ?? null;
 }
 
-// The LinkedIn nurture series (4 DMs over 30 days) for a card sitting in Nurture. Message 1 is due the day the card lands there;
-// after each send the next one is due this many days later, and after message 4 nothing more is scheduled.
-export const NURTURE_TOTAL = 4;
-export const NURTURE_GAP_DAYS: Record<number, number | null> = { 1: 10, 2: 10, 3: 10, 4: null };
+// The nurture series (5 DMs over 30 days, on every platform) for a card sitting in Nurture. Message 1 is due the day the card
+// lands there; after each send the next one is due this many days later (Days 0, 7, 14, 21 and 30), and after message 5
+// nothing more is scheduled.
+export { NURTURE_TOTAL, NURTURE_GAP_DAYS } from "@/lib/dmSteps";
 export const nurtureStepOf = (title: string | null | undefined): number | null => {
   const m = (title ?? "").match(/\bNurture (\d)\b/i);
   return m ? Number(m[1]) : null;

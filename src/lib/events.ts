@@ -88,7 +88,7 @@ async function mailer(db: Db, planId: string) {
 }
 
 /** Sign someone up (or return their existing sign-up). Sends the confirmation from the account's own address. */
-export async function register(db: Db, e: EventRow, input: { email: string; firstName: string; lastName?: string; timezone?: string | null; phone?: string | null; smsOk?: boolean }): Promise<{ ok: true; token: string; already: boolean } | { ok: false; error: string }> {
+export async function register(db: Db, e: EventRow, input: { email: string; firstName: string; lastName?: string; timezone?: string | null; phone?: string | null; smsOk?: boolean; cardCode?: string | null }): Promise<{ ok: true; token: string; already: boolean } | { ok: false; error: string }> {
   const email = input.email.trim().toLowerCase();
   const firstName = input.firstName.trim().slice(0, 80);
   if (!firstName) return { ok: false, error: "Please enter your first name." };
@@ -119,7 +119,12 @@ export async function register(db: Db, e: EventRow, input: { email: string; firs
   if (contact) await logEvent(e.master_plan_id, contact.id, "form", `Registered for ${e.title}`, { event: e.slug }, db).catch(() => {});
   if (contact && mobile) await logEvent(e.master_plan_id, contact.id, "form", `Agreed to text reminders for ${e.title}`, { event: e.slug, phone: mobile, agreed: eventConsentText((await brandFor(db, e.master_plan_id).catch(() => null))?.name || "LifeCharter", e.days ?? 1) }, db).catch(() => {});
   // A workshop sign-up moves the person's outreach cards to Registered, which also stops any cold-email follow-ups to them.
-  if (e.kind === "challenge") await advanceCards(db, e.master_plan_id, { contactId: contact?.id ?? null, email }, "registered").catch((x) => console.error("event card move:", x));
+  if (e.kind === "challenge") {
+    // Their personal link (lccommandsuite.com/m/<code>) names the outreach card, so the right card moves even when it has no email yet.
+    const code = (input.cardCode || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 24);
+    const { data: viaLink } = code ? await db.from("dm_cards").select("id").eq("master_plan_id", e.master_plan_id).eq("link_code", code).maybeSingle() : { data: null };
+    await advanceCards(db, e.master_plan_id, { contactId: contact?.id ?? null, email, cardId: (viaLink?.id as string | undefined) ?? null }, "registered").catch((x) => console.error("event card move:", x));
+  }
   await sendConfirmation(db, e, { email, first_name: firstName, timezone: tz, token }).catch((x) => console.error("event confirmation:", x));
   return { ok: true, token, already: false };
 }

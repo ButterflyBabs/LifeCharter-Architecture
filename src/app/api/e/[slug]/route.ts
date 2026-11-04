@@ -33,7 +33,7 @@ export async function POST(request: Request, { params }: { params: { slug: strin
   const b = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   if (typeof b._hp === "string" && b._hp.trim()) return NextResponse.json({ ok: true });
   const s = (v: unknown) => (typeof v === "string" ? v : "");
-  const r = await register(db, e, { email: s(b.email), firstName: s(b.firstName), lastName: s(b.lastName), timezone: s(b.timezone) || null, phone: s(b.phone) || null, smsOk: b.smsOk === true });
+  const r = await register(db, e, { email: s(b.email), firstName: s(b.firstName), lastName: s(b.lastName), timezone: s(b.timezone) || null, phone: s(b.phone) || null, smsOk: b.smsOk === true, cardCode: s(b.c) || null });
   if (!r.ok) return NextResponse.json({ error: r.error }, { status: 400 });
   return NextResponse.json({ ok: true, already: r.already, challenge: e.kind === "challenge" ? `/e/${e.slug}/c/${r.token}` : null });
 }

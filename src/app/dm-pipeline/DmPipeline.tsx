@@ -9,6 +9,7 @@ import ContactLookupInput, { lookupName } from "@/components/crm/ContactLookupIn
 import QualResult, { PriorityBadge, type Qual } from "@/components/qualifier/QualResult";
 import { QUALIFIER_OPEN_TO_ALL } from "@/lib/qualifier";
 import { LIST_TEMPLATE_CSV } from "@/lib/dmListParse";
+import { NURTURE_TOTAL, PLATFORM_NAMES, dmLabel, stepOrder, suggestedStep } from "@/lib/dmSteps";
 import { EMAIL_LIST_TEMPLATE_CSV, mapPeople, parseCsv } from "@/lib/dmEmailList";
 
 type Board = { id: string; name: string; tag: string | null; sortOrder: number };
@@ -1197,23 +1198,31 @@ function DmLimitNote({ use, platform }: { use: DmUse; platform: string | null })
 
 // "Send a DM": pick a script to see its message, copy it, and log it as sent. Shows the last one sent.
 function DmSentPick({ card, scripts, stages, onPick }: { card: Card; scripts: ScriptLite[]; stages: Stage[]; onPick: (scriptId: string) => void }) {
-  const mine = card.platform ? scripts.filter((s) => (s.platforms ?? []).includes(card.platform as string)) : [];
-  const rest = scripts.filter((s) => !mine.includes(s));
-  // A card in Nurture is on the 4-message series: the next message in it goes first in the list, with its due date.
-  const inNurture = stages.find((s) => s.id === card.stage_id)?.key === "nurture";
+  // This platform's scripts first, in pipeline order (1 Opener ... 8, then Nurture 1 to 5); everything else after.
+  const byStep = (a: ScriptLite, b: ScriptLite) => stepOrder(a.title) - stepOrder(b.title) || a.title.localeCompare(b.title);
+  const mine = (card.platform ? scripts.filter((s) => (s.platforms ?? []).includes(card.platform as string)) : []).sort(byStep);
+  const rest = scripts.filter((s) => !mine.includes(s)).sort(byStep);
+  const stageKey = stages.find((s) => s.id === card.stage_id)?.key ?? null;
+  // A card in Nurture is on the 5-message series: the next message in it goes first in the list, with its due date.
+  const inNurture = stageKey === "nurture";
   const lastStep = Number((card.script_title ?? "").match(/\bNurture (\d)\b/i)?.[1] ?? 0);
-  const nextStep = inNurture && lastStep < 4 ? lastStep + 1 : null;
+  const nextStep = inNurture && lastStep < NURTURE_TOTAL ? lastStep + 1 : null;
   const nextScript = nextStep ? mine.find((s) => new RegExp(`\\bNurture ${nextStep}\\b`, "i").test(s.title)) : undefined;
-  const label = (s: ScriptLite) => s.title.replace(/^MasterClass DM · /, "");
+  // The step this stage usually sends next (Opener from To reach out, Invite once they have accepted, and so on).
+  const want = suggestedStep(stageKey);
+  const suggested = want ? mine.find((s) => stepOrder(s.title) === want) : undefined;
+  const label = (s: ScriptLite) => dmLabel(s.title);
+  const platformName = card.platform ? PLATFORM_NAMES[card.platform] ?? card.platform : "";
   return (
     <div className="mt-2">
-      <select value="" onChange={(e) => e.target.value && onPick(e.target.value)} aria-label="Choose a DM to send" className="block h-8 w-full rounded-md border border-[#2E7C83]/40 bg-white px-1.5 text-xs font-medium text-[#2E7C83] dark:bg-[#1a2b4a]/40">
+      <select value="" onChange={(e) => e.target.value && onPick(e.target.value)} aria-label="Choose a DM to send" className="block h-8 w-full rounded-md border border-[#2E7C83]/40 bg-white px-1.5 text-xs font-medium text-[#1a2b4a] dark:bg-[#1a2b4a]/40 dark:text-[#F8F5F0]">
         <option value="">Choose a DM to send…</option>
         {nextScript && <optgroup label="Next in the nurture series"><option value={nextScript.id}>{label(nextScript)}</option></optgroup>}
-        {mine.length > 0 && <optgroup label={`${card.platform} scripts`}>{mine.map((s) => <option key={s.id} value={s.id}>{label(s)}</option>)}</optgroup>}
+        {!nextScript && suggested && <optgroup label="Suggested for this step"><option value={suggested.id}>{label(suggested)}</option></optgroup>}
+        {mine.length > 0 && <optgroup label={`${platformName || card.platform} scripts, in pipeline order`}>{mine.map((s) => <option key={s.id} value={s.id}>{label(s)}</option>)}</optgroup>}
         {rest.length > 0 && <optgroup label={mine.length ? "Other scripts" : "Scripts"}>{rest.map((s) => <option key={s.id} value={s.id}>{label(s)}</option>)}</optgroup>}
       </select>
-      {inNurture && <p className="mt-1 text-[11px] font-medium text-[#2E7C83]">{nextStep ? `Nurture ${nextStep} of 4${card.follow_up_on ? ` · due ${card.follow_up_on}` : ""}` : "Nurture series finished: nothing more scheduled"}</p>}
+      {inNurture && <p className="mt-1 text-[11px] font-medium text-[#2E7C83]">{nextStep ? `Nurture ${nextStep} of ${NURTURE_TOTAL}${card.follow_up_on ? ` · due ${card.follow_up_on}` : ""}` : "Nurture series finished: nothing more scheduled."}</p>}
       {card.script_title && <p className="mt-1 text-[11px] text-[#5a6472] dark:text-[#b8c2cf] truncate">DM sent: {label({ title: card.script_title } as ScriptLite)}</p>}
     </div>
   );
@@ -1257,7 +1266,7 @@ export function SendDm({ card, script, stages, sessionIso, onClose, onDone, post
   const needsAccepted = card.platform === "LI" && cur?.key === "connect_sent" && !/new connection opener/i.test(script.title);
   const [accepted, setAccepted] = useState(false);
   const left = Array.from(new Set(text.match(/\[[^\]]+\]/g) ?? []));
-  const short = script.title.replace(/^MasterClass DM · /, "");
+  const short = dmLabel(script.title);
   // The assistant rewrites this one message for this one person; they read it before they copy it.
   const original = useMemo(() => fillScript(card, script, sessionIso ? niceDate(sessionIso) : ""), [card, script, sessionIso]);
   const [ask, setAsk] = useState("");
