@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Minus, Sparkles, X } from "lucide-react";
 import AssistantPanel from "@/components/assistant/AssistantPanel";
-import { setPopped, usePopped } from "@/lib/assistantPopout";
+import { ASK_EVENT, setPopped, usePopped } from "@/lib/assistantPopout";
 import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 
 const POS_KEY = "assistant-popout-pos";
@@ -27,6 +27,27 @@ export default function AssistantPopout() {
     } catch {
       /* default place */
     }
+  }, []);
+  // "Have my assistant work on this" must always show the assistant: open it if it was minimized, and put it back
+  // in its default corner.
+  useEffect(() => {
+    const show = () => {
+      setMin(false);
+      try {
+        localStorage.setItem(MIN_KEY, "0");
+      } catch {
+        /* not remembered */
+      }
+      // Back to the default corner, in case it was left behind the side menu or off a smaller screen.
+      setPos(null);
+      try {
+        localStorage.removeItem(POS_KEY);
+      } catch {
+        /* not remembered */
+      }
+    };
+    window.addEventListener(ASK_EVENT, show);
+    return () => window.removeEventListener(ASK_EVENT, show);
   }, []);
   useEffect(() => {
     if (!popped) return;
