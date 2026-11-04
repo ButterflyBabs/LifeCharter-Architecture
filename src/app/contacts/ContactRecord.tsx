@@ -780,7 +780,8 @@ export default function ContactRecord({
             {events.map((e) => {
               const Icon = ICON[e.kind] ?? FileText;
               const data = (e.detail?.data as Record<string, string> | undefined) ?? null;
-              const reportId = data?.volant_report_id;
+              // logEvent stores the extra details straight on detail; older lines kept them under detail.data.
+              const reportId = (e.detail as Record<string, unknown> | null)?.volant_report_id as string | undefined ?? data?.volant_report_id;
               return (
                 <li key={e.id} className="flex gap-3">
                   <Icon className="w-4 h-4 mt-0.5 shrink-0 text-[#c9a227]" />
