@@ -11297,6 +11297,70 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     ]
   },
   {
+      "id": "getting-started",
+      "name": "Getting Started",
+      "area": "Getting Started",
+      "where": "Getting Started (one page, three tabs)",
+      "href": "/getting-started",
+      "what": "One page that holds your setup, your first month and your reference material. Your 30 Days is the checklist with a progress bar and a Your next step card. The Big Picture is the Welcome Overview. Look It Up is the User Guide, with the Glossary inside it. It replaces five separate menu items on newer accounts.",
+      "ai": "No AI",
+      "aiNote": "This page does not use AI. It sends you to the pages that do, and connecting your own AI key is its first step.",
+      "steps": [
+          "Open Getting Started from the left menu. While you are new it sits at the top.",
+          "On Your 30 Days, press Open it on the Your next step card, or press any step.",
+          "Connect your AI first. Your three assessments stay locked until it is connected, so your assistant can help you complete them.",
+          "Finish Brain, Soul and Profit. Each step ticks itself off once the assessment is complete, and the progress bar moves.",
+          "Press The Big Picture for the Welcome Overview, or Look It Up to search the User Guide or open the Glossary."
+      ],
+      "health": "This page does not change your scores. It reads your latest scores and marks the steps that strengthen your three lowest dimensions with Focus for you. Your assessments set your scores, and they are the work it asks you to do first.",
+      "tips": [
+          "The bar at the top shows how many steps are done and which day of your first 30 you are on.",
+          "Week 1 opens as soon as your AI is connected and your three assessments are done. Connect your tools stays on the list, but it does not hold Week 1 back.",
+          "Once your AI is connected and your assessments are done, Getting Started moves from the top of the menu to the bottom. It never goes away.",
+          "Open the printable checklist (the Starter Guide) from the bottom of Your 30 Days."
+      ],
+      "questions": [
+          {
+              "q": "Why is an assessment locked?",
+              "a": "The three assessments open once your own AI is connected, so your assistant can help you complete them. Press Connect your AI and the assessments open as soon as it is saved."
+          },
+          {
+              "q": "Why is a week locked?",
+              "a": "Each week opens once the one before it is done. Week 1 opens when your AI is connected and your three assessments are finished."
+          },
+          {
+              "q": "Where did Set up Suite, First 30 Days, Starter Guide, Welcome Overview and Glossary go?",
+              "a": "Into this page. On newer accounts they are tabs and links inside Getting Started. On accounts that began earlier, they stay in the menu exactly as they were."
+          }
+      ],
+      "related": [
+          "set-up-suite",
+          "first-30-days",
+          "starter-guide",
+          "welcome-overview",
+          "the-assessment-lock"
+      ],
+      "who": "Accounts opened on or after November 5, 2026. Earlier accounts keep the separate menu items and see no change.",
+      "keywords": [
+          "getting started",
+          "start here",
+          "set up",
+          "setup",
+          "first 30 days",
+          "30 days",
+          "progress bar",
+          "next step",
+          "big picture",
+          "welcome overview",
+          "look it up",
+          "glossary",
+          "what do i do first",
+          "connect ai first",
+          "assessments locked"
+      ],
+      "starter": true
+  },
+  {
     "id": "first-30-days",
     "name": "First 30 Days",
     "area": "Getting Started",

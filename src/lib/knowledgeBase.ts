@@ -1054,6 +1054,14 @@ export const KNOWLEDGE_BASE: KbEntry[] = [
     keywords: ["menu", "sidebar", "navigation", "left menu", "sections", "where is", "find", "sign out", "log out", "dark mode", "light mode"],
   },
   {
+    id: "gs-getting-started-page",
+    category: "Getting Started",
+    question: "What is the Getting Started page?",
+    answer:
+      "On newer accounts, Getting Started is one page with three tabs, so there is one place to begin. Your 30 Days is your checklist: it starts with connecting your AI (the three assessments stay locked until it is connected, so your assistant can help you complete them), then Brain, Soul and Profit, then connecting your tools, then four weeks of small steps. A progress bar shows how many steps are done, a Your next step card shows what to do now, and every step ticks itself off when the work is finished. Week 1 opens once your AI is connected and your three assessments are complete. The Big Picture is the Welcome Overview. Look It Up is the User Guide, with the Glossary inside it. When your AI is connected and your assessments are done, Getting Started moves from the top of the menu to the bottom, and it stays there for you. Accounts that started before November 5, 2026 keep Set up Suite, First 30 Days, Starter Guide, Welcome Overview and Glossary as separate menu items, exactly as before.",
+    keywords: ["getting started", "start here", "one page", "progress bar", "next step", "set up", "first 30 days", "big picture", "look it up", "glossary", "connect ai first", "where do i begin"],
+  },
+  {
     id: "gs-setup-suite",
     category: "Getting Started",
     question: "What is Set up Suite?",

@@ -692,7 +692,7 @@ export const FOUNDATIONS: Lesson[] = [
     title: "Your first month",
     minutes: 11,
     summary: "How First 30 Days and the Starter Guide work together.",
-    sources: ["first-30-days", "starter-guide"],
+    sources: ["first-30-days", "starter-guide", "getting-started"],
     sections: [
       {
         heading: "Why this matters",
@@ -726,6 +726,17 @@ export const FOUNDATIONS: Lesson[] = [
         text: "The Your first 30 days card on Executive Home shows the day you are on, the steps you have done, and the steps left in your current stage. Stages open one at a time, starting with your assessments. Press See all for the whole list. The card leaves when every step is done, or after 60 days.",
       },
       {
+        heading: "If your Getting Started is one page",
+        text: "On newer accounts, Set up Suite, First 30 Days, the Starter Guide, the Welcome Overview and the Glossary all live inside one Getting Started page with three tabs. Your 30 Days is the checklist: a progress bar, a Your next step card, and every step ticking itself off when the work is finished. Connect your AI comes first, because your three assessments stay locked until it is connected, so your assistant can help you complete them. Week 1 opens once your AI is connected and your three assessments are complete. Connect your tools stays on the list but does not hold Week 1 back. The Big Picture tab is the Welcome Overview, and Look It Up is the User Guide with the Glossary inside it. When your AI is connected and your assessments are done, Getting Started moves from the top of the menu to the bottom. Accounts opened before November 5, 2026 keep the separate menu items and see no change.",
+        steps: [
+          "Open Getting Started from the left menu.",
+          "On Your 30 Days, press Open it on the Your next step card.",
+          "Connect your AI first, then take Brain, Soul and Profit.",
+          "Watch the progress bar move as each step ticks off.",
+        ],
+        tips: ["The printable checklist (the Starter Guide) opens from the bottom of Your 30 Days.", "A locked assessment always means the AI key is not connected yet."],
+      },
+      {
         heading: "The Starter Guide you tick yourself",
         text: "The Starter Guide is the fuller checklist for all 30 days, with where to click and a time estimate for every day. Each step says where to click and how you will know it worked. Day 1 is about 6 to 10 hours in as many sittings as you like, because it holds your three assessments. Most other days are under an hour. These are estimates.",
         steps: [
@@ -756,6 +767,7 @@ export const FOUNDATIONS: Lesson[] = [
       { id: "c3-1", q: "A First 30 Days step will not tick off. What is the likely reason?", right: "The work is not saved on its own page yet", wrong: ["You need to tick it by hand", "Your AI key has expired", "Your plan does not include it"], why: "Steps tick from your real data, so the work has to be saved on its own page." },
       { id: "c3-2", q: "How do the two guides differ?", right: "First 30 Days ticks itself; you tick the Starter Guide yourself", wrong: ["They are the same page", "The Starter Guide is for team members only", "First 30 Days is for your clients"], why: "First 30 Days reads your data. The Starter Guide is the fuller checklist you tick yourself." },
       { id: "c3-3", q: "Why is a week locked?", right: "The week before it is not complete yet", wrong: ["You have not paid for it", "Its date has not arrived", "Your coach must open it"], why: "Each week opens once the one before it is complete." },
+      { id: "c3-5", q: "On a one-page Getting Started, why would Brain, Soul and Profit be locked?", right: "Your AI is not connected yet", wrong: ["Your plan does not include them", "Your coach must unlock them", "It is not yet day 30"], why: "The assessments open once your own AI is connected, so your assistant can help you complete them." },
       { id: "c3-4", q: "What happens after day 30?", right: "Nothing closes, and your steps stay there to finish", wrong: ["The page disappears", "Your unfinished steps are deleted", "Your account is locked"], why: "The day count stops at 30, and your steps stay for you to finish at your own pace." },
     ],
   },
