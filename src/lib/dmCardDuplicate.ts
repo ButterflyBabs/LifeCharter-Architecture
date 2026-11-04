@@ -16,7 +16,9 @@ const SOCIAL_HOSTS = /^(linkedin\.com|facebook\.com|fb\.com|instagram\.com|x\.co
 
 /** Does this link point at one person (a social profile), rather than a business website or a shared page? */
 export function isPersonalProfileLink(u: string | null | undefined): boolean {
-  return SOCIAL_HOSTS.test(normProfileUrl(u).replace(/^[a-z]{2}\./, ""));
+  const n = normProfileUrl(u).replace(/^[a-z]{2}\./, "");
+  if (/^linkedin\.com\/(company|school|showcase|groups|pulse|jobs)(\/|$)/.test(n)) return false; // a LinkedIn company page is a business page
+  return SOCIAL_HOSTS.test(n);
 }
 
 /** Is this the same person, judging by the profile link and name? Social profile: the link decides. Any other link: the same name too. */

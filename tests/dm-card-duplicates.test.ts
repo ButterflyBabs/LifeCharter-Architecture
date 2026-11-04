@@ -41,3 +41,10 @@ test("a shared business website is not a duplicate when the names differ: collea
   assert.equal(isPersonalProfileLink("https://m.facebook.com/sam.lee"), true);
   assert.equal(isPersonalProfileLink("https://www.co-case.org/page/924"), false);
 });
+
+test("a LinkedIn company page is a business page: different names on it are different people", () => {
+  const co = "https://linkedin.com/company/exquisite-events";
+  assert.equal(isPersonalProfileLink(co), false);
+  assert.ok(!isSameCard(card({ name: "Keila Young", profile_url: co }), inc({ name: "Ana Cruz", profileUrl: co })));
+  assert.equal(isPersonalProfileLink("https://www.linkedin.com/in/keila-young"), true);
+});

@@ -98,7 +98,8 @@ export function mapPeople(table: string[][], max = 2000): { rows: PersonRow[]; i
       invalid.push(`${name}: needs an email or a profile link`);
       continue;
     }
-    const key = email || url.toLowerCase();
+    // The same email is the same person. With no email, the same link AND the same name is: two people on one company page are two people.
+    const key = email || `${url.toLowerCase()}|${name.toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
     rows.push({ name: name.slice(0, 120), email: email || null, profileUrl: url ? url.slice(0, 500) : null, notes: parts.length ? parts.join(" · ").slice(0, 300) : null });
