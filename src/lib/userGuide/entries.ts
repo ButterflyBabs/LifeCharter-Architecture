@@ -4193,6 +4193,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "Your scripts must be approved in Scripts & Templates to show in the Choose a DM to send menu. The DM scripts & templates button takes you there.",
       "Add an email to a card that says Not in Contacts. That puts them in Contacts and tags them.",
       "On LinkedIn, send a connection request first and wait in Connect request sent: waiting until they accept.",
+      "A column with a lot of people draws the first 150 cards and a button to show 150 more. The number at the top of the column is always the full count, and Search finds anyone on the pipeline.",
       "Put the step number in each DM script's name, for example LinkedIn 2 · Invite, and the scripts list in pipeline order. A script named Nurture 1, Nurture 2 and so on becomes a series for cards in Nurture: the next one is offered first, and the Suite sets the next date for you (five messages over 30 days, due on Days 0, 7, 14, 21 and 30)."
     ],
     "questions": [
