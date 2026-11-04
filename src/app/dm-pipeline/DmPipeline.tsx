@@ -89,6 +89,8 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
   const [stageFilter, setStageFilter] = useState("");
   const [elsewhere, setElsewhere] = useState<{ id: string; name: string; handle: string | null; platform: string | null; boardId: string; boardName: string; stageName: string }[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
+  // A long column (thousands of cards) draws the first 150 and a button for more, so the board stays fast. The counts are always the full counts.
+  const [shown, setShown] = useState<Record<string, number>>({});
   const [msg, setMsg] = useState("");
   const [adding, setAdding] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -435,7 +437,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
                     {s.tag && <p className="text-[11px] text-[#7b6b8d] truncate" title="Tag given to their contact record">Tag: {s.tag}</p>}
                   </div>
                   <div className="flex flex-col gap-2 min-h-[40px]">
-                    {col.map((c) => {
+                    {col.slice(0, shown[s.id] ?? 150).map((c) => {
                       const p = plat(c.platform);
                       const overdue = c.follow_up_on && today && c.follow_up_on < today;
                       const due = c.follow_up_on && c.follow_up_on === today;
@@ -467,6 +469,11 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
                         </article>
                       );
                     })}
+                    {col.length > (shown[s.id] ?? 150) && (
+                      <button onClick={() => setShown((m) => ({ ...m, [s.id]: (m[s.id] ?? 150) + 150 }))} className="rounded-xl border border-dashed border-[#1a2b4a]/25 px-3 py-2 text-xs font-semibold text-[#2E7C83] hover:bg-[#2E7C83]/5">
+                        Showing {shown[s.id] ?? 150} of {col.length}. Show 150 more
+                      </button>
+                    )}
                   </div>
                 </section>
               );

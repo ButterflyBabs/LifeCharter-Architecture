@@ -54,10 +54,14 @@ const normUrl = (v: string | null | undefined) => (v ?? "").trim().toLowerCase()
 const normName = (v: string | null | undefined) => (v ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 const normEmail = (v: string | null | undefined) => (v ?? "").trim().toLowerCase();
 async function pipelineIndex(db: Db, planId: string) {
-  const [{ data: cards }, { data: boards }] = await Promise.all([
-    db.from("dm_cards").select("board_id, name, email, profile_url").eq("master_plan_id", planId).limit(20000),
-    db.from("pipeline_boards").select("id, name").eq("master_plan_id", planId),
-  ]);
+  // Every card, page by page: the database returns at most 1,000 rows per request.
+  const cards: { board_id: string; name: string; email: string | null; profile_url: string | null }[] = [];
+  for (let from = 0; from < 40000; from += 1000) {
+    const { data } = await db.from("dm_cards").select("board_id, name, email, profile_url").eq("master_plan_id", planId).order("id").range(from, from + 999);
+    cards.push(...((data ?? []) as typeof cards));
+    if ((data ?? []).length < 1000) break;
+  }
+  const { data: boards } = await db.from("pipeline_boards").select("id, name").eq("master_plan_id", planId);
   type C = { board_id: string; name: string; email: string | null; profile_url: string | null };
   const byUrl = new Map<string, C[]>();
   const byEmail = new Map<string, C[]>();

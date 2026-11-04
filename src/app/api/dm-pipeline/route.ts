@@ -57,6 +57,19 @@ async function dmUsage(db: ReturnType<typeof createServerClient>, planId: string
 }
 const PLATFORM_IDS = CARD_PLATFORMS.map((p) => p.id) as string[];
 const SOCIAL_COL: Record<string, string> = { IG: "instagram", FB: "facebook", LI: "linkedin" };
+// The database returns at most 1,000 rows per request however high the limit is set, so every list that must be COMPLETE
+// (the board, the duplicate checks, the DM counts) is read page by page.
+async function allRows<T>(page: (from: number, to: number) => PromiseLike<{ data: unknown[] | null }>, max = 30000): Promise<T[]> {
+  const out: T[] = [];
+  for (let from = 0; from < max; from += 1000) {
+    const { data } = await page(from, from + 999);
+    const rows = (data ?? []) as T[];
+    out.push(...rows);
+    if (rows.length < 1000) break;
+  }
+  return out;
+}
+
 const KINDS = ["open", "booked", "closed"];
 
 export async function GET(request: Request) {
@@ -70,14 +83,7 @@ export async function GET(request: Request) {
   if (!board) return NextResponse.json({ boards: [], board: null, stages: [], cards: [], today: dateIn(tz, 0) });
   const [stages, { data: cards }] = await Promise.all([
     boardStages(db, a.planId, board.id),
-    db
-      .from("dm_cards")
-      .select("id, board_id, stage_id, contact_id, name, handle, profile_url, email, platform, script_id, script_title, link_code, notes, qual_priority, qual_fit, qual_level, last_contacted_at, follow_up_on, deal_id, sort_order, stage_changed_at, created_at")
-      .eq("master_plan_id", a.planId)
-      .eq("board_id", board.id)
-      .order("sort_order")
-      .order("created_at")
-      .limit(2000),
+    allRows<Record<string, unknown>>((from, to) => db.from("dm_cards").select("id, board_id, stage_id, contact_id, name, handle, profile_url, email, platform, script_id, script_title, link_code, notes, qual_priority, qual_fit, qual_level, last_contacted_at, follow_up_on, deal_id, sort_order, stage_changed_at, created_at").eq("master_plan_id", a.planId).eq("board_id", board.id).order("sort_order").order("created_at").order("id").range(from, to)).then((data) => ({ data })),
   ]);
   // The MasterClass boards offer the next session that is still more than a day away, for the dates in their DM scripts.
   let nextSession: string | null = null;
@@ -89,8 +95,8 @@ export async function GET(request: Request) {
   const counts = new Map<string, number>();
   const cardIds = ((cards ?? []) as { id: string }[]).map((c) => c.id);
   if (cardIds.length) {
-    const { data: sentRows } = await db.from("dm_sends").select("card_id").eq("master_plan_id", a.planId).eq("board_id", board.id).limit(10000);
-    for (const r of (sentRows ?? []) as { card_id: string }[]) counts.set(r.card_id, (counts.get(r.card_id) ?? 0) + 1);
+    const sentRows = await allRows<{ card_id: string }>((from, to) => db.from("dm_sends").select("card_id").eq("master_plan_id", a.planId).eq("board_id", board.id).order("id").range(from, to));
+    for (const r of sentRows) counts.set(r.card_id, (counts.get(r.card_id) ?? 0) + 1);
   }
   // A personal link only fills into a message once it has somewhere to go.
   const { data: own } = await db.from("pipeline_boards").select("personal_link_url").eq("id", board.id).maybeSingle();
@@ -217,9 +223,9 @@ export async function POST(request: Request) {
     if (!stage) return NextResponse.json({ error: "Add a stage to this pipeline first." }, { status: 400 });
     // Already on this board? Checked before anything is created, so a repeat makes no new contact either.
     {
-      const { data: onBoard } = await db.from("dm_cards").select("name, profile_url, handle, platform").eq("board_id", board.id).limit(10000);
+      const onBoard = await allRows<CardKey>((from, to) => db.from("dm_cards").select("name, profile_url, handle, platform").eq("board_id", board.id).order("id").range(from, to));
       const incoming = { name, profileUrl: str(b.profileUrl, 500) || null, handle: str(b.handle, 120) || null, platform };
-      if (((onBoard ?? []) as CardKey[]).some((c) => isSameCard(c, incoming))) {
+      if (onBoard.some((c) => isSameCard(c, incoming))) {
         return NextResponse.json({ error: `They're already in ${board.name}.` }, { status: 409 });
       }
     }
@@ -278,13 +284,13 @@ export async function POST(request: Request) {
     const stages = await boardStages(db, a.planId, board.id);
     const stage = landingStage(stages, platform, stages.find((s) => s.key === "to_reach") ?? stages[0]);
     if (!stage) return NextResponse.json({ error: "Add a stage to this pipeline first." }, { status: 400 });
-    const { data: existing } = await db.from("dm_cards").select("name, profile_url, platform").eq("board_id", board.id).limit(10000);
+    const existing = await allRows<{ name: string | null; profile_url: string | null; platform: string | null }>((from, to) => db.from("dm_cards").select("name, profile_url, platform").eq("board_id", board.id).order("id").range(from, to));
     const norm = (u: string | null | undefined) => (u ?? "").toLowerCase().replace(/^https?:\/\/(www\.|m\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, "");
     // A link only means "the same person" for a personal profile (LinkedIn, Facebook...). On a shared website, a different
     // name is a different person who may work in the same office.
     const seenLinks: { url: string; name: string }[] = [];
     const seenName = new Set<string>();
-    for (const c of (existing ?? []) as { name: string | null; profile_url: string | null; platform: string | null }[]) {
+    for (const c of existing) {
       if (c.profile_url) seenLinks.push({ url: c.profile_url, name: c.name ?? "" });
       seenName.add(`${(c.name ?? "").toLowerCase()}|${c.platform ?? ""}`);
     }
@@ -319,12 +325,12 @@ export async function POST(request: Request) {
     const stage = stages.find((s) => s.key === "to_reach") ?? stages[0];
     if (!stage) return NextResponse.json({ error: "Add a stage to this pipeline first." }, { status: 400 });
     const norm = (u: string | null | undefined) => (u ?? "").toLowerCase().replace(/^https?:\/\/(www\.|m\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, "");
-    const { data: existing } = await db.from("dm_cards").select("email, profile_url, name").eq("board_id", board.id).limit(20000);
+    const existing = await allRows<{ email: string | null; profile_url: string | null; name: string | null }>((from, to) => db.from("dm_cards").select("email, profile_url, name").eq("board_id", board.id).order("id").range(from, to));
     const haveEmail = new Set<string>();
     // The same email is always the same person. The same link is too, but only for a personal profile (LinkedIn, Facebook...):
     // two different names on one company website are two people who may work in the same office.
     const haveLinks: { url: string; name: string }[] = [];
-    for (const c of (existing ?? []) as { email: string | null; profile_url: string | null; name: string | null }[]) {
+    for (const c of existing) {
       if (c.email) haveEmail.add(c.email.toLowerCase());
       if (c.profile_url) haveLinks.push({ url: c.profile_url, name: c.name ?? "" });
     }
