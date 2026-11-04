@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, CheckCircle2, Circle, Download, ExternalLink, Lock, Printer, Rocket } from "lucide-react";
 import UserGuideHome from "@/app/user-guide/UserGuideHome";
 import { STARTER_GUIDE_URL, WELCOME_OVERVIEW_PATH } from "@/lib/starterGuide";
-import { combineSteps, nextStep, weekLocked, WEEK_TITLES, type StartStep } from "@/lib/startHere";
+import { ASSESSMENT_NEEDS_AI_MESSAGE, combineSteps, nextStep, weekLocked, WEEK_TITLES, type StartStep } from "@/lib/startHere";
 import type { GuideEntry } from "@/lib/userGuide/types";
 
 type EntryCardData = Pick<GuideEntry, "id" | "name" | "where" | "area" | "starter">;
@@ -52,6 +52,17 @@ function useStartSteps() {
 }
 
 function StepRow({ s }: { s: StartStep }) {
+  if (s.blocked && !s.done) {
+    return (
+      <Link href="/settings?tab=ai" className="flex items-start gap-3 rounded-lg px-2 py-3 opacity-70 hover:bg-[#1a2b4a]/5">
+        <Lock className="mt-0.5 h-5 w-5 shrink-0 text-[#7a8a99]" aria-label="Locked" />
+        <span className="min-w-0 flex-1">
+          <span className="block font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{s.title}</span>
+          <span className="block text-xs font-semibold text-[#8a6a15]">{s.blocked}, so your assistant can help you complete it. It opens as soon as your AI is connected.</span>
+        </span>
+      </Link>
+    );
+  }
   return (
     <Link href={s.href} className="flex items-start gap-3 rounded-lg px-2 py-3 hover:bg-[#1a2b4a]/5">
       {s.done ? <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#2c6b3f]" aria-label="Done" /> : <Circle className="mt-0.5 h-5 w-5 shrink-0 text-[#c9a227]" aria-label="Not done yet" />}
@@ -69,6 +80,7 @@ function StepRow({ s }: { s: StartStep }) {
 
 function Days() {
   const d = useStartSteps();
+  const needAi = useSearchParams().get("need") === "ai";
   const steps = useMemo(() => d?.steps ?? [], [d]);
   const done = steps.filter((s) => s.done).length;
   const total = steps.length;
@@ -80,6 +92,9 @@ function Days() {
   if (!d) return <p className="text-[#7a8a99]">Loading…</p>;
   return (
     <div>
+      {needAi && !steps.find((x) => x.key === "ai")?.done && (
+        <p className="mb-4 rounded-xl border border-[#c9a227]/50 bg-[#c9a227]/10 p-4 text-sm font-medium text-[#1a2b4a] dark:text-[#F8F5F0]" role="status">{ASSESSMENT_NEEDS_AI_MESSAGE}</p>
+      )}
       <div className="rounded-2xl border border-[#c9a227]/40 bg-white p-5 shadow-sm dark:bg-[#1a2b4a]/30">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{done} of {total} steps done</p>

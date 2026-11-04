@@ -46,3 +46,13 @@ test("a locked account (assessments unfinished) can still open Getting Started",
   assert.equal(gatePageAllowed("/getting-started"), true);
   assert.equal(gatePageAllowed("/finance"), false);
 });
+
+test("the three assessments stay locked until the AI key is connected", () => {
+  const without = combineSteps(f30, none);
+  for (const k of ["brain", "soul", "profit"]) assert.ok(without.find((s) => s.key === k)?.blocked, `${k} blocked without AI`);
+  assert.equal(without.find((s) => s.key === "ai")?.blocked, undefined);
+  assert.equal(nextStep(without)?.key, "ai");
+  const withAi = combineSteps(f30, { ...none, ai: true });
+  for (const k of ["brain", "soul", "profit"]) assert.equal(withAi.find((s) => s.key === k)?.blocked, undefined);
+  assert.equal(nextStep(withAi)?.key, "brain");
+});

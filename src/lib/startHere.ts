@@ -19,14 +19,14 @@ export type SetupSteps = { ai: boolean; brain: boolean; soul: boolean; profit: b
 
 // The 5 setup steps, in order, then the 20 later steps of the First 30 Days. The assessments count as done only when
 // COMPLETE (the same rule as Set up Suite and the assessment lock), so a ticked step always means finished.
-export interface StartStep { key: string; week: number; title: string; why?: string; time?: string; href: string; done: boolean; focus?: string }
+export interface StartStep { key: string; week: number; title: string; why?: string; time?: string; href: string; done: boolean; focus?: string; blocked?: string }
 
 export function combineSteps(first30: { key: string; week: number; title: string; why?: string; href: string; done: boolean; focus?: string }[], setup: SetupSteps): StartStep[] {
   const head: StartStep[] = [
     { key: "ai", week: 0, title: "Connect your AI", why: "Your own Claude or OpenAI key, about five minutes, so your assistant can draft, score and plan for you.", time: "About 5 minutes", href: "/settings?tab=ai", done: setup.ai },
-    { key: "brain", week: 0, title: "Take the Brain assessment", why: "Maps your business systems in your own words.", time: "About 3 to 5 hours", href: "/assessments/brain", done: setup.brain },
-    { key: "soul", week: 0, title: "Take the Soul assessment", why: "Your identity, values, calling and story: the heart your assistant writes from.", time: "About 2 to 3 hours", href: "/assessments/soul", done: setup.soul },
-    { key: "profit", week: 0, title: "Take the Profit assessment", why: "Scores your 12 business dimensions and sets your baseline.", time: "About 1 to 2 hours", href: "/assessments/profit", done: setup.profit },
+    { key: "brain", week: 0, title: "Take the Brain assessment", why: "Maps your business systems in your own words.", time: "About 3 to 5 hours", href: "/assessments/brain", done: setup.brain, blocked: setup.ai ? undefined : "Connect your AI first" },
+    { key: "soul", week: 0, title: "Take the Soul assessment", why: "Your identity, values, calling and story: the heart your assistant writes from.", time: "About 2 to 3 hours", href: "/assessments/soul", done: setup.soul, blocked: setup.ai ? undefined : "Connect your AI first" },
+    { key: "profit", week: 0, title: "Take the Profit assessment", why: "Scores your 12 business dimensions and sets your baseline.", time: "About 1 to 2 hours", href: "/assessments/profit", done: setup.profit, blocked: setup.ai ? undefined : "Connect your AI first" },
     { key: "tools", week: 0, title: "Connect your tools", why: "Your calendar and email, or PostStream, so the Suite can see your week.", time: "About 10 minutes", href: "/settings", done: setup.tools },
   ];
   const later = first30.filter((s) => s.week > 0).map((s) => ({ ...s }));
@@ -45,6 +45,9 @@ export const WEEK_TITLES: Record<number, string> = {
 export function weekLocked(steps: StartStep[], week: number): boolean {
   return week > 0 && steps.some((s) => s.week < week && !s.done);
 }
+
+// The three assessments need the AI key first (Babs, 2026-11-04): your assistant helps you complete them.
+export const ASSESSMENT_NEEDS_AI_MESSAGE = "Connect your AI first. It takes about five minutes, and it lets your assistant help you complete your assessments.";
 
 export function nextStep(steps: StartStep[]): StartStep | null {
   const weeks = Array.from(new Set(steps.map((s) => s.week))).sort((a, b) => a - b);
