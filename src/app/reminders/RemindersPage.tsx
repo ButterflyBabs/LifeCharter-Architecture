@@ -77,7 +77,7 @@ export default function RemindersPage() {
             {tone === "done" ? (
               <button onClick={() => void setDone(r.id, false)} className="mt-0.5 text-[#2E7C83]" aria-label={`Reopen: ${r.title}`}><RotateCcw className="h-5 w-5" /></button>
             ) : (
-              <button onClick={() => void setDone(r.id, true)} className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded border ${tone === "due" ? "border-[#A4523C] text-[#A4523C] hover:bg-[#A4523C] hover:text-white" : "border-gray-300 text-transparent hover:border-[#2c6b3f] hover:text-[#2c6b3f]"}`} aria-label={`Mark done: ${r.title}`}><Check className="h-4 w-4" /></button>
+              <button onClick={() => void setDone(r.id, true)} title="Mark done" className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded border-2 text-transparent ${tone === "due" ? "border-[#A4523C] hover:bg-[#2c6b3f] hover:border-[#2c6b3f] hover:text-white" : "border-gray-300 hover:border-[#2c6b3f] hover:bg-[#2c6b3f] hover:text-white"}`} aria-label={`Mark done: ${r.title}`}><Check className="h-4 w-4" /></button>
             )}
             <div className="min-w-0 flex-1">
               <p className={`font-semibold ${tone === "done" ? "text-[#7a8a99] line-through" : "text-[#1a2b4a] dark:text-[#F8F5F0]"}`}>{r.title}</p>
@@ -105,6 +105,7 @@ export default function RemindersPage() {
               </p>
               {tone !== "done" && (
                 <div className="mt-1.5 flex flex-wrap gap-3 text-xs font-medium text-[#2E7C83]">
+                  <button className="inline-flex items-center gap-1 font-semibold text-[#2c6b3f] hover:underline" onClick={() => void setDone(r.id, true)}><Check className="h-3 w-3" />Mark done</button>
                   {tone === "due" && (
                     <>
                       <button className="hover:underline" onClick={() => void snooze(r.id, 60)}>Remind me in 1 hour</button>

@@ -53,7 +53,13 @@ export function useReminders() {
     error,
     refresh: load,
     add: (title: string, remindAt: string, notes?: string) => call("POST", { title, remindAt, notes }),
-    setDone: (id: string, done: boolean) => call("PATCH", { id, done }),
+    // Done shows at once (no waiting on the server); if the save fails the list is reloaded and the message shows.
+    setDone: async (id: string, done: boolean) => {
+      setItems((cur) => (cur ? cur.map((r) => (r.id === id ? { ...r, status: done ? "done" : "open", done_at: done ? new Date().toISOString() : null } : r)) : cur));
+      const ok = await call("PATCH", { id, done });
+      if (!ok) await load();
+      return ok;
+    },
     snooze: (id: string, minutes: number) => call("PATCH", { id, snoozeMinutes: minutes }),
     update: (id: string, patch: { title?: string; notes?: string; remindAt?: string }) => call("PATCH", { id, ...patch }),
     remove: (id: string) => call("DELETE", { id }),
