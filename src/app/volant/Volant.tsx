@@ -572,6 +572,7 @@ function EmailClient({ r, report, template, onClose, onReport, onContact }: { r:
   const [copyToMe, setCopyToMe] = useState(true);
   const [addToPortal, setAddToPortal] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
   const sorted = groupItems(report.action_items);
 
@@ -612,6 +613,7 @@ function EmailClient({ r, report, template, onClose, onReport, onContact }: { r:
   );
 
   async function send() {
+    setConfirming(false);
     setBusy(true);
     setResult(null);
     const { ok, d } = await post("/api/volant/email", { id: r.id, subject, message, summary, clientItems, coachItems, copyToMe, addToPortal });
@@ -665,8 +667,18 @@ function EmailClient({ r, report, template, onClose, onReport, onContact }: { r:
               {!info.canSend && <p className="mt-2 text-sm text-[#8a2f2f]">Connect Gmail or Microsoft 365 in Settings, Integrations, so it comes from your own address.</p>}
             </div>
             <div className="flex flex-wrap items-center gap-3 lg:col-span-2">
-              <button className={btnGold} disabled={busy || !hasContact || !info.to || !info.canSend || !message.trim()} onClick={() => void send()}><Mail className="h-4 w-4" />{busy ? "Sending…" : info.to ? `Send to ${info.to}` : "Pick your client to send"}</button>
-              <button className={btn} onClick={onClose}>Not now</button>
+              {confirming ? (
+                <span className="inline-flex flex-wrap items-center gap-2 rounded-xl border border-[#8a2f2f]/40 bg-[#8a2f2f]/5 px-3 py-2 text-sm text-[#8a2f2f]">
+                  This emails {info.to} right now.
+                  <button className={btnGold} disabled={busy} onClick={() => void send()}><Mail className="h-4 w-4" />Yes, send it</button>
+                  <button className={btn} onClick={() => setConfirming(false)}>Keep editing</button>
+                </span>
+              ) : (
+                <>
+                  <button className={btnGold} disabled={busy || !hasContact || !info.to || !info.canSend || !message.trim()} onClick={() => setConfirming(true)}><Mail className="h-4 w-4" />{busy ? "Sending…" : info.to ? `Send to ${info.to}` : "Pick your client to send"}</button>
+                  <button className={btn} onClick={onClose}>Not now</button>
+                </>
+              )}
               {result && <span className={`text-sm font-medium ${result.ok ? "text-[#2f7d55]" : "text-[#8a2f2f]"}`} role="status">{result.text}</span>}
             </div>
           </div>
