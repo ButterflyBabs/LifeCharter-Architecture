@@ -7,6 +7,7 @@ import GuideSearch, { guideHitHref, rememberGuideSearch } from "@/components/use
 import { searchGuide } from "@/lib/userGuide/search";
 import { GUIDE_AREAS, type GuideEntry } from "@/lib/userGuide/types";
 import { guideCard } from "./guideStyles";
+import Glossary from "@/app/glossary/Glossary";
 
 type EntryCardData = Pick<GuideEntry, "id" | "name" | "where" | "area" | "starter">;
 
@@ -19,10 +20,12 @@ function EntryCard({ entry }: { entry: EntryCardData }) {
   );
 }
 
-export default function UserGuideHome({ entries, top, topTitle }: { entries: EntryCardData[]; top: EntryCardData[]; topTitle: string }) {
+export default function UserGuideHome({ entries, top, topTitle, withGlossary = false, embedded = false }: { entries: EntryCardData[]; top: EntryCardData[]; topTitle: string; withGlossary?: boolean; embedded?: boolean }) {
   const router = useRouter();
   const [recent, setRecent] = useState<string[]>([]);
   const [area, setArea] = useState<string | null>(null);
+  // New accounts keep the Glossary inside the User Guide (one place to look things up).
+  const [view, setView] = useState<"features" | "glossary">("features");
   useEffect(() => {
     fetch("/api/me/preferences", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
@@ -40,13 +43,24 @@ export default function UserGuideHome({ entries, top, topTitle }: { entries: Ent
   const areas = GUIDE_AREAS.filter((a) => entries.some((e) => e.area === a));
   const heading = "text-sm font-semibold uppercase tracking-[0.12em] text-[#5a6472] dark:text-[#b8c2cf]";
 
+  if (withGlossary && view === "glossary") {
+    return (
+      <div className={embedded ? "" : "px-4 py-8 sm:px-6"}>
+        <p className="mb-4"><button type="button" onClick={() => setView("features")} className="text-sm font-semibold text-[#2E7C83] hover:underline">← Back to the User Guide</button></p>
+        <Glossary />
+      </div>
+    );
+  }
   return (
-    <div className="px-4 py-8 sm:px-6">
+    <div className={embedded ? "" : "px-4 py-8 sm:px-6"}>
       <h1 className="font-serif text-3xl font-bold text-[#1a2b4a] dark:text-[#F8F5F0] sm:text-4xl">What are you looking to do today?</h1>
       <p className="mt-2 text-[#5a6472] dark:text-[#b8c2cf]">Search for it in your own words, or browse by the left menu.</p>
       <div className="mt-5 max-w-3xl">
         <GuideSearch variant="page" />
       </div>
+      {withGlossary && (
+        <p className="mt-3 text-sm text-[#5a6472] dark:text-[#b8c2cf]">Not sure what a word means? <button type="button" onClick={() => setView("glossary")} className="font-semibold text-[#2E7C83] hover:underline">Open the Glossary</button></p>
+      )}
 
       {recent.length > 0 && (
         <section className="mt-8" aria-labelledby="guide-recent">

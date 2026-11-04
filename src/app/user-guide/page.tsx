@@ -5,6 +5,7 @@ import { GUIDE_ENTRIES } from "@/lib/userGuide/entries";
 import { guideHomeList } from "@/lib/userGuide/search";
 import { createServerClient } from "@/lib/supabase/server";
 import UserGuideHome from "./UserGuideHome";
+import { startHereForCurrentAccount } from "@/lib/startHereServer";
 
 export const dynamic = "force-dynamic";
 
@@ -15,5 +16,6 @@ export default async function UserGuidePage() {
   const entries = GUIDE_ENTRIES.map(({ id, name, where, area, starter }) => ({ id, name, where, area, starter }));
   const { data } = await createServerClient().from("user_guide_opens").select("entry_id, opens").order("opens", { ascending: false }).limit(50);
   const top = guideHomeList(entries, (data ?? []) as { entry_id: string; opens: number }[]);
-  return <UserGuideHome entries={entries} topTitle={top.title} top={top.list} />;
+  const withGlossary = await startHereForCurrentAccount(); // new accounts: the Glossary lives inside the User Guide
+  return <UserGuideHome entries={entries} topTitle={top.title} top={top.list} withGlossary={withGlossary} />;
 }

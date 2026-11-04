@@ -23,6 +23,7 @@ import {
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { STARTER_GUIDE_URL, WELCOME_OVERVIEW_PATH, WELCOME_OVERVIEW_URL } from "@/lib/starterGuide";
+import { START_HERE_REPLACES } from "@/lib/startHere";
 import {
   LayoutDashboard,
   FileText,
@@ -739,12 +740,17 @@ export function CollapsibleSidebar() {
   // New clients: Getting Started sits at the TOP of the menu until every First 30 Days step is complete, then goes back to
   // wherever the account keeps it (the bottom by default). The server decides (never Babs's own account).
   const [pinGettingStarted, setPinGettingStarted] = useState(false);
+  // New accounts (and Babs's own, to review) get ONE Getting Started page instead of five menu items; existing clients keep theirs.
+  const [startHere, setStartHere] = useState(false);
   useEffect(() => {
     if (document.cookie.split("; ").some((c) => c.trim() === "lc_demo=1")) return;
     const load = () =>
       fetch("/api/first30", { cache: "no-store" })
         .then((r) => (r.ok ? r.json() : null))
-        .then((d) => setPinGettingStarted(d?.pin === true))
+        .then((d) => {
+          setPinGettingStarted(d?.pin === true);
+          setStartHere(d?.startHere === true);
+        })
         .catch(() => {});
     load();
     window.addEventListener("focus", load);
@@ -793,7 +799,7 @@ export function CollapsibleSidebar() {
     if (href === "/demo") return extras?.demo === true;
     if (assessmentsLocked) {
       const p = href.split("?")[0];
-      return p === "/setup" || p.endsWith("/starter-guide.html") || p.endsWith(WELCOME_OVERVIEW_PATH) || p === "/assessments" || p.startsWith("/assessments/brain") || p.startsWith("/assessments/soul") || p.startsWith("/assessments/profit") || p.startsWith("/settings") || p === "/glossary" || p === "/user-guide" || p === "/help" || p.startsWith("/help/");
+      return p === "/setup" || p === "/getting-started" || p.endsWith("/starter-guide.html") || p.endsWith(WELCOME_OVERVIEW_PATH) || p === "/assessments" || p.startsWith("/assessments/brain") || p.startsWith("/assessments/soul") || p.startsWith("/assessments/profit") || p.startsWith("/settings") || p === "/glossary" || p === "/user-guide" || p === "/help" || p.startsWith("/help/");
     }
     if (!features) return true;
     // A custom page can be given to a member one at a time, even with My Pages off.
@@ -825,7 +831,11 @@ export function CollapsibleSidebar() {
   // Babs's Alignment Architect pages sit in her Architect groups; a team member she shared one with sees it under My Pages.
   const myPages = customPages.filter((p) => !superAdmin || p.nav_section !== "alignment_architect").map(pageItem);
   const mySection = myPages.length ? [{ title: "MY PAGES", color: "text-[#c9a227]", items: myPages }] : [];
-  const demoOrderedSections = isDemo ? demoTourSections() : navigationSections;
+  const demoOrderedSections = isDemo
+    ? demoTourSections()
+    : startHere
+      ? navigationSections.map((s) => (s.title === "GETTING STARTED" ? { ...s, items: [{ id: "getting-started", label: "Getting Started", icon: Rocket, href: "/getting-started" }, ...s.items.filter((i) => !START_HERE_REPLACES.includes(i.id))] } : s))
+      : navigationSections;
   // The Alignment Architect section never shows while presenting the demo.
   // The TEAM section (Briefing + Support Desk) is only for a restricted member; Babs has both elsewhere.
   const teamExtra = !superAdmin && (extras?.restrict || extras?.demo) ? [teamSection] : [];
@@ -968,6 +978,7 @@ export function CollapsibleSidebar() {
     const order = [...placed, ...rest];
     // The User Guide goes first in Getting Started, even in an order saved before it existed.
     if (order.includes("user-guide") && !known.includes("user-guide")) order.unshift(...order.splice(order.indexOf("user-guide"), 1));
+    if (order.includes("getting-started") && !known.includes("getting-started")) order.unshift(...order.splice(order.indexOf("getting-started"), 1));
     return { ...s, items: order.map((id) => byId.get(id)!).filter(Boolean) };
   }).map((s) => (Object.keys(itemLabels).length ? { ...s, items: s.items.map((i) => (itemLabels[i.id] ? { ...i, label: itemLabels[i.id] } : i)) } : s));
   const GS_TITLE = "GETTING STARTED";
