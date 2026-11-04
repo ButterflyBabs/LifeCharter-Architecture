@@ -877,7 +877,8 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "health": "This does not change your scores. It gives you the right words faster, so your sales and marketing work gets done.",
     "tips": [
       "Use [brackets] in your own scripts. Anything in brackets becomes a blank to fill in.",
-      "Click a platform badge on any script to see everything for that platform."
+      "Click a platform badge on any script to see everything for that platform.",
+      "Your DM scripts are grouped under each platform (LinkedIn, Facebook, Instagram, WhatsApp, then every platform) and listed in step order, so number them in their names, for example Facebook 2 · Invite."
     ],
     "questions": [
       {
@@ -4182,7 +4183,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "steps": [
       "Open Outreach Pipelines and choose a pipeline from the row at the top, or press New pipeline.",
       "Press Add a person. For many people at once, open Add people faster.",
-      "On a card, use Choose a DM to send and pick one of your scripts.",
+      "On a card, use Choose a DM to send and pick one of your scripts. Scripts for the card's platform are listed first, in pipeline order, and the one that fits the column the card is in is suggested at the top.",
       "In the small window, fill in anything in [brackets], press Copy message and Open their profile, then paste and send it yourself.",
       "Choose where to move them under After you send it, and press I sent it.",
       "Drag a card to its next stage at any time. Its follow-up date sets itself and becomes a task."
@@ -4191,7 +4192,8 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "tips": [
       "Your scripts must be approved in Scripts & Templates to show in the Choose a DM to send menu. The DM scripts & templates button takes you there.",
       "Add an email to a card that says Not in Contacts. That puts them in Contacts and tags them.",
-      "On LinkedIn, send a connection request first and wait in Connect request sent: waiting until they accept."
+      "On LinkedIn, send a connection request first and wait in Connect request sent: waiting until they accept.",
+      "Put the step number in each DM script's name, for example LinkedIn 2 · Invite, and the scripts list in pipeline order. A script named Nurture 1, Nurture 2 and so on becomes a series for cards in Nurture: the next one is offered first, and the Suite sets the next date for you (five messages over 30 days, due on Days 0, 7, 14, 21 and 30)."
     ],
     "questions": [
       {
@@ -4201,6 +4203,10 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       {
         "q": "What does a Booked stage do?",
         "a": "Moving a card there adds the person to your Pipeline as a deal. Set which stage is Booked under Stages & settings."
+      },
+      {
+        "q": "How does a sign-up move a card to Registered?",
+        "a": "Set the pipeline's personal link (under Stages & settings) to one of your own event pages. Each person's link then carries their card, so when they register, their card moves to Registered by itself, whatever email they use."
       },
       {
         "q": "Can I have more than one pipeline?",

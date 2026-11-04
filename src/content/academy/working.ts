@@ -449,7 +449,7 @@ export const WORKING: Lesson[] = [
       },
       {
         heading: "Two script libraries",
-        text: "Scripts & Templates holds ready-to-use words for your sales and marketing. The Starter Library has 200 scripts, emails and DMs across Sales, Prospecting, Objections, Onboarding, Follow-up, Content, Nurture and Closing. They are shared examples, so press Save to My Library first to get your own copy to edit. My Library holds your own scripts and the ones you saved, private to your account. You can edit, delete and star them, press Favorites to see only your stars, and see how often you have used each one.",
+        text: "Scripts & Templates holds ready-to-use words for your sales and marketing. The Starter Library has 200 scripts, emails and DMs across Sales, Prospecting, Objections, Onboarding, Follow-up, Content, Nurture and Closing. They are shared examples, so press Save to My Library first to get your own copy to edit. My Library holds your own scripts and the ones you saved, private to your account. You can edit, delete and star them, press Favorites to see only your stars, and see how often you have used each one. DM scripts are grouped under each platform and listed in step order, so name them with the step number, for example LinkedIn 2 · Invite.",
         image: { src: "/academy/scripts.jpg", alt: "The Scripts & Templates page with My Library and Starter Library tabs, a search box, category buttons from Sales to Training, platform buttons, and a New button", caption: "Scripts & Templates. My Library is empty in this sample account." },
       },
       {

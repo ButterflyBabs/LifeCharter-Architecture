@@ -1079,7 +1079,12 @@ export const FOUNDATIONS: Lesson[] = [
       },
       {
         heading: "Scripts must be approved",
-        text: "A script must be approved in Scripts & Templates to show in the Choose a DM to send menu. The DM scripts & templates button takes you there. Under Stages & settings, fill in Personal links go to with your own page, and each person on that pipeline gets their own link. Use [their personal link] in a script and it fills in for that person.",
+        text: "A script must be approved in Scripts & Templates to show in the Choose a DM to send menu. The DM scripts & templates button takes you there. Under Stages & settings, fill in Personal links go to with your own page, and each person on that pipeline gets their own link. Use [their personal link] in a script and it fills in for that person. If that page is one of your own event pages, a person who registers through their own link moves to Registered by themselves, whatever email they use.",
+        tips: [
+          "Put the step number and platform in each DM script's name, for example LinkedIn 2 · Invite. Choose a DM to send then lists the card's platform first, in step order, and suggests the step that fits the column the card is in.",
+          "Scripts named Nurture 1, Nurture 2 and so on work as a series for cards in Nurture: the next one is offered first, and the Suite sets the next date for you (five messages, due on Days 0, 7, 14, 21 and 30).",
+          "On the Scripts & Templates page, your DM scripts are grouped under each platform and listed in step order.",
+        ],
       },
       {
         heading: "The daily DM counter",
@@ -1113,6 +1118,7 @@ export const FOUNDATIONS: Lesson[] = [
       { id: "s1-1", q: "Does the Suite send your DMs?", right: "No, you paste and send each one, then press I sent it", wrong: ["Yes, automatically", "Yes, once approved", "Only on LinkedIn"], why: "Platforms do not let any app send DMs. You send it yourself and log it with I sent it." },
       { id: "s1-2", q: "A script is missing from Choose a DM to send. Why?", right: "It has not been approved in Scripts & Templates", wrong: ["It is too long", "The person has no email", "The pipeline is full"], why: "Only approved scripts show in that menu." },
       { id: "s1-3", q: "You move a card to a Booked stage. What happens?", right: "The person is added to the Pipeline as a deal", wrong: ["An email goes out", "The card is deleted", "They get an invoice"], why: "A Booked stage adds the person to your Pipeline as a deal." },
+      { id: "s1-5", q: "How do you get a series of nurture messages offered in order?", right: "Name the scripts Nurture 1, Nurture 2 and so on", wrong: ["Tick Series on each script", "Move the card to Booked", "Ask the assistant to send them"], why: "Scripts named Nurture 1, 2 and so on are offered in order for cards in Nurture, and the Suite sets each next date." },
       { id: "s1-4", q: "You upload a list. Do those people get marketing emails?", right: "No, an upload does not add them to marketing contacts", wrong: ["Yes, right away", "Yes, after one day", "Only if they have a tag"], why: "An upload does not add anyone to marketing contacts." },
     ],
   },
