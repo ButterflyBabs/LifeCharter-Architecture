@@ -56,3 +56,11 @@ test("the three assessments stay locked until the AI key is connected", () => {
   for (const k of ["brain", "soul", "profit"]) assert.equal(withAi.find((s) => s.key === k)?.blocked, undefined);
   assert.equal(nextStep(withAi)?.key, "brain");
 });
+
+test("Week 1 opens as soon as the AI key and the three assessments are done, even before tools are connected", () => {
+  const steps = combineSteps(f30, { ai: true, brain: true, soul: true, profit: true, tools: false });
+  assert.equal(weekLocked(steps, 1), false);
+  assert.equal(nextStep(steps)?.key, "tools");
+  const partial = combineSteps(f30, { ai: true, brain: true, soul: false, profit: true, tools: true });
+  assert.equal(weekLocked(partial, 1), true);
+});

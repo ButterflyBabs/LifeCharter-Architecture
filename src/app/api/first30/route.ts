@@ -22,10 +22,10 @@ export async function GET() {
   const startHere = startHereApplies({ planId: masterPlanId, createdAt: s.startedAt, house, demo });
   let pin = !demo && s.total > 0 && s.done < s.total && !house;
   if (startHere) {
-    // The one-page Getting Started stays at the top only until SET UP is complete (AI key, the three finished
-    // assessments, one connected tool), not for 30 days. Everyone else keeps the old rule above.
+    // The one-page Getting Started stays at the top only until SET UP is complete (the AI key and the three finished
+    // assessments, the same things that open Week 1), not for 30 days. Everyone else keeps the old rule above.
     const su = await setupStatus().then((r) => r.json()).catch(() => null);
-    pin = !demo && !house && !(su?.requiredComplete || su?.bypass);
+    pin = !demo && !house && !((su?.ai?.connected && su?.assessments?.complete) || su?.bypass);
   }
   return NextResponse.json({ ...s, show: s.done < s.total && s.day <= 60, pin, startHere });
 }

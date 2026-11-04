@@ -132,7 +132,7 @@ function Days() {
             return (
               <div key={w} className="rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 opacity-60 dark:bg-[#1a2b4a]/20">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#7a8a99]">{title}</p>
-                <p className="flex items-center gap-2 py-2 text-sm text-[#7a8a99]"><Lock className="h-4 w-4" aria-hidden /> Opens once {w === 1 ? "your setup is" : `Week ${w - 1} is`} complete.</p>
+                <p className="flex items-center gap-2 py-2 text-sm text-[#7a8a99]"><Lock className="h-4 w-4" aria-hidden /> Opens once {w === 1 ? "your AI is connected and your three assessments are" : `Week ${w - 1} is`} done.</p>
               </div>
             );
           }

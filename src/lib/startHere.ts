@@ -42,8 +42,10 @@ export const WEEK_TITLES: Record<number, string> = {
 };
 
 // A week opens once the one before it is fully done.
+// Connecting tools stays on the list but does NOT hold a week back: Week 1 opens as soon as the AI key and the three
+// assessments are done (Babs, 2026-11-04).
 export function weekLocked(steps: StartStep[], week: number): boolean {
-  return week > 0 && steps.some((s) => s.week < week && !s.done);
+  return week > 0 && steps.some((s) => s.week < week && !s.done && s.key !== "tools");
 }
 
 // The three assessments need the AI key first (Babs, 2026-11-04): your assistant helps you complete them.
