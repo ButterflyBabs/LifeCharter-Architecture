@@ -1092,7 +1092,7 @@ export const FOUNDATIONS: Lesson[] = [
       },
       {
         heading: "Adding many people",
-        text: "Add people faster lets you paste a list or upload a spreadsheet. Anyone already on that pipeline is skipped. An upload does not add anyone to marketing contacts, and anyone unsubscribed or marked Do Not Contact is left out. Someone already in Contacts is linked to their card. Adding people does not use AI, and your assistant can also put people on a pipeline for you, which waits behind Approve.",
+        text: "Add people faster lets you paste a list or upload a spreadsheet. Anyone already on that pipeline is skipped, by email or by a personal profile link. Two people with different names on the same company website are both added. An upload does not add anyone to marketing contacts, and anyone unsubscribed or marked Do Not Contact is left out. Someone already in Contacts is linked to their card. Adding people does not use AI, and your assistant can also put people on a pipeline for you, which waits behind Approve.",
         steps: [
           "Press Add people faster.",
           "To paste, type or paste one person per line under Paste a list, choose They are on, and press Add to my pipeline.",

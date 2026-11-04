@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isSameCard, normProfileUrl } from "../src/lib/dmCardDuplicate";
+import { isPersonalProfileLink, isSameCard, normProfileUrl } from "../src/lib/dmCardDuplicate";
 
 const card = (o: Partial<{ name: string; profile_url: string; handle: string; platform: string }> = {}) => ({
   name: "Sam Lee", profile_url: null as string | null, handle: null as string | null, platform: "FB" as string | null, ...o,
@@ -31,4 +31,13 @@ test("a link on only one side falls back to the name", () => {
 
 test("the same handle is a repeat even under another name", () => {
   assert.ok(isSameCard(card({ handle: "@samlee" }), inc({ name: "S. Lee", handle: "samlee" })));
+});
+
+test("a shared business website is not a duplicate when the names differ: colleagues in one office are different people", () => {
+  const site = "https://www.yourcoloradoretirement.com";
+  assert.ok(!isSameCard(card({ name: "Mike Rosaasen", profile_url: site }), inc({ name: "G. Lance Ortiz", profileUrl: site })));
+  assert.ok(isSameCard(card({ name: "Mike Rosaasen", profile_url: site }), inc({ name: "mike rosaasen", profileUrl: "http://yourcoloradoretirement.com/" })), "the same name on the same site is the same person");
+  assert.ok(isSameCard(card({ name: "Sam Lee", profile_url: "https://www.linkedin.com/in/sam-lee" }), inc({ name: "Samuel Lee", profileUrl: "https://linkedin.com/in/sam-lee/" })), "a personal profile link still decides by itself");
+  assert.equal(isPersonalProfileLink("https://m.facebook.com/sam.lee"), true);
+  assert.equal(isPersonalProfileLink("https://www.co-case.org/page/924"), false);
 });

@@ -5,7 +5,7 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { upsertContact, logEvent, EMAIL_RE } from "@/lib/crm";
 import { parseList } from "@/lib/dmListParse";
-import { isSameCard, type CardKey } from "@/lib/dmCardDuplicate";
+import { isSameCard, sameLinkSamePerson, type CardKey } from "@/lib/dmCardDuplicate";
 import { landingStage } from "@/lib/dmLanding";
 import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, moveCard, createCard, dateIn, platformTag, retagContact, slugTag, shapeStage, movesForward, markDoNotContact, type Board, setFollowUp, nurtureStepOf, NURTURE_GAP_DAYS } from "@/lib/dmPipeline";
 import { mapPeople, parseCsv } from "@/lib/dmEmailList";
@@ -280,10 +280,12 @@ export async function POST(request: Request) {
     if (!stage) return NextResponse.json({ error: "Add a stage to this pipeline first." }, { status: 400 });
     const { data: existing } = await db.from("dm_cards").select("name, profile_url, platform").eq("board_id", board.id).limit(10000);
     const norm = (u: string | null | undefined) => (u ?? "").toLowerCase().replace(/^https?:\/\/(www\.|m\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, "");
-    const seenUrl = new Set<string>();
+    // A link only means "the same person" for a personal profile (LinkedIn, Facebook...). On a shared website, a different
+    // name is a different person who may work in the same office.
+    const seenLinks: { url: string; name: string }[] = [];
     const seenName = new Set<string>();
     for (const c of (existing ?? []) as { name: string | null; profile_url: string | null; platform: string | null }[]) {
-      if (c.profile_url) seenUrl.add(norm(c.profile_url));
+      if (c.profile_url) seenLinks.push({ url: c.profile_url, name: c.name ?? "" });
       seenName.add(`${(c.name ?? "").toLowerCase()}|${c.platform ?? ""}`);
     }
     let added = 0;
@@ -291,14 +293,14 @@ export async function POST(request: Request) {
     for (const r of rows) {
       const u = r.profileUrl ? norm(r.profileUrl) : "";
       const nk = `${r.name.toLowerCase()}|${platform ?? ""}`;
-      if ((u && seenUrl.has(u)) || seenName.has(nk)) {
+      if ((u && seenLinks.some((l) => sameLinkSamePerson(l.url, l.name, r.profileUrl, r.name))) || seenName.has(nk)) {
         duplicates.push(r.name);
         continue;
       }
       const made = await createCard(db, a.planId, board, stage, tz, { name: r.name, profileUrl: r.profileUrl, platform, notes: r.notes });
       if ("error" in made) continue;
       added++;
-      if (u) seenUrl.add(u);
+      if (u) seenLinks.push({ url: r.profileUrl as string, name: r.name });
       seenName.add(nk);
     }
     return NextResponse.json({ added, duplicates, skipped, stage: stage.name, boardId: board.id });
@@ -317,12 +319,14 @@ export async function POST(request: Request) {
     const stage = stages.find((s) => s.key === "to_reach") ?? stages[0];
     if (!stage) return NextResponse.json({ error: "Add a stage to this pipeline first." }, { status: 400 });
     const norm = (u: string | null | undefined) => (u ?? "").toLowerCase().replace(/^https?:\/\/(www\.|m\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, "");
-    const { data: existing } = await db.from("dm_cards").select("email, profile_url").eq("board_id", board.id).limit(20000);
+    const { data: existing } = await db.from("dm_cards").select("email, profile_url, name").eq("board_id", board.id).limit(20000);
     const haveEmail = new Set<string>();
-    const haveUrl = new Set<string>();
-    for (const c of (existing ?? []) as { email: string | null; profile_url: string | null }[]) {
+    // The same email is always the same person. The same link is too, but only for a personal profile (LinkedIn, Facebook...):
+    // two different names on one company website are two people who may work in the same office.
+    const haveLinks: { url: string; name: string }[] = [];
+    for (const c of (existing ?? []) as { email: string | null; profile_url: string | null; name: string | null }[]) {
       if (c.email) haveEmail.add(c.email.toLowerCase());
-      if (c.profile_url) haveUrl.add(norm(c.profile_url));
+      if (c.profile_url) haveLinks.push({ url: c.profile_url, name: c.name ?? "" });
     }
     const contactBy = new Map<string, { id: string; stop: boolean }>();
     const emails = rows.map((r) => r.email).filter(Boolean) as string[];
@@ -338,7 +342,7 @@ export async function POST(request: Request) {
     const linked: string[] = [];
     for (const r of rows) {
       const u = r.profileUrl ? norm(r.profileUrl) : "";
-      if ((r.email && haveEmail.has(r.email)) || (u && haveUrl.has(u))) {
+      if ((r.email && haveEmail.has(r.email)) || (u && haveLinks.some((l) => sameLinkSamePerson(l.url, l.name, r.profileUrl, r.name)))) {
         duplicates++;
         continue;
       }
@@ -348,7 +352,7 @@ export async function POST(request: Request) {
         continue;
       }
       if (r.email) haveEmail.add(r.email);
-      if (u) haveUrl.add(u);
+      if (u) haveLinks.push({ url: r.profileUrl as string, name: r.name });
       if (known) linked.push(known.id);
       toAdd.push({ master_plan_id: a.planId, board_id: board.id, stage_id: stage.id, contact_id: known?.id ?? null, name: r.name, email: r.email, profile_url: r.profileUrl, platform, notes: r.notes, link_code: code(), stage_changed_at: now });
     }

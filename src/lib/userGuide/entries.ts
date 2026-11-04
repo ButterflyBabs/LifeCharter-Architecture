@@ -5032,7 +5032,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "questions": [
       {
         "q": "Will I get the same person twice?",
-        "a": "Anyone already on that pipeline is skipped. For a paste, that means the same profile link, or the same name on the same platform. For an upload, it means the same email or profile link. Adding one person at a time also refuses a repeat."
+        "a": "Anyone already on that pipeline is skipped. For a paste, that means the same profile link, or the same name on the same platform. For an upload, it means the same email or profile link. A link only counts for a personal profile such as LinkedIn or Facebook: two people with different names on the same company website are both added, since they may work in the same office. Adding one person at a time also refuses a repeat."
       },
       {
         "q": "Do people I upload get my marketing emails?",
