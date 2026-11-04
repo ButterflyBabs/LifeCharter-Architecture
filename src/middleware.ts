@@ -32,6 +32,7 @@ const PUBLIC_APIS = [
   "/api/pay/", // an offer's pay page (GST/HST accounts): pick where you are, then on to Stripe Checkout
   "/api/e/", // public event pages (task 1149): sign-up, calendar file, a registrant's challenge page (their private link is the key)
   "/api/cron/events", // secured by its own CRON_SECRET check, not a session
+  "/api/cron/event-attendance", // secured by its own CRON_SECRET check (or the owner's dry run), not a session
   "/api/portal", // a client's private portal (task 1147): the unguessable link is the key; writes are origin-checked and limited to that client
   "/api/support/intake", // LC Fledge support requests; checked with the person's own Supabase sign-in token, not a Suite session
   "/api/stripe-connect/webhook", // events from clients' connected Stripe accounts; each event is fetched back from Stripe, not trusted from the body

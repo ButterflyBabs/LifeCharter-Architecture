@@ -29,6 +29,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/event-attendance",
+      "schedule": "*/20 * * * *"
+    },
+    {
       "path": "/api/cron/masterclass-zoom-sync",
       "schedule": "*/5 * * * *"
     },

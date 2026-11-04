@@ -122,7 +122,9 @@ export async function register(db: Db, e: EventRow, input: { email: string; firs
   if (e.kind === "challenge") {
     // Their personal link (lccommandsuite.com/m/<code>) names the outreach card, so the right card moves even when it has no email yet.
     const code = (input.cardCode || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 24);
-    const { data: viaLink } = code ? await db.from("dm_cards").select("id").eq("master_plan_id", e.master_plan_id).eq("link_code", code).maybeSingle() : { data: null };
+    const { data: viaLink } = code ? await db.from("dm_cards").select("id, contact_id, email").eq("master_plan_id", e.master_plan_id).eq("link_code", code).maybeSingle() : { data: null };
+    // Tie the card to this contact (whatever email they used) so attendance can move it later.
+    if (viaLink && contact) await db.from("dm_cards").update({ contact_id: (viaLink.contact_id as string | null) ?? contact.id, email: (viaLink.email as string | null) ?? email }).eq("id", viaLink.id as string);
     await advanceCards(db, e.master_plan_id, { contactId: contact?.id ?? null, email, cardId: (viaLink?.id as string | undefined) ?? null }, "registered").catch((x) => console.error("event card move:", x));
   }
   await sendConfirmation(db, e, { email, first_name: firstName, timezone: tz, token }).catch((x) => console.error("event confirmation:", x));
