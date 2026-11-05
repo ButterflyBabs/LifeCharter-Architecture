@@ -15,7 +15,7 @@ const MAX_PER_SENDER_PER_RUN = 2;
 
 type Settings = { master_plan_id: string; board_id: string | null; enabled: boolean; steps: ColdStep[]; tz: string; window_start: number; window_end: number; weekdays_only: boolean; booking_url?: string | null; footer: string | null; started_on: string | null };
 type Sender = { id: string; master_plan_id: string; account_key: string; email: string | null; daily_cap: number; paused: boolean; fail_count: number; created_at?: string; send_as?: string | null };
-type CardRow = { id: string; board_id: string; stage_id: string; name: string; email: string | null; notes: string | null; link_code: string | null };
+type CardRow = { id: string; board_id: string; stage_id: string; name: string; email: string | null; notes: string | null; link_code: string | null; card_tags?: string[] | null };
 
 export async function coldEmailSwitchOn(db: Db): Promise<boolean> {
   const { data } = await db.from("app_settings").select("value").eq("key", "cold_email_on").maybeSingle();
@@ -127,7 +127,7 @@ async function sendDue(db: Db, s: Settings, senders: Sender[], ownerId: string, 
   if (!stageIds.length || !senders.length) return { ...out, skipped: "no mailbox or no stages" };
   const cards: CardRow[] = [];
   for (let from = 0; ; from += 1000) {
-    const { data } = await db.from("dm_cards").select("id, board_id, stage_id, name, email, notes, link_code").eq("master_plan_id", s.master_plan_id).eq("board_id", s.board_id).in("stage_id", stageIds).not("email", "is", null).order("created_at").order("id").range(from, from + 999);
+    const { data } = await db.from("dm_cards").select("id, board_id, stage_id, name, email, notes, link_code, card_tags").eq("master_plan_id", s.master_plan_id).eq("board_id", s.board_id).in("stage_id", stageIds).not("email", "is", null).order("created_at").order("id").range(from, from + 999);
     const part = (data ?? []) as CardRow[];
     cards.push(...part);
     if (part.length < 1000) break;
@@ -153,7 +153,9 @@ async function sendDue(db: Db, s: Settings, senders: Sender[], ownerId: string, 
     const step = dueStep(sendsBy.get(c.id) ?? [], steps, now, s.tz);
     if (step !== null) due.push({ card: c, step });
   }
-  due.sort((a, b) => b.step - a.step); // finish people already started before beginning new ones
+  // Finish people already started before beginning new ones; within a step, cards tagged send-first (the best fit for the event) go ahead of the rest.
+  const first = (c: CardRow) => ((c.card_tags ?? []).includes("send-first") ? 1 : 0);
+  due.sort((a, b) => b.step - a.step || first(b.card) - first(a.card));
   if (!due.length) return out;
 
   const { ymd, hour } = localParts(now, s.tz);

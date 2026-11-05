@@ -988,7 +988,84 @@ function OutreachOverview({ refreshKey }: { refreshKey: string }) {
 type SenderRow = { id: string; account_key: string; email: string | null; daily_cap: number; paused: boolean; last_error: string | null; scanned_at: string | null; sentToday: number; todayCap: number };
 type ColdData = { house: boolean; bookingUrl: string; personalLinkUrl: string; boardId: string | null; globalOn: boolean; enabled: boolean; steps: { day: number; subject: string; body: string }[]; windowStart: number; windowEnd: number; weekdaysOnly: boolean; footer: string; startedOn: string | null; senders: SenderRow[]; connections: { accountKey: string; email: string | null; canReadMail: boolean }[]; sentTotal: number };
 
+type VariantRow = { variant: string; people: number; emails_sent: number; replies: number; stops: number; registered: number; attended: number };
+
+// Which wording (A, B, C, D) of the cold series is working, best to least: sign-ups first, then replies, then fewest "no thanks".
+function ColdVariantResults() {
+  const [rows, setRows] = useState<VariantRow[] | null>(null);
+  const [names, setNames] = useState<Record<string, string>>({});
+  const [event, setEvent] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    const load = async () => {
+      const r = await fetch("/api/cold-email/variants", { cache: "no-store" }).catch(() => null);
+      if (!r || !r.ok || !live) return;
+      const x = await r.json();
+      setRows(x.variants ?? []);
+      setNames(x.names ?? {});
+      setEvent(x.event ?? null);
+    };
+    void load();
+    const t = setInterval(load, 120000);
+    return () => {
+      live = false;
+      clearInterval(t);
+    };
+  }, []);
+  if (!rows || rows.length === 0) return null;
+  const pct = (n: number, d: number) => (d ? `${((n / d) * 100).toFixed(1)}%` : "0%");
+  const ranked = [...rows].sort((a, b) => b.registered / Math.max(1, b.people) - a.registered / Math.max(1, a.people) || b.replies / Math.max(1, b.people) - a.replies / Math.max(1, a.people) || a.stops / Math.max(1, a.people) - b.stops / Math.max(1, b.people));
+  const small = ranked.some((r) => r.people < 100);
+  return (
+    <div className={CARD_CLS + " mb-4"}>
+      <p className={HEAD_CLS}>Which wording is working{event ? ` (${event.replace(/-/g, " ")})` : ""}</p>
+      <p className={TXT_CLS}>Best to least. Each person got one letter for all three emails. Sign-ups count people who registered with the same email or through their personal link; attended fills in from the first day.</p>
+      <div className="mt-2 overflow-x-auto">
+        <table className="w-full text-left text-sm tabular-nums">
+          <thead>
+            <tr className="text-xs text-[#5a6472]">
+              <th className="py-1 pr-3 font-medium">#</th>
+              <th className="py-1 pr-3 font-medium">Wording</th>
+              <th className="py-1 pr-3 font-medium">Emailed</th>
+              <th className="py-1 pr-3 font-medium">Replies</th>
+              <th className="py-1 pr-3 font-medium">No thanks</th>
+              <th className="py-1 pr-3 font-medium">Sign-ups</th>
+              <th className="py-1 font-medium">Attended</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ranked.map((r, i) => (
+              <tr key={r.variant} className="border-t border-[#1a2b4a]/10">
+                <td className="py-1.5 pr-3 text-[#5a6472]">{i + 1}</td>
+                <td className="py-1.5 pr-3 font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">
+                  {r.variant}
+                  {names[r.variant] ? <span className="ml-2 font-normal text-[#5a6472]">{names[r.variant]}</span> : null}
+                </td>
+                <td className="py-1.5 pr-3">{r.people}</td>
+                <td className="py-1.5 pr-3">{r.replies} <span className="text-xs text-[#5a6472]">({pct(r.replies, r.people)})</span></td>
+                <td className="py-1.5 pr-3">{r.stops} <span className="text-xs text-[#5a6472]">({pct(r.stops, r.people)})</span></td>
+                <td className="py-1.5 pr-3 font-medium">{r.registered} <span className="text-xs font-normal text-[#5a6472]">({pct(r.registered, r.people)})</span></td>
+                <td className="py-1.5">{r.attended}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {small && <p className={TXT_CLS + " mt-2"}>Early days: some letters have fewer than 100 people, so small gaps can be luck. Wait for about 100 per letter before calling a winner.</p>}
+    </div>
+  );
+}
+
 function ColdEmailSender({ boardId }: { boardId: string | null }) {
+  return (
+    <>
+      <ColdVariantResults />
+      <ColdEmailSenderCard boardId={boardId} />
+    </>
+  );
+}
+
+function ColdEmailSenderCard({ boardId }: { boardId: string | null }) {
   const [d, setD] = useState<ColdData | null>(null);
   const [open, setOpen] = useState(false);
   const [steps, setSteps] = useState<ColdData["steps"]>([]);
