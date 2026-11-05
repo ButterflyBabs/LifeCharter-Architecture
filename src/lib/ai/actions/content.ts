@@ -2,6 +2,8 @@ import type { ActionTool } from "./types";
 import { getClientKey, createPost, deletePost, PLATFORMS } from "@/lib/postStream";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { zonedToUtcISO } from "@/lib/tz";
+import { fledgeForMe, createFledgeDrafts, deleteFledgeDrafts } from "@/lib/fledge";
+import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const isDay = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);
@@ -51,6 +53,21 @@ export const createContentPosts: ActionTool = {
     required: ["posts"],
   },
   plan: async (args) => {
+    // AmiLynne posts through LC Fledge: these go in as drafts there, never scheduled.
+    if (await fledgeForMe()) {
+      const mine = postsOf(args.posts);
+      if (!mine.length) return { error: "I need at least one post with a title, text and a platform." };
+      return {
+        preview: {
+          title: `Add ${mine.length} draft${mine.length === 1 ? "" : "s"} to LC Fledge`,
+          lines: [
+            ...mine.slice(0, 10).map((p) => `${p.date ? `Planned ${p.date} ${p.time}` : "Draft"} · ${p.platforms.join(", ")} · ${p.title}: ${p.caption.slice(0, 70)}${p.caption.length > 70 ? "…" : ""}`),
+            ...(mine.length > 10 ? [`…and ${mine.length - 10} more`] : []),
+            "They are saved as drafts only. Nothing is scheduled or published until you do that in Fledge.",
+          ],
+        },
+      };
+    }
     if (!(await getClientKey())) return { error: "Their content calendar isn't connected yet (PostStream in Settings → Integrations). I can write the posts here in chat instead." };
     const posts = postsOf(args.posts);
     if (!posts.length) return { error: "I need at least one post with a title, text and a platform." };
@@ -67,6 +84,17 @@ export const createContentPosts: ActionTool = {
     };
   },
   run: async (args) => {
+    if (await fledgeForMe()) {
+      const tzMe = await resolveUserTimeZone(null);
+      const masterPlanId = await resolveMasterPlanId();
+      if (!masterPlanId) throw new Error("Not signed in.");
+      const ids = await createFledgeDrafts(
+        masterPlanId,
+        postsOf(args.posts).map((p) => ({ title: p.title, caption: p.caption, platforms: p.platforms, scheduledAt: p.date ? zonedToUtcISO(p.date, p.time, tzMe) : null, tags: p.tags })),
+      );
+      if (!ids.length) throw new Error("None of the posts saved to LC Fledge.");
+      return { summary: `Added ${ids.length} draft${ids.length === 1 ? "" : "s"} to LC Fledge.`, result: { count: ids.length }, undo: { ids, fledge: true } };
+    }
     const key = await getClientKey();
     if (!key) throw new Error("Content calendar isn't connected.");
     const tz = await resolveUserTimeZone(null);
@@ -91,6 +119,10 @@ export const createContentPosts: ActionTool = {
     return { summary: `Added ${made.length} post${made.length === 1 ? "" : "s"} to your Content Calendar.`, result: { count: made.length }, undo: { ids: made } };
   },
   undo: async (u) => {
+    if (u.fledge) {
+      const n = await deleteFledgeDrafts((u.ids as string[]) ?? []);
+      return `Removed ${n} draft${n === 1 ? "" : "s"} from LC Fledge.`;
+    }
     const key = await getClientKey();
     if (!key) return "Couldn't reach the content calendar.";
     let n = 0;
