@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { canCallNoShows, matchAttendance, mergeParticipants, sessionOver } from "../src/lib/eventAttendanceLogic";
+import { canCallNoShows, followUpKeyFor, matchAttendance, mergeParticipants, noShowsReliableFor, sessionOver } from "../src/lib/eventAttendanceLogic";
 
 const regs = [
   { id: "r1", email: "ana@x.com", firstName: "Ana", lastName: "Lopez" },
@@ -55,4 +55,22 @@ test("a session is judged only after it has been over for ten minutes", () => {
   const start = "2026-11-16T22:00:00Z";
   assert.equal(sessionOver(start, 120, Date.parse("2026-11-17T00:05:00Z")), false);
   assert.equal(sessionOver(start, 120, Date.parse("2026-11-17T00:11:00Z")), true);
+});
+
+test("attendees get the main series; no-shows get their own only when attendance was reliable, otherwise they are held", () => {
+  const k = { followUpKey: "main", missedKey: "missed" };
+  assert.equal(followUpKeyFor({ attended: true, ...k, noShowsReliable: false }), "main");
+  assert.equal(followUpKeyFor({ attended: false, ...k, noShowsReliable: true }), "missed");
+  assert.equal(followUpKeyFor({ attended: false, ...k, noShowsReliable: false }), null);
+  // An event with no separate no-show series behaves as before: everyone gets the one series.
+  assert.equal(followUpKeyFor({ attended: false, followUpKey: "main", missedKey: null, noShowsReliable: false }), "main");
+});
+
+test("no-shows are called with confidence only when every day's report could call them", () => {
+  const ok = JSON.stringify({ noShowsMoved: true });
+  const bad = JSON.stringify({ noShowsMoved: false });
+  assert.equal(noShowsReliableFor([ok, ok, ok], 3), true);
+  assert.equal(noShowsReliableFor([ok, ok], 3), false);
+  assert.equal(noShowsReliableFor([ok, bad, ok], 3), false);
+  assert.equal(noShowsReliableFor(["not json", ok, ok], 3), false);
 });

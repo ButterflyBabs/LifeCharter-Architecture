@@ -69,3 +69,20 @@ export function canCallNoShows(m: Matched): boolean {
 export function sessionOver(startIso: string, durationMin: number, now = Date.now()): boolean {
   return Date.parse(startIso) + (durationMin + 10) * 60_000 <= now;
 }
+
+/**
+ * Which follow-up series a registered person starts when a workshop ends. Someone who showed up always gets the main series.
+ * When the event has no separate no-show series, everyone gets the main one (as before). When it has one, a person who did not
+ * show up is moved to it only if Zoom's attendance was reliable for every session; otherwise they are held (null) until it is.
+ */
+export function followUpKeyFor(a: { attended: boolean; followUpKey: string | null; missedKey: string | null; noShowsReliable: boolean }): string | null {
+  if (a.attended) return a.followUpKey;
+  if (!a.missedKey) return a.followUpKey;
+  return a.noShowsReliable ? a.missedKey : null;
+}
+
+/** Were no-shows called with confidence for every day of the workshop? (one saved attendance report per session, each reliable) */
+export function noShowsReliableFor(reportsJson: string[], days: number): boolean {
+  const reports = reportsJson.map((j) => { try { return JSON.parse(j) as { noShowsMoved?: boolean }; } catch { return null; } }).filter(Boolean) as { noShowsMoved?: boolean }[];
+  return reports.length >= Math.max(1, days) && reports.every((r) => r.noShowsMoved === true);
+}

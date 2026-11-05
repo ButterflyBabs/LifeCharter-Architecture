@@ -8,6 +8,7 @@ import { enrolContact, isValidTz } from "@/lib/sequences/engine";
 import { brandFor } from "@/lib/portal";
 import { dayInTz } from "@/lib/tz";
 import { toE164 } from "@/lib/sms";
+import { followUpKeyFor, noShowsReliableFor } from "@/lib/eventAttendanceLogic";
 import { sendSms } from "@/lib/smsServer";
 import { eventConsentText, eventTextBody } from "@/lib/workshopTexts";
 
@@ -25,6 +26,7 @@ export interface EventRow {
   id: string; master_plan_id: string; kind: "live" | "challenge"; slug: string; title: string; subtitle: string | null; description: string | null;
   host_name: string | null; accent: string | null; starts_at: string | null; duration_min: number; timezone: string; join_url: string | null;
   days: number | null; starts_on: string | null; send_hour: number; capacity: number | null; tags: string[]; follow_up_key: string | null;
+  follow_up_missed_key?: string | null; replay_attendees_only?: boolean | null;
   replay_url: string | null; replay_hours: number | null; replay_sent_at: string | null; status: "draft" | "published" | "ended";
 }
 export interface RegRow {
@@ -179,11 +181,13 @@ export async function sendReplay(db: Db, e: EventRow): Promise<number> {
   if (!e.replay_url) throw new Error("Add the replay link first.");
   const { who, brand } = await mailer(db, e.master_plan_id);
   if (!who.ok) throw new Error(who.reason || "Set up email sending first (Contacts › Email sending).");
-  const { data: regs } = await db.from("event_registrations").select("*").eq("event_id", e.id).is("replay_sent_at", null);
+  const { data: allRegs } = await db.from("event_registrations").select("*").eq("event_id", e.id).is("replay_sent_at", null);
+  // A workshop can keep its replay for the people who showed up (replay_attendees_only): everyone else is left alone here.
+  const regs = ((allRegs ?? []) as RegRow[]).filter((r) => !e.replay_attendees_only || r.attended);
   const now = new Date().toISOString();
   await db.from("events").update({ replay_sent_at: e.replay_sent_at ?? now, updated_at: now }).eq("id", e.id);
   let n = 0;
-  for (const r of (regs ?? []) as RegRow[]) {
+  for (const r of regs) {
     const expiry = e.replay_hours ? ` It's available for ${e.replay_hours} hours.` : "";
     await sendMail(who, {
       to: r.email, fromName: e.host_name || brand.name,
@@ -238,6 +242,7 @@ export async function runEvents(db: Db): Promise<Record<string, number>> {
         if (localHour(e.timezone) >= e.send_hour) {
           const { data: days } = await db.from("event_days").select("day, title, body, action").eq("event_id", e.id);
           const byDay = new Map(((days ?? []) as { day: number; title: string; body: string | null; action: string | null }[]).map((d) => [d.day, d]));
+          let reliable: boolean | null = null;
           for (const r of list) {
             const n = challengeDay(r.challenge_start || startFor(e, new Date().toISOString()), today);
             if (n >= 1 && n <= e.days && n > r.last_day_sent) {
@@ -261,9 +266,15 @@ export async function runEvents(db: Db): Promise<Record<string, number>> {
             }
             // The challenge is over: start the follow-up campaign once.
             if (n > e.days && e.follow_up_key && !r.replay_sent_at) {
-              await enrolContact({ masterPlanId: e.master_plan_id, sequenceKey: e.follow_up_key, email: r.email, firstName: r.first_name, source: `event:${e.slug}` }).catch(() => null);
-              await db.from("event_registrations").update({ replay_sent_at: new Date().toISOString() }).eq("id", r.id);
-              out.followUps++;
+              // People who showed up start the main series; people who did not start the no-show series, but only once Zoom's
+              // attendance was reliable for every day (otherwise they are held, and Babs is told once).
+              if (reliable === null) reliable = await noShowsReliable(db, e);
+              const key = followUpKeyFor({ attended: Boolean(r.attended), followUpKey: e.follow_up_key, missedKey: e.follow_up_missed_key ?? null, noShowsReliable: reliable });
+              if (key) {
+                await enrolContact({ masterPlanId: e.master_plan_id, sequenceKey: key, email: r.email, firstName: r.first_name, source: `event:${e.slug}` }).catch(() => null);
+                await db.from("event_registrations").update({ replay_sent_at: new Date().toISOString() }).eq("id", r.id);
+                out.followUps++;
+              } else await holdNoShows(db, e);
             }
           }
         }
@@ -285,4 +296,20 @@ export async function runEvents(db: Db): Promise<Record<string, number>> {
     }
   }
   return out;
+}
+
+
+// Zoom's attendance for a workshop was reliable for every day: one saved report per session (see eventAttendance.ts), each able to call no-shows.
+async function noShowsReliable(db: Db, e: EventRow): Promise<boolean> {
+  const { data } = await db.from("app_settings").select("value").like("key", `event-attendance:${e.id}:%`);
+  return noShowsReliableFor(((data ?? []) as { value: unknown }[]).map((x) => (typeof x.value === "string" ? x.value : JSON.stringify(x.value))), e.days ?? 1);
+}
+
+// Told once per event that the no-show series is waiting because Zoom could not confirm who was absent.
+async function holdNoShows(db: Db, e: EventRow) {
+  const key = `event-noshow-held:${e.id}`;
+  const { data: done } = await db.from("app_settings").select("key").eq("key", key).maybeSingle();
+  if (done) return;
+  await db.from("app_settings").upsert({ key, value: "true" });
+  await db.from("reminders").insert({ master_plan_id: e.master_plan_id, title: `${e.title}: no-show series is on hold`, notes: "Zoom could not confirm who was absent for every day (some guests had no email or joined under another name), so nobody who did not show up has been sent the no-show series yet. Check the attendance notes for each day, mark anyone who did attend, and tell Claude to release the series.", remind_at: new Date().toISOString() });
 }
