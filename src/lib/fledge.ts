@@ -52,6 +52,7 @@ export async function fledgeRemainingToday(masterPlanId: string, tz: string): Pr
     .from("beacon_posts")
     .select("scheduled_at")
     .eq("workspace_id", ws)
+    .is("hidden_at", null)
     .in("status", ["draft", "scheduled"])
     .gte("scheduled_at", from)
     .lte("scheduled_at", to)
