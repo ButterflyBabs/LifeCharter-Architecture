@@ -337,6 +337,17 @@ function Editor({ page, data, urls, onBack, onChanged }: { page: Page; data: Dat
             <Field label="Web address" help={`${SUITE}/go/${slug}${data.domain ? ` and https://${data.domain}/${slug}` : ""}`}>
               <input className={input} value={slug} onChange={(e) => { setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-")); setDirty(true); }} />
             </Field>
+            {t === "links" && (
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="font-medium">Your photo</span>
+              <label className={`${btn} cursor-pointer`}>
+                {busy === "image" ? "Uploading…" : img ? "Replace" : "Add an image"}
+                <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(e) => upload(e.target.files?.[0] ?? null)} />
+              </label>
+              {img && <button className={btn} onClick={() => upload(null, true)}>Remove</button>}
+              <span className="text-xs text-muted-foreground">PNG, JPG, WebP or GIF, up to 5 MB.</span>
+            </div>
+            )}
             {t === "optin" && (
               <Field label="Sign-up form" help="Sign-ups go through this form: its tags and campaign apply. Make or change forms in Contacts > Forms.">
                 <select className={input} value={link.formId} onChange={(e) => setL({ formId: e.target.value })}>
@@ -522,16 +533,16 @@ function Editor({ page, data, urls, onBack, onChanged }: { page: Page; data: Dat
                 </select>
               </Field>
             </div>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={look.showLogo} onChange={(e) => { setLook({ ...look, showLogo: e.target.checked }); setDirty(true); }} /> {t === "links" ? "Use my business logo when I have no photo" : "Show my business name and logo at the top"}</label>
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="font-medium">{t === "links" ? "Your photo" : "Main image"}</span>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={look.showLogo} onChange={(e) => { setLook({ ...look, showLogo: e.target.checked }); setDirty(true); }} /> {page.template === "links" ? "Use my business logo when I have no photo" : "Show my business name and logo at the top"}</label>
+            {t !== "links" && (<div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="font-medium">Main image</span>
               <label className={`${btn} cursor-pointer`}>
                 {busy === "image" ? "Uploading…" : img ? "Replace" : "Add an image"}
                 <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(e) => upload(e.target.files?.[0] ?? null)} />
               </label>
               {img && <button className={btn} onClick={() => upload(null, true)}>Remove</button>}
               <span className="text-xs text-muted-foreground">PNG, JPG, WebP or GIF, up to 5 MB.</span>
-            </div>
+            </div>)}
           </section>
 
           <section className="space-y-3 rounded-2xl border border-border p-4">
