@@ -4,6 +4,7 @@ import { resolveMasterPlanId } from "@/lib/scoring/masterPlan";
 import { dayWindowUtc, dayInTz } from "@/lib/tz";
 import { publishedPostCounts } from "@/lib/social/postCounts";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
+import { fledgeForMe, fledgeRemainingToday } from "@/lib/fledge";
 
 export const dynamic = "force-dynamic";
 
@@ -83,8 +84,13 @@ export async function GET(request: Request) {
       });
     }
     // Still to go: planned for today but not posted (an idea isn't planned yet).
-    for (const p of (posts || []) as { status: string }[]) {
-      if (p.status === "draft" || p.status === "scheduled") postsRemaining += 1;
+    // Babs plans in LC Fledge, so her "still to go" comes from there.
+    if (await fledgeForMe()) {
+      postsRemaining = await fledgeRemainingToday(masterPlanId, tz);
+    } else {
+      for (const p of (posts || []) as { status: string }[]) {
+        if (p.status === "draft" || p.status === "scheduled") postsRemaining += 1;
+      }
     }
     // Posted: Social Planner posts plus posts published only in PostStream.
     postsPosted = postCounts.byDay.get(today) ?? 0;

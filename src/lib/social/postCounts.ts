@@ -1,6 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { getClientKey, listPosts } from "@/lib/postStream";
 import { dayInTz } from "@/lib/tz";
+import { fledgeForMe, fledgePublishedCounts } from "@/lib/fledge";
 
 // How many posts the client actually published each day, reconciling the two
 // places posts live:
@@ -25,6 +26,13 @@ export async function publishedPostCounts(masterPlanId: string, tz: string, sinc
   const byDay = new Map<string, number>();
   const fromPostStream = new Map<string, number>();
   const bump = (m: Map<string, number>, day: string, n = 1) => m.set(day, (m.get(day) ?? 0) + n);
+
+  // Babs posts through LC Fledge, not PostStream: count what Fledge sent, one per platform it reached.
+  if (await fledgeForMe()) {
+    const fledge = await fledgePublishedCounts(masterPlanId, tz, sinceDay);
+    fledge.forEach((n, day) => bump(byDay, day, n));
+    return { byDay, fromPostStream, postStreamChecked: false };
+  }
 
   const { data } = await createServerClient()
     .from("social_posts")
