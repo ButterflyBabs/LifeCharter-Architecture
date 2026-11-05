@@ -1137,7 +1137,7 @@ export const ADVANCED: Lesson[] = [
       },
       {
         heading: "Landing pages",
-        text: "Open Landing Pages from the left menu, under Marketing. They are simple branded pages built on your own forms, events, offers and booking pages. Each page counts its visits and how many people took action. The four templates are Opt-in, which uses a form and counts sign-ups; Webinar or event, which registers people for one of your Events and counts registrations; Sales page, which sends buyers to your payment link and counts Buy clicks; and Book a call, which shows your open times on the page and counts bookings. Paid booking pages show a button instead. Sign-ups on an Opt-in page get that form's tags and campaign.",
+        text: "Open Landing Pages from the left menu, under Marketing. They are simple branded pages built on your own forms, events, offers and booking pages. Each page counts its visits and how many people took action. The five templates are Opt-in, which uses a form and counts sign-ups; Webinar or event, which registers people for one of your Events and counts registrations; Sales page, which sends buyers to your payment link and counts Buy clicks; Book a call, which shows your open times on the page and counts bookings; and Link page, a page of buttons for your Instagram, Facebook or LinkedIn bio that counts the taps on each button. Paid booking pages show a button instead. Sign-ups on an Opt-in page get that form's tags and campaign.",
         steps: [
           "Type a Page name if you like, then press a template under Make a new page.",
           "Under Basics, choose the form, event, offer or booking page it uses.",
@@ -1146,11 +1146,11 @@ export const ADVANCED: Lesson[] = [
           "Press Preview to check it, then press Publish.",
           "Back on All landing pages, press Copy beside the link and share it.",
         ],
-        image: { src: "/academy/landing-pages.jpg", alt: "The Landing Pages page with a Make a new page area holding four templates called Opt-in, Webinar or event, Sales page and Book a call, and a Your pages area saying No pages yet", caption: "Pick a template to start. This is a sample account." },
+        image: { src: "/academy/landing-pages.jpg", alt: "The Landing Pages page with a Make a new page area holding five templates called Opt-in, Webinar or event, Sales page, Book a call and Link page, and a Your pages area saying No pages yet", caption: "Pick a template to start. This is a sample account." },
       },
       {
         heading: "Reading a landing page",
-        text: "Each page shows visits, what it counts and your rate, for the last 30 days and all time. It counts sign-ups, registrations, Buy clicks or bookings, depending on the template. If a page says something is missing, each template needs its piece: a form, an event, an offer with a payment link or a pasted Buy link, or a booking page. Choose it under Basics.",
+        text: "Each page shows visits, what it counts and your rate, for the last 30 days and all time. It counts sign-ups, registrations, Buy clicks, bookings or taps, depending on the template. A Link page also shows the taps on each button, kept by the button's words, so changing the words starts that button's count again from zero. If a page says something is missing, each template needs its piece: a form, an event, an offer with a payment link or a pasted Buy link, a booking page, or at least one button on a Link page. Choose or add it under Basics or Buttons.",
       },
       {
         heading: "Links & Forms",

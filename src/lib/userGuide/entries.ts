@@ -13649,7 +13649,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "area": "Marketing",
     "where": "Marketing > Landing Pages",
     "href": "/landing-pages",
-    "what": "Simple branded pages built on your own forms, events, offers and booking pages. Pick a template, fill in the words with a live preview, and publish. Each page counts its visits and how many people took action.",
+    "what": "Simple branded pages built on your own forms, events, offers and booking pages, plus a Link page: one page of buttons for your Instagram, Facebook or LinkedIn bio. Pick a template, fill in the words with a live preview, and publish. Each page counts its visits and how many people took action.",
     "ai": "Has an AI button",
     "aiNote": "Draft the words has your assistant write from your form, event, offer or booking page and your notes, using your own AI key. Nothing changes until you press Use on a part or Use all, then Save. It never makes up results or testimonials. Your chat assistant can also draft a page behind Approve, but you press Publish yourself.",
     "steps": [
@@ -13664,12 +13664,21 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "tips": [
       "Running Facebook or Instagram ads? Paste your Meta pixel ID under Ads tracking.",
       "Press Duplicate to start a new page from one that works.",
-      "If you have a verified short-link domain, your page also opens on your own domain."
+      "If you have a verified short-link domain, your page also opens on your own domain.",
+      "For a bio link, make a Link page: add your photo, your name, one line and a button for each place you want people to go. Put its address in your Instagram, Facebook or LinkedIn bio."
     ],
     "questions": [
       {
         "q": "Why does my page say something is missing?",
-        "a": "Each template needs its piece: a form, an event, an offer with a payment link or a pasted Buy link, or a booking page. Choose it under Basics."
+        "a": "Each template needs its piece: a form, an event, an offer with a payment link or a pasted Buy link, a booking page, or at least one button on a Link page. Choose or add it under Basics or Buttons."
+      },
+      {
+        "q": "How do I make a page for my Instagram bio?",
+        "a": "Press Link page under Make a new page. Add your photo, your name and one line, then add a button for each link, with the words and the address. The first button is your main one. Press Publish, press Copy, and paste the address in your Instagram bio. Each tap is counted per button."
+      },
+      {
+        "q": "Why did a button's taps start again from zero?",
+        "a": "Taps are kept by the button's words. If you change the words, the new words start at zero. Change the address instead if you want to keep the count."
       },
       {
         "q": "What does Unpublish do?",
@@ -13691,6 +13700,9 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "who": "Everyone. Team members need the Contacts area.",
     "keywords": [
       "landing page",
+      "link in bio",
+      "bio link",
+      "link page",
       "sales page",
       "opt in page",
       "freebie page",
@@ -13705,8 +13717,8 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "sections": [
       {
         "id": "landing-templates",
-        "title": "The four templates",
-        "body": "Opt-in uses a form, and sign-ups get that form's tags and campaign. Webinar or event registers people for one of your Events. Sales page sends buyers to your payment link. Book a call shows your open times on the page. Paid booking pages show a button instead.",
+        "title": "The five templates",
+        "body": "Opt-in uses a form, and sign-ups get that form's tags and campaign. Webinar or event registers people for one of your Events. Sales page sends buyers to your payment link. Book a call shows your open times on the page. Paid booking pages show a button instead. Link page is a page of buttons for your bio, and every tap on a button is counted.",
         "keywords": [
           "opt-in",
           "webinar",
@@ -13718,7 +13730,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       {
         "id": "landing-numbers",
         "title": "Visits and rate",
-        "body": "Each page shows visits, what it counts (sign-ups, registrations, Buy clicks or bookings) and your rate, for the last 30 days and all time.",
+        "body": "Each page shows visits, what it counts (sign-ups, registrations, Buy clicks, bookings or taps on a Link page) and your rate, for the last 30 days and all time. A Link page also shows the taps on each button.",
         "keywords": [
           "visits",
           "conversions",

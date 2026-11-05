@@ -287,6 +287,7 @@ export const createLandingPage: ActionTool = {
   },
   plan: async (args, ctx) => {
     const t = (TEMPLATES.some((x) => x.key === args.template) ? args.template : null) as Template | null;
+    if (t === ("links" as Template)) return { error: "I can't draft a link page. The client adds its buttons themselves under Marketing > Landing Pages > Link page." };
     if (!t) return { error: "Which kind of page: opt-in, webinar, sales or book a call?" };
     const linked = await linkFor(ctx, t, args.link);
     return {
