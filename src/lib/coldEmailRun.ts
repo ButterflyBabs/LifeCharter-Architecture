@@ -5,7 +5,7 @@ import { boardStages, moveCard, markDoNotContact, movesForward, type DmStage } f
 import { notifyReplies, recordReply, replyNotifyList, type NewReply } from "@/lib/coldEmailReplies";
 import { isHousePlan } from "@/lib/housePlan";
 import { isZoomConfigured, masterclassMeetingId, meetingSchedule } from "@/lib/zoom";
-import { DEFAULT_FOOTER, DEFAULT_STEPS, classifyMessage, coldNotReady, daysBetween, dueStep, footer, inSendWindow, listUnsubscribeHeaders, localParts, rampCap, render, senderStart, varsFor, type ColdStep } from "@/lib/coldEmail";
+import { DEFAULT_FOOTER, DEFAULT_STEPS, classifyMessage, coldNotReady, daysBetween, dueStep, footer, inSendWindow, listUnsubscribeHeaders, localParts, pickVariantKey, rampCap, render, senderStart, stepText, varsFor, variantKeys, type ColdStep } from "@/lib/coldEmail";
 
 type Db = ReturnType<typeof createServerClient>;
 const SITE = "https://lccommandsuite.com";
@@ -133,15 +133,15 @@ async function sendDue(db: Db, s: Settings, senders: Sender[], ownerId: string, 
     if (part.length < 1000) break;
   }
   if (!cards.length) return out;
-  const sendsBy = new Map<string, { step: number; sentAt: Date; sender_id: string | null }[]>();
+  const sendsBy = new Map<string, { step: number; sentAt: Date; sender_id: string | null; variant: string | null }[]>();
   const stopped = new Set<string>();
   for (let i = 0; i < cards.length; i += 200) {
     const part = cards.slice(i, i + 200);
-    const { data: sr } = await db.from("cold_email_sends").select("card_id, step, sent_at, sender_id, status").in("card_id", part.map((c) => c.id));
-    for (const r of (sr ?? []) as { card_id: string; step: number; sent_at: string; sender_id: string | null; status: string }[]) {
+    const { data: sr } = await db.from("cold_email_sends").select("card_id, step, sent_at, sender_id, status, variant").in("card_id", part.map((c) => c.id));
+    for (const r of (sr ?? []) as { card_id: string; step: number; sent_at: string; sender_id: string | null; status: string; variant: string | null }[]) {
       if (r.status === "sending" && Date.now() - new Date(r.sent_at).getTime() > 3600_000) continue; // an old unfinished claim is retried
       const list = sendsBy.get(r.card_id) ?? [];
-      list.push({ step: r.step, sentAt: new Date(r.sent_at), sender_id: r.sender_id });
+      list.push({ step: r.step, sentAt: new Date(r.sent_at), sender_id: r.sender_id, variant: r.variant });
       sendsBy.set(r.card_id, list);
     }
     const { data: cs } = await db.from("seq_contacts").select("email, tags, unsubscribed_at").eq("master_plan_id", s.master_plan_id).in("email", part.map((c) => (c.email as string).toLowerCase()));
@@ -165,6 +165,7 @@ async function sendDue(db: Db, s: Settings, senders: Sender[], ownerId: string, 
     left.set(sd.id, Math.max(0, rampCap(daysBetween(senderStart(s.started_on, sd.created_at, s.tz), ymd), sd.daily_cap) - (count ?? 0)));
     perRun.set(sd.id, 0);
   }
+  const keys = variantKeys(steps);
   const session = house ? await nextSessionLabel() : "";
   const stageByKey = new Map(stages.map((x) => [x.key, x]));
   const tokens = new Map<string, string | null>();
@@ -187,11 +188,14 @@ async function sendDue(db: Db, s: Settings, senders: Sender[], ownerId: string, 
       linkCode = code7();
       await db.from("dm_cards").update({ link_code: linkCode }).eq("id", card.id);
     }
-    const claim = await db.from("cold_email_sends").insert({ master_plan_id: s.master_plan_id, card_id: card.id, step, sender_id: sender.id, to_email: card.email, status: "sending" });
+    // The letter this person was given at Email 1 stays with them; someone started before the variants existed gets one now.
+    const letter = keys.length ? ((sendsBy.get(card.id) ?? []).find((x) => x.variant)?.variant ?? pickVariantKey(card.id, keys)) : null;
+    const claim = await db.from("cold_email_sends").insert({ master_plan_id: s.master_plan_id, card_id: card.id, step, sender_id: sender.id, to_email: card.email, status: "sending", ...(letter ? { variant: letter } : {}) });
     if (claim.error) continue; // someone else (or an earlier run) has this step
     const vars = varsFor({ name: card.name, notes: card.notes, link_code: linkCode }, session, links);
-    const subject = render(steps[step].subject, vars);
-    const body = render(steps[step].body, vars) + footer(s.footer || (house ? DEFAULT_FOOTER : ""), `${SITE}/unsubscribe?c=${linkCode}`);
+    const text = stepText(steps[step], letter, keys);
+    const subject = render(text.subject, vars);
+    const body = render(text.body, vars) + footer(s.footer || (house ? DEFAULT_FOOTER : ""), `${SITE}/unsubscribe?c=${linkCode}`);
     try {
       const r = await google.sendEmail(token, { to: card.email as string, subject, body, extraHeaders: [...(sender.send_as ? [`From: ${FROM_NAME} <${sender.send_as}>`] : []), ...listUnsubscribeHeaders(`${SITE}/api/cold-unsubscribe?c=${linkCode}`, replyTo), `Reply-To: ${replyTo}`] });
       await db.from("cold_email_sends").update({ status: "sent", subject, message_id: r.id, thread_id: r.threadId, sent_at: new Date().toISOString() }).eq("card_id", card.id).eq("step", step);

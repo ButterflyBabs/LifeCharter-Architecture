@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { crmAccount, testRecipient } from "../crm/guard";
 import * as google from "@/lib/google";
 import { ensureBoards, boardStages } from "@/lib/dmPipeline";
-import { DEFAULT_FOOTER, DEFAULT_STEPS, STARTER_STEPS, cleanLinkUrl, coldNotReady, rampCap, daysBetween, localParts, render, senderStart, varsFor, footer, listUnsubscribeHeaders, type ColdStep } from "@/lib/coldEmail";
+import { DEFAULT_FOOTER, DEFAULT_STEPS, STARTER_STEPS, cleanLinkUrl, coldNotReady, rampCap, daysBetween, localParts, render, senderStart, stepText, variantKeys, varsFor, footer, listUnsubscribeHeaders, type ColdStep } from "@/lib/coldEmail";
 import { coldEmailSwitchOn } from "@/lib/coldEmailRun";
 
 export const dynamic = "force-dynamic";
@@ -78,7 +78,16 @@ export async function POST(request: Request) {
 
   if (b.action === "save") {
     await ensure();
-    const steps = Array.isArray(b.steps) ? (b.steps as ColdStep[]).slice(0, 5).map((x, i) => ({ day: Math.max(0, Math.min(60, Math.round(Number(x.day) || 0))) * (i === 0 ? 0 : 1), subject: clean(x.subject, 200), body: clean(x.body, 4000), ...(typeof x.by === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x.by) ? { by: x.by } : {}) })) : null;
+    // Variants (the A/B wordings) are kept as they are while the step's own subject and body are unchanged; editing the step's text replaces them.
+    const { data: stored } = Array.isArray(b.steps) ? await db.from("cold_email_settings").select("steps").eq("master_plan_id", a.planId).maybeSingle() : { data: null };
+    const storedSteps = ((stored?.steps as ColdStep[] | undefined) ?? []) as ColdStep[];
+    const steps = Array.isArray(b.steps) ? (b.steps as ColdStep[]).slice(0, 5).map((x, i) => {
+      const subject = clean(x.subject, 200);
+      const body = clean(x.body, 4000);
+      const was = storedSteps[i];
+      const keep = was?.variants?.length && was.subject === subject && was.body === body ? { variants: was.variants } : {};
+      return { day: Math.max(0, Math.min(60, Math.round(Number(x.day) || 0))) * (i === 0 ? 0 : 1), subject, body, ...keep, ...(typeof x.by === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x.by) ? { by: x.by } : {}) };
+    }) : null;
     if (steps && steps.some((x) => !x.subject.trim() || !x.body.trim())) return NextResponse.json({ error: "Every email needs a subject and a message." }, { status: 400 });
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (steps) patch.steps = steps;
@@ -162,10 +171,13 @@ export async function POST(request: Request) {
     const steps = ((s?.steps as ColdStep[] | undefined) ?? []).length ? (s!.steps as ColdStep[]) : a.house ? DEFAULT_STEPS : STARTER_STEPS;
     const n = Math.max(0, Math.min(steps.length - 1, Math.round(Number(b.step) || 0)));
     const vars = varsFor({ name: "Jane Example", notes: "Example Studio · Founder · Denver", link_code: "example" }, a.house ? "this Wednesday" : "", a.house ? undefined : { personal: "example", booking: (s?.booking_url as string | null) ?? "" });
+    const keys = variantKeys(steps);
+    const letter = typeof b.variant === "string" && keys.includes(b.variant) ? b.variant : keys[0] ?? null;
+    const text = stepText(steps[n], letter, keys);
     await google.sendEmail(token, {
       to,
-      subject: "[TEST" + (sender.send_as ? ` from ${sender.send_as}` : "") + "] " + render(steps[n].subject, vars),
-      body: render(steps[n].body, vars) + footer((s?.footer as string) || (a.house ? DEFAULT_FOOTER : ""), "https://lccommandsuite.com/unsubscribe?c=example"),
+      subject: "[TEST" + (sender.send_as ? ` from ${sender.send_as}` : "") + "] " + render(text.subject, vars),
+      body: render(text.body, vars) + footer((s?.footer as string) || (a.house ? DEFAULT_FOOTER : ""), "https://lccommandsuite.com/unsubscribe?c=example"),
       extraHeaders: [...(sender.send_as ? [`From: AmiLynne Carroll <${sender.send_as}>`] : []), ...listUnsubscribeHeaders("https://lccommandsuite.com/api/cold-unsubscribe?c=example", to), `Reply-To: ${to}`],
     }).catch((e) => {
       throw new Error(String(e));

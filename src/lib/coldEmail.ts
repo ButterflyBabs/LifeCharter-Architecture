@@ -1,10 +1,19 @@
 // Cold email sent from connected Google mailboxes inside the Suite (never Resend). This file is the rules, with no database or network:
 // the three-step series, the daily ramp, the send window, who is due next, how a reply or a bounce is told apart, and the footer.
 
+// One wording of an email. A step with variants sends a different wording to different people (an A/B test); each person keeps the
+// same letter (A, B, C...) for every email in the series. A step with no variants sends its own subject and body to everyone.
+export interface ColdVariant {
+  key: string;
+  subject: string;
+  body: string;
+}
+
 export interface ColdStep {
   day: number; // days after Email 1 (0 for the first)
   subject: string;
   body: string;
+  variants?: ColdVariant[]; // subject and body above stay as the fallback (and what the editor shows)
   // The last day (YYYY-MM-DD, in the series' time zone) this email may go out, for a series that points at a dated event.
   // A follow-up whose normal gap would land after that day goes sooner (never closer than MIN_GAP_DAYS to the one before);
   // if even that is too late it is skipped, and nothing goes out for it after the day.
@@ -142,6 +151,32 @@ export function coldNotReady(steps: ColdStep[], foot: string, links: { personal:
 
 export function render(text: string, vars: Record<string, string>): string {
   return text.replace(/\{\{\s*([a-z_]+)\s*\}\}/gi, (_m, k: string) => vars[k.toLowerCase()] ?? "");
+}
+
+// The letters Email 1 offers, in order, or [] when the series is not split into variants.
+export function variantKeys(steps: ColdStep[]): string[] {
+  return (steps[0]?.variants ?? []).map((v) => v.key).filter(Boolean);
+}
+
+// A steady, even-ish pick of one letter for a card: the same card always gets the same letter.
+export function pickVariantKey(cardId: string, keys: string[]): string | null {
+  if (!keys.length) return null;
+  let h = 2166136261;
+  for (let i = 0; i < cardId.length; i++) {
+    h ^= cardId.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return keys[h % keys.length];
+}
+
+// The wording this person gets for a step. Their letter matches the variant with that letter; a step that offers fewer variants
+// than Email 1 (say two for four letters) gives the letters that have no match the variants in turn, so A and C share one, B and D the other.
+export function stepText(step: ColdStep, key: string | null, keys: string[]): { subject: string; body: string; key: string | null } {
+  const vs = step.variants ?? [];
+  if (!vs.length || !key) return { subject: step.subject, body: step.body, key: null };
+  const exact = vs.find((v) => v.key === key);
+  const v = exact ?? vs[Math.max(0, keys.indexOf(key)) % vs.length];
+  return { subject: v.subject, body: v.body, key: exact ? key : v.key };
 }
 
 export function firstNameOf(name: string): string {

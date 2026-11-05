@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { movesForward } from "../src/lib/dmPipeline";
-import { DEFAULT_STEPS, type ColdStep, classifyMessage, dueStep, firstNameOf, inSendWindow, rampCap, render, varsFor } from "../src/lib/coldEmail";
+import { DEFAULT_STEPS, type ColdStep, classifyMessage, dueStep, firstNameOf, inSendWindow, pickVariantKey, rampCap, render, stepText, varsFor, variantKeys } from "../src/lib/coldEmail";
 
 test("the ramp starts small and never goes over the mailbox cap", () => {
   assert.equal(rampCap(0, 30), 5);
@@ -93,4 +93,26 @@ test("a dated series squeezes follow-ups to fit before the event and stops after
   // After the day, no new person starts the series, until the wording is switched.
   assert.equal(dueStep([], steps, at("2026-11-14T17:00:00Z")), null);
   assert.equal(dueStep([], steps, at("2026-11-13T17:00:00Z")), 0);
+});
+
+test("A/B variants: each card keeps one letter, the split is even, and fewer follow-up variants are shared out in turn", () => {
+  const v = (key: string, t: string) => ({ key, subject: `s${key}`, body: `${t}${key}` });
+  const steps: ColdStep[] = [
+    { day: 0, subject: "sA", body: "e1A", variants: [v("A", "e1"), v("B", "e1"), v("C", "e1"), v("D", "e1")] },
+    { day: 2, subject: "sA", body: "e2A", variants: [v("A", "e2"), v("B", "e2")] },
+  ];
+  const keys = variantKeys(steps);
+  assert.deepEqual(keys, ["A", "B", "C", "D"]);
+  assert.equal(pickVariantKey("abc", keys), pickVariantKey("abc", keys));
+  const tally: Record<string, number> = { A: 0, B: 0, C: 0, D: 0 };
+  for (let i = 0; i < 4000; i++) tally[pickVariantKey(`card-${i}-${i * 7919}`, keys) as string]++;
+  for (const k of keys) assert.ok(tally[k] > 800 && tally[k] < 1200, `${k} got ${tally[k]}`);
+  assert.equal(stepText(steps[0], "C", keys).body, "e1C");
+  assert.equal(stepText(steps[1], "A", keys).body, "e2A");
+  assert.equal(stepText(steps[1], "C", keys).body, "e2A");
+  assert.equal(stepText(steps[1], "D", keys).body, "e2B");
+  // A series with no variants is untouched: everyone gets the step's own words.
+  assert.deepEqual(stepText(DEFAULT_STEPS[0], null, []), { subject: DEFAULT_STEPS[0].subject, body: DEFAULT_STEPS[0].body, key: null });
+  assert.equal(pickVariantKey("x", []), null);
+  assert.deepEqual(variantKeys(DEFAULT_STEPS), []);
 });
