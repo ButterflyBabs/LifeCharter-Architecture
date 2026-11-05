@@ -6,7 +6,7 @@ import { resolveAiConfig } from "@/lib/ai/config";
 import { memberAiGate } from "@/lib/ai/memberCap";
 import { brandFor } from "@/lib/portal";
 import { cleanContent, cleanPageLook, cleanPixel, cleanUrl, slugify, starterContent, templateInfo, validSlug, TEMPLATES, type Template } from "@/lib/landingPages";
-import { PAGE_COLUMNS, pageStats, type PageRow } from "@/lib/landingServer";
+import { PAGE_COLUMNS, linkTaps, pageStats, type PageRow } from "@/lib/landingServer";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -49,11 +49,13 @@ export async function GET() {
   ]);
   const rows = (pages ?? []) as PageRow[];
   const [stats, brand] = await Promise.all([pageStats(db, rows.map((p) => p.id)), brandFor(db, a.planId)]);
+  const taps: Record<string, Awaited<ReturnType<typeof linkTaps>>> = {};
+  await Promise.all(rows.filter((p) => p.template === "links").map(async (p) => { taps[p.id] = await linkTaps(db, p.id); }));
   return NextResponse.json(
     {
       templates: TEMPLATES,
       brand,
-      pages: rows.map((p) => ({ ...p, content: cleanContent(p.content, p.template), look: cleanPageLook(p.look), stats: stats[p.id] })),
+      pages: rows.map((p) => ({ ...p, content: cleanContent(p.content, p.template), look: cleanPageLook(p.look), stats: stats[p.id], taps: taps[p.id] ?? {} })),
       forms: forms ?? [],
       events: events ?? [],
       offers: offers ?? [],
@@ -160,6 +162,7 @@ export async function POST(request: Request) {
     if (overCap) return overCap;
     if (!key) return NextResponse.json({ needsKey: true, error: "Add your AI key in Settings > AI first (the same one your assistant uses), then try again." }, { status: 400 });
     const t = p.template;
+    if (t === "links") return NextResponse.json({ error: "A link page is just your name, one line and your buttons, so there's nothing to draft." }, { status: 400 });
     const ctx: string[] = [];
     const brand = await brandFor(db, a.planId);
     ctx.push(`Business name: ${brand.name}`);

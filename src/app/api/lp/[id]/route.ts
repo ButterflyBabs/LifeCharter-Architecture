@@ -4,7 +4,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import { submitForm } from "@/lib/crm";
 import { register, type EventRow } from "@/lib/events";
 import { AFF_COOKIE, affiliateByCode, recordReferral } from "@/lib/affiliates";
-import { PAGE_COLUMNS, recordHit, type PageRow } from "@/lib/landingServer";
+import { PAGE_COLUMNS, recordHit, recordLinkTap, type PageRow } from "@/lib/landingServer";
+import { cleanContent } from "@/lib/landingPages";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -15,6 +16,7 @@ export const maxDuration = 30;
 //   POST { action: "submit", v, ...form fields }       -> opt-in: the page's Suite form, then a conversion
 //   POST { action: "register", v, firstName, email }   -> webinar: the page's event, then a conversion
 //   POST { action: "click", v }                        -> sales: a Buy click (the conversion for a sales page)
+//   POST { action: "click", v, label }                 -> link page: a tap on one of its buttons (the conversion for a link page)
 //   POST { action: "booked", v }                       -> book a call: sent by the booking page after a booking
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   if (!/^[0-9a-f-]{36}$/i.test(params.id)) return NextResponse.json({ error: "Not found." }, { status: 404 });
@@ -33,6 +35,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
   if (action === "click" && p.template === "sales") {
     await recordHit(db, p.id, "conversion", v);
+    return NextResponse.json({ ok: true });
+  }
+  if (action === "click" && p.template === "links") {
+    const label = typeof b.label === "string" ? b.label.slice(0, 80) : "";
+    // Only a button that is really on the page counts.
+    if (!label || !cleanContent(p.content, "links").links.some((l) => l.label === label)) return NextResponse.json({ ok: true });
+    await recordLinkTap(db, p.id, label, v);
     return NextResponse.json({ ok: true });
   }
   if (action === "booked" && p.template === "booking") {

@@ -5,17 +5,20 @@ import { PORTAL_FONTS, type FontKey } from "@/lib/portalLook";
 // payment link), and a book-a-call page on one of its booking pages. Published at lccommandsuite.com/go/<slug> and on
 // the account's own short-link domain (<their domain>/<slug>). Pure, so the editor and the public page share it.
 
-export type Template = "optin" | "webinar" | "sales" | "booking";
+export type Template = "optin" | "webinar" | "sales" | "booking" | "links";
 export const TEMPLATES: { key: Template; label: string; blurb: string; uses: string; conversion: string }[] = [
   { key: "optin", label: "Opt-in (freebie)", blurb: "Give something away and grow your list. Sign-ups land in Contacts with your form's tags and campaign.", uses: "one of your forms", conversion: "sign-ups" },
   { key: "webinar", label: "Webinar or event", blurb: "Fill a live event or challenge. People save their seat right on the page and get your event emails.", uses: "one of your Events", conversion: "registrations" },
   { key: "sales", label: "Sales page", blurb: "Tell the story, show the results and send buyers to your payment link.", uses: "one of your offers", conversion: "Buy clicks" },
   { key: "booking", label: "Book a call", blurb: "A short pitch with your booking calendar right on the page.", uses: "one of your booking pages", conversion: "bookings" },
+  { key: "links", label: "Link page", blurb: "One page of buttons for your Instagram, Facebook or LinkedIn bio. Every tap is counted.", uses: "the links you add", conversion: "taps" },
 ];
 export const templateInfo = (t: string) => TEMPLATES.find((x) => x.key === t) ?? TEMPLATES[0];
 
 export interface Testimonial { name: string; quote: string }
 export interface Faq { q: string; a: string }
+/** One button on a link page. */
+export interface LinkItem { label: string; url: string; note: string }
 export interface Content {
   eyebrow: string;
   headline: string;
@@ -28,6 +31,7 @@ export interface Content {
   about: string;
   testimonials: Testimonial[];
   faq: Faq[];
+  links: LinkItem[];
   priceNote: string;
   guarantee: string;
   closing: string;
@@ -55,11 +59,13 @@ export function starterContent(t: Template): Content {
     about: "",
     testimonials: [],
     faq: [],
+    links: [],
     priceNote: "",
     guarantee: "",
     closing: "",
     thankYou: "",
   };
+  if (t === "links") return { ...base, headline: "Your name", subheadline: "One line about who you help and how.", aboutTitle: "", cta: "" };
   if (t === "optin")
     return { ...base, eyebrow: "Free guide", headline: "The one-page plan that gets your week back", subheadline: "A short, practical guide you can use today.", bulletsTitle: "Inside you'll find", bullets: ["The three questions to ask before you say yes", "A simple weekly rhythm that fits real life", "What to stop doing first"], cta: "Send me the guide", thankYou: "Thank you! Check your email in the next few minutes." };
   if (t === "webinar")
@@ -87,6 +93,7 @@ export function cleanContent(raw: unknown, t: Template): Content {
     aboutTitle: has("aboutTitle") ? str(r.aboutTitle, 80) : start.aboutTitle,
     about: has("about") ? str(r.about, 2000) : start.about,
     testimonials: pairs(r.testimonials, 6, (o) => (str(o.quote, 600) ? { name: str(o.name, 60), quote: str(o.quote, 600) } : null)),
+    links: t === "links" || has("links") ? pairs(r.links, 30, (o) => { const url = cleanUrl(o.url); return str(o.label, 80) && url ? { label: str(o.label, 80), url, note: str(o.note, 120) } : null; }) : [],
     faq: pairs(r.faq, 10, (o) => (str(o.q, 200) && str(o.a, 1000) ? { q: str(o.q, 200), a: str(o.a, 1000) } : null)),
     priceNote: str(r.priceNote, 200),
     guarantee: str(r.guarantee, 400),

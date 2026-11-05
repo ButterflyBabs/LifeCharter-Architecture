@@ -76,6 +76,7 @@ export async function publicPage(db: Db, p: PageRow): Promise<PublicPage> {
     : p.template === "webinar" && !e ? "Choose one of your Events."
     : p.template === "sales" && !buyUrl ? "Choose an offer with a payment link, or paste a Buy link."
     : p.template === "booking" && !(c && c.active) ? "Choose one of your booking pages (and make sure it is turned on)."
+    : p.template === "links" && !cleanContent(p.content, "links").links.length ? "Add at least one button."
     : null;
 
   return {
@@ -121,6 +122,34 @@ export async function pageStats(db: Db, ids: string[]): Promise<Record<string, {
     if (rows.length < 10000) break;
   }
   return out;
+}
+
+/** Taps per button on a link page: all time and the last 30 days, by the button's words. */
+export async function linkTaps(db: Db, pageId: string): Promise<Record<string, { all: number; d30: number }>> {
+  const out: Record<string, { all: number; d30: number }> = {};
+  const since = Date.now() - 30 * 86_400_000;
+  for (let from = 0; ; from += 10000) {
+    const { data } = await db.from("landing_page_hits").select("label, created_at").eq("page_id", pageId).eq("kind", "conversion").not("label", "is", null).order("id").range(from, from + 9999);
+    const rows = (data ?? []) as { label: string; created_at: string }[];
+    for (const r of rows) {
+      const o = (out[r.label] ??= { all: 0, d30: 0 });
+      o.all++;
+      if (Date.parse(r.created_at) >= since) o.d30++;
+    }
+    if (rows.length < 10000) break;
+  }
+  return out;
+}
+
+/** Count one tap on a link-page button (the same visitor tapping the same button twice within a minute counts once). */
+export async function recordLinkTap(db: Db, pageId: string, label: string, visitor: string | null): Promise<boolean> {
+  const v = visitor && /^[A-Za-z0-9_-]{8,64}$/.test(visitor) ? visitor : null;
+  if (v) {
+    const { count } = await db.from("landing_page_hits").select("id", { count: "exact", head: true }).eq("page_id", pageId).eq("kind", "conversion").eq("label", label).eq("visitor", v).gte("created_at", new Date(Date.now() - 60_000).toISOString());
+    if ((count ?? 0) > 0) return false;
+  }
+  await db.from("landing_page_hits").insert({ page_id: pageId, kind: "conversion", visitor: v, label });
+  return true;
 }
 
 /** Count a visit or a conversion once per visitor (a visit once per visitor per 30 minutes). */

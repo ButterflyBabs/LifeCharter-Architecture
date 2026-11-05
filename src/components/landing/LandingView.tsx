@@ -122,6 +122,47 @@ export default function LandingView({ page, preview = false }: { page: PublicPag
   const scrollToAct = () => act.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   const paragraphs = (t: string) => t.split(/\n{2,}/).map((x) => x.trim()).filter(Boolean);
 
+  // A link page (a bio link): your photo, your name, one line, then big buttons. Each tap is counted by its words.
+  if (page.template === "links") {
+    const avatar = page.image || (look.showLogo ? page.brand.logo : null);
+    const tap = (label: string) => () => {
+      if (preview) return;
+      const body = JSON.stringify({ action: "click", v, label });
+      try {
+        navigator.sendBeacon(`/api/lp/${page.id}`, new Blob([body], { type: "application/json" }));
+      } catch {
+        fetch(`/api/lp/${page.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => null);
+      }
+    };
+    return (
+      <main className="min-h-screen [color-scheme:light]" style={{ background: look.background, color: "#1F2B3A", fontFamily: font.body }}>
+        <div className="mx-auto flex max-w-md flex-col items-center px-5 pb-14 pt-12 text-center">
+          {avatar && /* eslint-disable-next-line @next/next/no-img-element */ <img src={avatar} alt="" className="h-28 w-28 rounded-full border-4 bg-white object-cover shadow-sm" style={{ borderColor: look.accent }} />}
+          <h1 className="mt-5 text-3xl font-semibold leading-tight" style={{ fontFamily: font.heading }}>{c.headline}</h1>
+          {c.subheadline && <p className="mt-2 text-base leading-relaxed opacity-80">{c.subheadline}</p>}
+          <div className="mt-8 w-full space-y-3">
+            {c.links.map((l, i) => (
+              <a
+                key={`${i}-${l.label}`}
+                href={l.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={tap(l.label)}
+                className="block w-full rounded-2xl px-5 py-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                style={i === 0 ? { background: look.accent, color: ink } : { background: "#fff", color: "#1F2B3A", border: `1.5px solid ${look.accent}55` }}
+              >
+                <span className="block text-base font-semibold">{l.label}</span>
+                {l.note && <span className="mt-0.5 block text-sm opacity-80">{l.note}</span>}
+              </a>
+            ))}
+            {!c.links.length && <p className="rounded-2xl bg-white p-5 text-sm opacity-70 shadow-sm">{preview ? page.missing : "Links coming soon."}</p>}
+          </div>
+          <p className="pt-12 text-xs opacity-50">Powered by LifeCharter Command Suite</p>
+        </div>
+      </main>
+    );
+  }
+
   // The part that does the page's job.
   const action = (() => {
     if (done)

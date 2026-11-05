@@ -26,6 +26,7 @@ type Page = {
   image_path: string | null;
   updated_at: string;
   stats: Stats;
+  taps?: Record<string, { all: number; d30: number }>;
 };
 type Data = {
   templates: { key: Template; label: string; blurb: string; uses: string; conversion: string }[];
@@ -119,7 +120,7 @@ export default function LandingPages() {
       <section className="rounded-2xl border border-border p-4">
         <p className="text-sm font-semibold">Make a new page</p>
         <input className={`${input} mt-2 max-w-md`} placeholder="Page name (for you), e.g. Free guide October" value={newName} onChange={(e) => setNewName(e.target.value)} />
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {data.templates.map((t) => (
             <button key={t.key} disabled={busy} onClick={() => create(t.key)} className="rounded-xl border border-border p-4 text-left hover:border-[#2E7C83] hover:bg-muted disabled:opacity-50">
               <span className="block font-semibold">{t.label}</span>
@@ -286,6 +287,7 @@ function Editor({ page, data, urls, onBack, onChanged }: { page: Page; data: Dat
       : t === "webinar" && !ev ? "Choose one of your Events."
       : t === "sales" && !buyUrl ? "Choose an offer with a payment link, or paste a Buy link."
       : t === "booking" && !cal ? "Choose one of your booking pages."
+      : t === "links" && !c.links.length ? "Add at least one button."
       : null;
     return {
       id: page.id,
@@ -372,6 +374,7 @@ function Editor({ page, data, urls, onBack, onChanged }: { page: Page; data: Dat
             )}
           </section>
 
+          {t !== "links" && (
           <section className="space-y-3 rounded-2xl border border-[#2E7C83]/40 bg-[#2E7C83]/5 p-4">
             <p className="font-semibold">Have my assistant draft the words</p>
             <p className="text-xs text-muted-foreground">Your assistant writes from your {info.uses} and anything you add here, using your own AI key. Nothing changes until you press Use on a part (then Save). It never makes up results or testimonials.</p>
@@ -396,12 +399,54 @@ function Editor({ page, data, urls, onBack, onChanged }: { page: Page; data: Dat
               </div>
             )}
           </section>
+          )}
+
+          {t === "links" && (
+            <section className="space-y-3 rounded-2xl border border-border p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="font-semibold">Buttons</p>
+                  <p className="text-xs text-muted-foreground">The first button is your main one (it is filled in your main color). Use the arrows to reorder. Each tap is counted.</p>
+                </div>
+                <button className={btn} onClick={() => set({ links: [...c.links, { label: "", url: "", note: "" }].slice(0, 30) })} disabled={c.links.length >= 30}>Add a button</button>
+              </div>
+              {c.links.map((l, i) => {
+                const n = page.taps?.[l.label];
+                const move = (d: number) => {
+                  const to = i + d;
+                  if (to < 0 || to >= c.links.length) return;
+                  const next = [...c.links];
+                  [next[i], next[to]] = [next[to], next[i]];
+                  set({ links: next });
+                };
+                const upd = (patch: Partial<typeof l>) => set({ links: c.links.map((y, j) => (j === i ? { ...y, ...patch } : y)) });
+                return (
+                  <div key={i} className="space-y-2 rounded-lg border border-border p-3">
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <input className={input} placeholder="Button words, e.g. Take the free workshop" value={l.label} onChange={(e) => upd({ label: e.target.value })} />
+                      <input className={input} placeholder="https://" value={l.url} onChange={(e) => upd({ url: e.target.value })} />
+                    </div>
+                    <input className={input} placeholder="Small line under the button (optional)" value={l.note} onChange={(e) => upd({ note: e.target.value })} />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button className={btn} onClick={() => move(-1)} disabled={i === 0} aria-label="Move up">↑</button>
+                      <button className={btn} onClick={() => move(1)} disabled={i === c.links.length - 1} aria-label="Move down">↓</button>
+                      <button className={btn} onClick={() => set({ links: c.links.filter((_, j) => j !== i) })}>Remove</button>
+                      <span className="text-xs text-muted-foreground">{n ? `${n.d30} taps in 30 days · ${n.all} all time` : "No taps yet"}</span>
+                    </div>
+                  </div>
+                );
+              })}
+              {!c.links.length && <p className="text-sm text-muted-foreground">No buttons yet. Press Add a button.</p>}
+              <p className="text-xs text-muted-foreground">Buttons with no words or no link are left off the page. If you change a button&apos;s words, its taps start again from zero.</p>
+            </section>
+          )}
 
           <section className="space-y-3 rounded-2xl border border-border p-4">
             <p className="font-semibold">Words</p>
-            <Field label="Small line above the headline (optional)"><input className={input} value={c.eyebrow} onChange={(e) => set({ eyebrow: e.target.value })} /></Field>
-            <Field label="Headline"><input className={input} value={c.headline} onChange={(e) => set({ headline: e.target.value })} /></Field>
-            <Field label="Under the headline"><textarea className={input} rows={2} value={c.subheadline} onChange={(e) => set({ subheadline: e.target.value })} /></Field>
+            {t !== "links" && <Field label="Small line above the headline (optional)"><input className={input} value={c.eyebrow} onChange={(e) => set({ eyebrow: e.target.value })} /></Field>}
+            <Field label={t === "links" ? "Your name" : "Headline"}><input className={input} value={c.headline} onChange={(e) => set({ headline: e.target.value })} /></Field>
+            <Field label={t === "links" ? "One line under your name" : "Under the headline"}><textarea className={input} rows={2} value={c.subheadline} onChange={(e) => set({ subheadline: e.target.value })} /></Field>
+            {t !== "links" && (<>
             <Field label="Main text (optional)" help="Leave a blank line between paragraphs."><textarea className={input} rows={t === "sales" ? 8 : 4} value={c.body} onChange={(e) => set({ body: e.target.value })} /></Field>
             <Field label="List title"><input className={input} value={c.bulletsTitle} onChange={(e) => set({ bulletsTitle: e.target.value })} /></Field>
             <Field label="List (one per line)"><textarea className={input} rows={4} value={c.bullets.join("\n")} onChange={(e) => set({ bullets: lines(e.target.value) })} /></Field>
@@ -416,8 +461,10 @@ function Editor({ page, data, urls, onBack, onChanged }: { page: Page; data: Dat
             <Field label="About title"><input className={input} value={c.aboutTitle} onChange={(e) => set({ aboutTitle: e.target.value })} /></Field>
             <Field label="About you (optional)"><textarea className={input} rows={3} value={c.about} onChange={(e) => set({ about: e.target.value })} /></Field>
             <Field label="Closing line (optional)"><input className={input} value={c.closing} onChange={(e) => set({ closing: e.target.value })} /></Field>
+            </>)}
           </section>
 
+          {t !== "links" && (
           <section className="space-y-3 rounded-2xl border border-border p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="font-semibold">Testimonials</p>
@@ -441,7 +488,9 @@ function Editor({ page, data, urls, onBack, onChanged }: { page: Page; data: Dat
               </div>
             ))}
           </section>
+          )}
 
+          {t !== "links" && (
           <section className="space-y-3 rounded-2xl border border-border p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="font-semibold">Questions (optional)</p>
@@ -455,6 +504,7 @@ function Editor({ page, data, urls, onBack, onChanged }: { page: Page; data: Dat
               </div>
             ))}
           </section>
+          )}
 
           <section className="space-y-3 rounded-2xl border border-border p-4">
             <p className="font-semibold">Look</p>
@@ -472,9 +522,9 @@ function Editor({ page, data, urls, onBack, onChanged }: { page: Page; data: Dat
                 </select>
               </Field>
             </div>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={look.showLogo} onChange={(e) => { setLook({ ...look, showLogo: e.target.checked }); setDirty(true); }} /> Show my business name and logo at the top</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={look.showLogo} onChange={(e) => { setLook({ ...look, showLogo: e.target.checked }); setDirty(true); }} /> {t === "links" ? "Use my business logo when I have no photo" : "Show my business name and logo at the top"}</label>
             <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="font-medium">Main image</span>
+              <span className="font-medium">{t === "links" ? "Your photo" : "Main image"}</span>
               <label className={`${btn} cursor-pointer`}>
                 {busy === "image" ? "Uploading…" : img ? "Replace" : "Add an image"}
                 <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(e) => upload(e.target.files?.[0] ?? null)} />

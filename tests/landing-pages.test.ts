@@ -43,3 +43,27 @@ test("pixel IDs, links and the rate", () => {
   assert.equal(rate(0, 0), 0);
   assert.equal(rate(200, 17), 8.5);
 });
+
+test("a link page keeps only buttons that have words and a real link", () => {
+  const c = cleanContent(
+    {
+      headline: "AmiLynne",
+      links: [
+        { label: " Take the workshop ", url: "lccommandsuite.com/l/tcs-bio", note: "Free, Nov 16-18" },
+        { label: "No link", url: "" },
+        { label: "", url: "https://example.com" },
+        { label: "Bad scheme", url: "javascript:alert(1)" },
+        { label: "Book", url: "https://example.com/book" },
+      ],
+    },
+    "links"
+  );
+  assert.equal(c.links.length, 2);
+  assert.deepEqual(c.links[0], { label: "Take the workshop", url: "https://lccommandsuite.com/l/tcs-bio", note: "Free, Nov 16-18" });
+  assert.equal(c.links[1].url, "https://example.com/book");
+  // Other templates carry no buttons unless some were saved.
+  assert.deepEqual(cleanContent({}, "optin").links, []);
+  // No more than 30 buttons.
+  const many = cleanContent({ links: Array.from({ length: 40 }, (_, i) => ({ label: `L${i}`, url: "https://example.com" })) }, "links");
+  assert.equal(many.links.length, 30);
+});
