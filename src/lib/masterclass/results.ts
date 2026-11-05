@@ -9,7 +9,7 @@ import { ownerMasterPlanId } from "@/lib/housePlan";
 const FIRST_SESSION = "2026-10-08";
 const WEEKLY_FROM = "2026-10-28"; // the first Wednesday-noon class; earlier dates stay on the old Thursday 5pm schedule
 const LAST_SESSION = "2027-12-29";
-const SKIP: string[] = ["2026-11-18", "2026-11-25", "2026-12-23", "2026-12-30"]; // Take the Command Seat week, Thanksgiving week and the two holiday weeks
+const SKIP: string[] = ["2026-11-18", "2026-12-23", "2026-12-30"]; // Take the Command Seat week and the two holiday weeks (Nov 25 runs: Babs, 2026-11-05)
 const CREDIT_DAYS = 14; // a booking or sale counts for the most recent session within this many days (the follow-up series runs two weeks)
 const UPCOMING_SHOWN = 2; // how many sessions ahead are tracked as they fill
 export const REGISTRATION_GOAL = 50; // her goal per weekly class: 50 registrations and 25 in the room (2026-10-23; was 120 for two sessions a month)
