@@ -380,7 +380,7 @@ export async function POST(request: Request) {
         fit,
         level: str(sc.likelyLevel, 60),
         priority,
-        result: { reason: str(sc.reason, 400), likelyLevel: str(sc.likelyLevel, 60), facts: r.facts },
+        result: { reason: str(sc.reason, 400) + (icp.purpose === "partner" && str(sc.check, 240) ? ` Check: ${str(sc.check, 240)}` : ""), likelyLevel: str(sc.likelyLevel, 60), facts: r.facts },
       };
     });
     const { data: saved, error } = await db.from("icp_qualifications").insert(insert).select(QUAL_COLUMNS);

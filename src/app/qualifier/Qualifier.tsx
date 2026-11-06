@@ -7,7 +7,7 @@ import { UserCheck, Plus, Trash2, Upload, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import QualResult, { PriorityBadge, type Qual } from "@/components/qualifier/QualResult";
-import { DEFAULT_LEVELS, PRIORITIES, type Icp, type IcpLevel } from "@/lib/qualifier";
+import { DEFAULT_LEVELS, PARTNER_SHEET_HEADERS, PARTNER_TEMPLATE_CSV, PRIORITIES, type Icp, type IcpLevel } from "@/lib/qualifier";
 import { parseDelimited } from "@/lib/contactImport";
 import { LIST_TEMPLATE_CSV } from "@/lib/dmListParse";
 
@@ -35,7 +35,7 @@ const TABS = [
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
 
-const blankIcp = (): Icp => ({ id: "", name: "", offerId: null, whoServe: "", helpDo: "", signatureOffer: "", coreProblem: "", alreadyHas: "", missing: "", redFlags: "", levels: DEFAULT_LEVELS.map((l) => ({ ...l })) });
+const blankIcp = (): Icp => ({ id: "", name: "", purpose: "client", offerId: null, whoServe: "", helpDo: "", signatureOffer: "", coreProblem: "", alreadyHas: "", missing: "", redFlags: "", levels: DEFAULT_LEVELS.map((l) => ({ ...l })) });
 
 export default function Qualifier() {
   const tz = typeof window !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Denver";
@@ -288,6 +288,7 @@ function rowsFromTable(table: string[][]): ListRow[] {
 
 function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: Icp[]; boards: Board[]; audiences: Audience[]; post: Post; setMsg: (m: string) => void; onChanged: () => void }) {
   const [icpId, setIcpId] = useState(() => lastIcp(icps));
+  const isPartner = icps.find((i) => i.id === icpId)?.purpose === "partner";
   const [platform, setPlatform] = useState("LI");
   const [listName, setListName] = useState("");
   const [pending, setPending] = useState<ListRow[]>([]);
@@ -371,6 +372,28 @@ function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: I
     <div className="space-y-5">
       <div className={`${panel} space-y-3`}>
         <h2 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Score a whole list</h2>
+        {isPartner ? (
+          <>
+            <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">This profile finds <strong>coaching partners</strong>: established coaches and consultants who will promote directly to their own active clients and community. Fill a sheet with what you can see, one row per coach: Excel (.xlsx) or CSV, or paste the cells from a spreadsheet. The first row must be the column headings. The score uses only what is in the row, so the more of these columns you fill, the better: {PARTNER_SHEET_HEADERS.slice(2).join(", ")}. It never guesses a number you left blank, and it can&rsquo;t judge whether they will promote directly: that question is asked on the discovery call.</p>
+            <p className="text-xs text-[#7a8a99]">
+              <button
+                type="button"
+                className="font-medium text-[#2E7C83] hover:underline"
+                onClick={() => {
+                  const a = document.createElement("a");
+                  a.href = URL.createObjectURL(new Blob([PARTNER_TEMPLATE_CSV], { type: "text/csv" }));
+                  a.download = "coaching-partner-list-template.csv";
+                  a.click();
+                  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+                }}
+              >
+                Download the coaching partner template (.csv)
+              </button>
+              . Active clients seen and Audience size matter most. Every result ends with the one thing to check when you read their profile.
+            </p>
+          </>
+        ) : (
+          <>
         <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Upload a spreadsheet of contacts or prospects: Excel (.xlsx) or CSV, or paste the cells straight from Excel, Numbers or Google Sheets. The first row must be the column headings. Each person gets a first-pass fit and priority from what the list holds: title, headline, company, industry, location. It can&rsquo;t see their posts, so it tells you who to look at first. Do the full qualification on a person&rsquo;s pipeline card when you work it.</p>
         <p className="text-xs text-[#7a8a99]">
           Not sure what to put in the sheet?{" "}
@@ -389,6 +412,8 @@ function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: I
           </button>
           . Name, Profile link, Headline and Group. The headline (the line under their name, or a sentence they wrote) is what gets scored.
         </p>
+          </>
+        )}
         <div className="grid gap-3 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
           <IcpPick icps={icps} value={icpId} onChange={setIcpId} />
           <label className={label}>List name<Input value={listName} onChange={(e) => setListName(e.target.value)} placeholder="e.g. Prospect Bank, Wave 2" /></label>
