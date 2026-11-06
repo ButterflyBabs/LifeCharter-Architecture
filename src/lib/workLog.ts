@@ -30,6 +30,13 @@ export function goalProgress(minutes: number, goalHours: number | string | null 
   return { goalMin, pct: Math.min(100, Math.round((minutes / goalMin) * 100)), shortMin: Math.max(0, goalMin - minutes) };
 }
 
+/** The Monday (YYYY-MM-DD) of the week containing `day`, given that day's weekday (0 = Sunday). Weeks run Monday to Sunday. */
+export function mondayOfDay(day: string, weekday: number): string {
+  const d = new Date(`${day}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - ((weekday + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}
+
 /** Where a request for help stands: nothing asked, asked and waiting, or someone helped. */
 export function helpState(i: Pick<ItemLike, "help_asked_of" | "help_received_from">): "none" | "waiting" | "received" {
   if (i.help_received_from?.trim()) return "received";

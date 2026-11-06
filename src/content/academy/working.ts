@@ -254,7 +254,7 @@ export const WORKING: Lesson[] = [
         steps: [
           "Under Settings > Team > Access, give the person the Work Log area with edit access.",
           "Open Work Log under Daily Operations. Under Hourly rates and weekly goals, set each person's rate and press Save rate. Leave the rate empty for someone paid a flat amount.",
-          "If you expect a set number of hours a week, type it in that person's Goal box and press Save goal. You then see everyone's progress under Weekly hours goals.",
+          "If you expect a set number of hours a week, type it in that person's Goal box and press Save goal. You then see everyone's progress under Weekly hours goals, and every Friday at 2:00 PM Mountain you get a reminder (to you only) if anyone is short.",
           "When a day is submitted, read it under Waiting for your review.",
           "Press Approved, or press Send back and say what to change.",
           "Check challenges noted and help still waiting in the cards at the top of the week.",

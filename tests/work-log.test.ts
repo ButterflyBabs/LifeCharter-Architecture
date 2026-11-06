@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { canEditLines, cleanItem, csvCell, goalProgress, helpState, loggedMinutes, payFor, shiftMinutes, submitBlocker } from "../src/lib/workLog";
+import { canEditLines, cleanItem, csvCell, goalProgress, helpState, mondayOfDay, loggedMinutes, payFor, shiftMinutes, submitBlocker } from "../src/lib/workLog";
 import { featureApiAccess, featureForApi, featureForPage } from "../src/lib/teamRoles";
 
 test("shift minutes run from clock in to clock out, or to now while clocked in", () => {
@@ -91,4 +91,10 @@ test("weekly goal progress: percent of the goal, minutes still to go, capped at 
   assert.equal(goalProgress(100, null), null);
   assert.equal(goalProgress(100, 0), null);
   assert.equal(goalProgress(100, ""), null);
+});
+
+test("the week runs Monday to Sunday: the Monday of a Friday, a Monday and a Sunday", () => {
+  assert.equal(mondayOfDay("2026-11-06", 5), "2026-11-02");
+  assert.equal(mondayOfDay("2026-11-02", 1), "2026-11-02");
+  assert.equal(mondayOfDay("2026-11-08", 0), "2026-11-02");
 });

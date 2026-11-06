@@ -191,6 +191,10 @@
     {
       "path": "/api/cron/cold-email-weekly",
       "schedule": "0 22,23 * * 5"
+    },
+    {
+      "path": "/api/cron/work-log-goals",
+      "schedule": "0 20,21 * * 5"
     }
   ],
   "rewrites": [

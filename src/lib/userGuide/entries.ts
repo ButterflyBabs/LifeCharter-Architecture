@@ -1846,7 +1846,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       },
       {
         "q": "How do I make sure a person is getting their hours each week?",
-        "a": "Under Hourly rates and weekly goals, type the hours in that person's Goal box and press Save goal. They see their own progress at the top of their Work Log, and you see everyone's under Weekly hours goals. It counts time on the clock for the week on screen."
+        "a": "Under Hourly rates and weekly goals, type the hours in that person's Goal box and press Save goal. They see their own progress at the top of their Work Log, and you see everyone's under Weekly hours goals. It counts time on the clock for the week on screen. Every Friday at 2:00 PM Mountain you also get a reminder, to you only, if anyone is short of their goal."
       },
       {
         "q": "What happens after I submit a day?",
