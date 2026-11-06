@@ -336,6 +336,8 @@ const ARCHITECT_PAGE_GROUP: Record<string, string> = {
   "team-briefing": "ARCHITECT · PROGRAMS & EVENTS",
   "masterclass-lenses": "ARCHITECT · PROGRAMS & EVENTS",
 };
+// custom_pages.nav_section for the Coaching Partner Program pages: they get their own left-menu section.
+const CPP_NAV_SECTION = "coaching_partner_program";
 // Sections that start folded until someone opens them.
 const DEFAULT_FOLDED = [ARCHIVE_TITLE];
 
@@ -829,8 +831,11 @@ export function CollapsibleSidebar() {
   }, []);
   const pageItem = (p: { slug: string; title: string }) => ({ id: `page-${p.slug}`, label: p.title, icon: FileText, href: `/my-pages/${p.slug}` });
   // Babs's Alignment Architect pages sit in her Architect groups; a team member she shared one with sees it under My Pages.
-  const myPages = customPages.filter((p) => !superAdmin || p.nav_section !== "alignment_architect").map(pageItem);
+  const myPages = customPages.filter((p) => p.nav_section !== CPP_NAV_SECTION && (!superAdmin || p.nav_section !== "alignment_architect")).map(pageItem);
   const mySection = myPages.length ? [{ title: "MY PAGES", color: "text-[#c9a227]", items: myPages }] : [];
+  // The Coaching Partner Program's own section: Babs and any team member she gave the page to (the page list only holds what they may open).
+  const cppPages = customPages.filter((p) => p.nav_section === CPP_NAV_SECTION).map(pageItem);
+  const cppSection = cppPages.length ? [{ title: "COACHING PARTNER PROGRAM", color: "text-[#c9a227]", items: cppPages }] : [];
   const demoOrderedSections = isDemo
     ? demoTourSections()
     : startHere
@@ -851,7 +856,7 @@ export function CollapsibleSidebar() {
   // A Call to Close consultant has no menu of pages: their workspace is the one page, reached from the logo, and the
   // left bar holds only Settings (profile, appearance and security).
   const consultantNav = [{ title: "MY ACCOUNT", color: "text-[#c9a227]", items: [...(academy ? [{ id: "academy", label: "LCCS Academy", icon: GraduationCap, href: "/academy" }] : []), { id: "settings", label: "Settings", icon: Settings2, href: "/settings" }] }];
-  const sections = teamRole === "consultant" ? consultantNav : [...(superAdmin && !isDemo ? [...demoOrderedSections, ...architectGroups, efSection] : demoOrderedSections), ...teamExtra, ...mySection]
+  const sections = teamRole === "consultant" ? consultantNav : [...(superAdmin && !isDemo ? [...demoOrderedSections, ...architectGroups, efSection] : demoOrderedSections), ...teamExtra, ...cppSection, ...mySection]
     .map((s) => ({ ...s, items: s.items.filter((i) => visible(i.href) && ((superAdmin && !isDemo) || !ARCHITECT_ONLY_IDS.includes(i.id)) && (i.id !== "team-huddle" || hasTeam) && (i.id !== "user-guide" || userGuide) && (i.id !== "academy" || academy)) }))
     .filter((s) => s.items.length > 0);
 
@@ -943,6 +948,7 @@ export function CollapsibleSidebar() {
     ["ARCHITECT · PROGRAMS & EVENTS", "ARCHITECT · SALES"],
     ["ARCHITECT · INVESTORS & LEGAL", "ARCHITECT · PROGRAMS & EVENTS"],
     ["ARCHITECT · ARCHIVE", "ARCHITECT · INVESTORS & LEGAL"],
+    ["COACHING PARTNER PROGRAM", "CLIENTS & SALES"],
   ];
   const savedOrder = [...savedBase];
   if (savedOrder.length) {
@@ -1205,7 +1211,7 @@ export function CollapsibleSidebar() {
   // Get active item based on current path
   const getActiveItem = () => {
     // The most specific match wins (so /sales/pipeline lights Pipeline, not Sales Plan).
-    const item = [...navigationItems, ...myPages, ...customPages.filter((p) => p.nav_section === "alignment_architect").map(pageItem)]
+    const item = [...navigationItems, ...myPages, ...cppPages, ...customPages.filter((p) => p.nav_section === "alignment_architect").map(pageItem)]
       .filter((i) => i.href !== "/" && !i.href.includes("?") && (pathname === i.href || pathname?.startsWith(i.href + "/")))
       .sort((a, b) => b.href.length - a.href.length)[0];
     if (item) return item.id;

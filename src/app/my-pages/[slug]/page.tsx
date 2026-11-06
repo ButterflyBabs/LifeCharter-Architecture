@@ -16,7 +16,7 @@ const ghost = "inline-flex items-center gap-1 font-ui text-xs font-medium text-[
 
 export default function CustomPage({ params }: { params: { slug: string } }) {
   const [title, setTitle] = useState("");
-  const [section, setSection] = useState<"my_pages" | "alignment_architect">("my_pages");
+  const [section, setSection] = useState<"my_pages" | "alignment_architect" | "coaching_partner_program">("my_pages");
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [state, setState] = useState<"loading" | "ready" | "missing">("loading");
   const [saved, setSaved] = useState<"saved" | "saving" | "error">("saved");
@@ -56,7 +56,7 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
       .then((d) => {
         if (!d?.page) return setState("missing");
         setTitle(d.page.title);
-        setSection(d.page.nav_section === "alignment_architect" ? "alignment_architect" : "my_pages");
+        setSection(d.page.nav_section === "alignment_architect" || d.page.nav_section === "coaching_partner_program" ? d.page.nav_section : "my_pages");
         setBlocks(d.page.blocks ?? []);
         setViewOnly(d.level === "view");
         setReview(d.page.review_status === "draft" || d.page.review_status === "approved" ? d.page.review_status : null);
@@ -141,7 +141,7 @@ export default function CustomPage({ params }: { params: { slug: string } }) {
   return (
     <div className="w-full px-4 py-10 font-ui sm:px-6 lg:px-10">
       <header className="mb-8">
-        <p className="font-ui text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">{section === "alignment_architect" ? "Alignment Architect" : "My Pages"}</p>
+        <p className="font-ui text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a227]">{section === "alignment_architect" ? "Alignment Architect" : section === "coaching_partner_program" ? "Coaching Partner Program" : "My Pages"}</p>
         <div className="mt-2 flex items-start justify-between gap-3">
           <input
             aria-label="Page title"
