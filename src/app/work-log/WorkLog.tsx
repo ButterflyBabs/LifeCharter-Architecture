@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, ChevronLeft, ChevronRight, ClipboardList, Download, LifeBuoy, LogIn, LogOut, Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import { hm, weekStart } from "@/lib/timeTracking";
-import { STATUS_LABEL, helpState, loggedMinutes, payFor, shiftMinutes, submitBlocker, type ShiftStatus } from "@/lib/workLog";
+import { STATUS_LABEL, goalProgress, helpState, loggedMinutes, payFor, shiftMinutes, submitBlocker, type ShiftStatus } from "@/lib/workLog";
 
 
 type Item = { id: string; what: string; quantity: number | null; unit: string | null; minutes: number | null; taskId: number | null; projectId: string | null; challenge: string | null; helpAskedOf: string | null; helpReceivedFrom: string | null; helpNote: string | null };
@@ -17,6 +17,7 @@ type Data = {
   tasks: { id: number; title: string; project_id: string | null }[];
   names: string[];
   rates?: Record<string, number>;
+  goals?: Record<string, number>;
   team?: { name: string; email: string }[];
 };
 
@@ -291,6 +292,7 @@ export default function WorkLog() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [rateEdit, setRateEdit] = useState<Record<string, string>>({});
+  const [goalEdit, setGoalEdit] = useState<Record<string, string>>({});
   const [, tick] = useState(0);
 
   const range = useMemo(() => ({ from: week.toISOString(), to: new Date(week.getTime() + 7 * 86_400_000).toISOString() }), [week]);
@@ -335,6 +337,10 @@ export default function WorkLog() {
 
   const weekMin = inRange.reduce((n, s) => n + minsOf(s), 0);
   const weekPay = reviewer ? inRange.reduce((n, s) => n + (payFor(minsOf(s), s.hourlyRate) ?? 0), 0) : 0;
+  // Weekly hours goal: a member sees their own; the owner sees everyone who has one, for the week on screen.
+  const minsFor = (email: string) => (d?.shifts ?? []).filter((s) => s.personEmail === email && s.clockIn >= range.from && s.clockIn < range.to).reduce((n, s) => n + minsOf(s), 0);
+  const myGoal = d ? goalProgress(minsFor(d.me.email), d.goals?.[d.me.email]) : null;
+  const goalRows = reviewer ? (d?.team ?? []).map((m) => ({ m, g: goalProgress(minsFor(m.email), d?.goals?.[m.email]), mins: minsFor(m.email) })).filter((r) => r.g) : [];
   const acts = inRange.reduce((n, s) => n + s.items.length, 0);
   const challenges = inRange.reduce((n, s) => n + s.items.filter((i) => i.challenge).length, 0);
   const helpWaiting = inRange.reduce((n, s) => n + s.items.filter((i) => helpState({ help_asked_of: i.helpAskedOf, help_received_from: i.helpReceivedFrom }) === "waiting").length, 0);
@@ -420,6 +426,30 @@ export default function WorkLog() {
             {reviewer && <div className={card}><p className={label}>Estimated pay</p><p className="text-2xl font-semibold tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">{usd(weekPay)}</p></div>}
           </div>
 
+
+          {!reviewer && myGoal && d && (
+            <section className={card} aria-label="My weekly hours goal">
+              <p className={label}>My goal this week</p>
+              <p className="text-2xl font-semibold tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">{hm(minsFor(d.me.email))} <span className="text-base font-normal text-[#5b5f73] dark:text-[#b8a898]">of {hm(myGoal.goalMin)}</span></p>
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#1a2b4a]/10 dark:bg-white/10" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={myGoal.pct}><div className="h-full rounded-full bg-[#2E7C83]" style={{ width: `${myGoal.pct}%` }} /></div>
+              <p className={`${muted} mt-2`}>{myGoal.shortMin > 0 ? `${hm(myGoal.shortMin)} to go this week.` : "You've reached your hours for the week."}</p>
+            </section>
+          )}
+          {reviewer && goalRows.length > 0 && (
+            <section className={card} aria-label="Weekly hours goals">
+              <h2 className={h2}>Weekly hours goals</h2>
+              <ul className="space-y-3">
+                {goalRows.map(({ m, g, mins }) => (
+                  <li key={m.email}>
+                    <p className="text-sm"><span className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{m.name}</span> · {hm(mins)} of {hm(g!.goalMin)} · {g!.shortMin > 0 ? `${hm(g!.shortMin)} short` : "goal reached"}</p>
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#1a2b4a]/10 dark:bg-white/10" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={g!.pct}><div className="h-full rounded-full bg-[#2E7C83]" style={{ width: `${g!.pct}%` }} /></div>
+                  </li>
+                ))}
+              </ul>
+              <p className={`${muted} mt-2`}>Counts time on the clock for the week on screen, approved or not.</p>
+            </section>
+          )}
+
           {days.length === 0 && inRange.length === 0 && <p className={muted}>Nothing logged this week yet.</p>}
           {days.map(([day, list]) => (
             <section key={day} className="space-y-3" aria-label={dayOf(`${day}T12:00:00`)}>
@@ -430,8 +460,8 @@ export default function WorkLog() {
 
           {reviewer && d.team && (
             <section className={card} aria-label="Hourly rates">
-              <h2 className={h2}>Hourly rates</h2>
-              <p className={`${muted} mb-3`}>Only you see these. A rate applies to every day that is not yet approved. Approved days keep the rate they were approved at.</p>
+              <h2 className={h2}>Hourly rates and weekly goals</h2>
+              <p className={`${muted} mb-3`}>Only you see the rates. A rate applies to every day that is not yet approved. Approved days keep the rate they were approved at. Leave the rate empty for someone paid a flat amount. A weekly hours goal shows that person their own progress and shows you everyone's.</p>
               {d.team.length === 0 && <p className={muted}>Add team members in Settings to set their rates.</p>}
               <ul className="space-y-2">
                 {d.team.map((m) => (
@@ -441,6 +471,10 @@ export default function WorkLog() {
                       <input aria-label={`${m.name} hourly rate`} inputMode="decimal" className={`${input} w-28`} value={rateEdit[m.email] ?? (d.rates?.[m.email] != null ? String(d.rates[m.email]) : "")} onChange={(e) => setRateEdit({ ...rateEdit, [m.email]: e.target.value })} placeholder="0.00" />/h
                     </label>
                     <button className={btn} onClick={async () => { const v = rateEdit[m.email]; if (await act({ action: "set_rate", email: m.email, rate: v === undefined ? (d.rates?.[m.email] ?? null) : v === "" ? null : Number(v) }, `Saved ${m.name}'s rate.`)) setRateEdit((r) => { const n = { ...r }; delete n[m.email]; return n; }); }}>Save rate</button>
+                    <label className="flex items-center gap-1.5 text-sm">Goal
+                      <input aria-label={`${m.name} weekly hours goal`} inputMode="decimal" className={`${input} w-20`} value={goalEdit[m.email] ?? (d.goals?.[m.email] != null ? String(d.goals[m.email]) : "")} onChange={(e) => setGoalEdit({ ...goalEdit, [m.email]: e.target.value })} placeholder="10" />hours/week
+                    </label>
+                    <button className={btn} onClick={async () => { const v = goalEdit[m.email]; if (await act({ action: "set_goal", email: m.email, hours: v === undefined ? (d.goals?.[m.email] ?? null) : v === "" ? null : Number(v) }, `Saved ${m.name}'s weekly goal.`)) setGoalEdit((r) => { const n = { ...r }; delete n[m.email]; return n; }); }}>Save goal</button>
                   </li>
                 ))}
               </ul>

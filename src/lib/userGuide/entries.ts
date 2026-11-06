@@ -1820,6 +1820,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "Under Add what I did, say what you did, how many, what you counted (such as DMs or posts) and how long it took. Choose a project or task if it belongs to one.",
       "If something got in the way, write it under Did anything get in the way? If you asked someone for help, or got it, say who and what it was about.",
       "Press Add to my log. Add one line for each thing you did.",
+      "If the account owner gave you a weekly hours goal, a bar at the top shows your hours so far this week against it, such as 6h 30m of 10h.",
       "Press Clock out when you finish, and add a short note about your day if you like.",
       "Check your lines, then press Submit for review. The account owner marks it Approved, or sends it back with a note."
     ],
@@ -1844,6 +1845,10 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
         "a": "Hourly rates and pay estimates are for the account owner only. Team members never see them."
       },
       {
+        "q": "How do I make sure a person is getting their hours each week?",
+        "a": "Under Hourly rates and weekly goals, type the hours in that person's Goal box and press Save goal. They see their own progress at the top of their Work Log, and you see everyone's under Weekly hours goals. It counts time on the clock for the week on screen."
+      },
+      {
         "q": "What happens after I submit a day?",
         "a": "It shows Waiting for review and you cannot change it. The owner marks it Approved, or sends it back with a note and you can edit it and submit it again."
       }
@@ -1854,7 +1859,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "projects",
       "team-huddle"
     ],
-    "who": "Anyone on a team. Team members need the Work Log area, which the account owner turns on for each person under Settings > Team > Access. Each person sees only their own days. The account owner sees everyone's, with hourly rates and pay estimates.",
+    "who": "Anyone on a team. Team members need the Work Log area, which the account owner turns on for each person under Settings > Team > Access. Each person sees only their own days. The account owner sees everyone's, with hourly rates, pay estimates and weekly hours goals.",
     "keywords": [
       "work log",
       "clock in",

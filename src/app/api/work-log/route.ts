@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 //   GET ?from=ISO&to=ISO[&format=csv] -> shifts with their lines. A team member gets only their own shifts and never
 //                                        sees a rate or pay. The owner gets everyone's, with rates and pay.
 //   POST { action: "clock_in" | "clock_out" | "update_shift" | "add_item" | "update_item" | "delete_item" | "submit"
-//                  | "approve" | "return" | "set_rate", ... }
+//                  | "approve" | "return" | "set_rate" | "set_goal", ... }
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const SHIFT_COLS = "id, person_email, person_name, clock_in, clock_out, status, summary, hourly_rate, submitted_at, reviewed_at, reviewed_by, review_note";
 const ITEM_COLS = "id, shift_id, what, quantity, unit, minutes, task_id, project_id, challenge, help_asked_of, help_received_from, help_note, created_at";
@@ -90,12 +90,14 @@ export async function GET(request: Request) {
     return new NextResponse(csv, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="work-log.csv"`, "Cache-Control": "no-store" } });
   }
 
-  const [{ data: projects }, { data: tasks }, members, owner, ratesRes] = await Promise.all([
+  const [{ data: projects }, { data: tasks }, members, owner, ratesRes, goalsRes] = await Promise.all([
     db.from("projects").select("id, name").eq("master_plan_id", a.planId).order("name").limit(300),
     db.from("tasks").select("id, title, project_id").eq("master_plan_id", a.planId).neq("status", "done").is("archived_at", null).order("updated_at", { ascending: false }).limit(300),
     planMembers(a.planId),
     v.reviewer ? Promise.resolve(null) : ownerName(a.planId),
     v.reviewer ? db.from("work_log_rates").select("person_email, hourly_rate").eq("master_plan_id", a.planId) : Promise.resolve({ data: [] as { person_email: string; hourly_rate: number }[] }),
+    // The owner gets every goal; a member gets only their own.
+    (v.reviewer ? db.from("work_log_goals").select("person_email, weekly_hours").eq("master_plan_id", a.planId) : db.from("work_log_goals").select("person_email, weekly_hours").eq("master_plan_id", a.planId).eq("person_email", v.email)),
   ]);
 
   const names = Array.from(new Set([...(members.map((m) => m.name || m.email)), ...(owner ? [owner] : []), ...(v.reviewer && v.name ? [v.name] : [])])).filter(Boolean);
@@ -127,6 +129,7 @@ export async function GET(request: Request) {
     tasks: tasks ?? [],
     names,
     rates: v.reviewer ? Object.fromEntries(((ratesRes.data ?? []) as { person_email: string; hourly_rate: number }[]).map((r) => [r.person_email.toLowerCase(), Number(r.hourly_rate)])) : undefined,
+    goals: Object.fromEntries(((goalsRes.data ?? []) as { person_email: string; weekly_hours: number | string }[]).map((g) => [g.person_email.toLowerCase(), Number(g.weekly_hours)])),
     team: v.reviewer ? members.map((m) => ({ name: m.name || m.email, email: m.email.toLowerCase() })) : undefined,
   }, { headers: { "Cache-Control": "no-store" } });
 }
@@ -251,6 +254,19 @@ export async function POST(request: Request) {
       const note = str(b.note, 1000) || null;
       if (!approving && !note) return fail("Add a short note so they know what to change.");
       await db.from("work_shifts").update({ status: approving ? "approved" : "returned", reviewed_at: now, reviewed_by: v.name, review_note: note, updated_at: now }).eq("id", s.id);
+      return NextResponse.json({ ok: true });
+    }
+    case "set_goal": {
+      if (!v.reviewer) return fail("Only the account owner can set a weekly goal.", 403);
+      const email = str(b.email, 200).toLowerCase();
+      if (!email) return fail("Choose a person.");
+      if (b.hours === null || b.hours === "" || b.hours === undefined) {
+        await db.from("work_log_goals").delete().eq("master_plan_id", planId).eq("person_email", email);
+        return NextResponse.json({ ok: true });
+      }
+      const hours = Math.round(Number(b.hours) * 100) / 100;
+      if (!Number.isFinite(hours) || hours <= 0 || hours > 168) return fail("The weekly goal needs to be a number of hours above zero.");
+      await db.from("work_log_goals").upsert({ master_plan_id: planId, person_email: email, weekly_hours: hours, updated_at: now }, { onConflict: "master_plan_id,person_email" });
       return NextResponse.json({ ok: true });
     }
     case "set_rate": {

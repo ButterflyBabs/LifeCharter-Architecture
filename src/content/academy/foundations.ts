@@ -949,7 +949,7 @@ export const FOUNDATIONS: Lesson[] = [
       },
       {
         heading: "Work Log: clock in and log your day",
-        text: "If the account owner has given you the Work Log area, it is where you show what you did and how long it took. It sits under Daily Operations. Press Clock in when you start, and add one line for each thing you did: what it was, how many, what you counted (such as DMs or posts) and how long. Say what got in the way, and who you asked for help and who helped. When you finish, press Clock out, check your lines, and press Submit for review. The owner marks the day Approved, or sends it back with a note. You see your own days and never anyone else's. Pay is never shown to team members. The Work Log does not change scores.",
+        text: "If the account owner has given you the Work Log area, it is where you show what you did and how long it took. It sits under Daily Operations. Press Clock in when you start, and add one line for each thing you did: what it was, how many, what you counted (such as DMs or posts) and how long. Say what got in the way, and who you asked for help and who helped. When you finish, press Clock out, check your lines, and press Submit for review. The owner marks the day Approved, or sends it back with a note. You see your own days and never anyone else's. Pay is never shown to team members. If the owner set you a weekly hours goal, a bar at the top shows your hours so far this week against it. The Work Log does not change scores.",
         steps: [
           "Open Work Log from the left menu and press Clock in.",
           "Under Add what I did, say what you did, how many, what you counted and how long it took.",

@@ -21,6 +21,15 @@ export function payFor(minutes: number, rate: number | string | null | undefined
   return Number.isFinite(r) && r >= 0 ? Math.round((minutes / 60) * r * 100) / 100 : null;
 }
 
+/** Progress toward a weekly hours goal. Null when there is no goal. */
+export function goalProgress(minutes: number, goalHours: number | string | null | undefined): { goalMin: number; pct: number; shortMin: number } | null {
+  if (goalHours === null || goalHours === undefined || goalHours === "") return null;
+  const g = Number(goalHours);
+  if (!Number.isFinite(g) || g <= 0) return null;
+  const goalMin = Math.round(g * 60);
+  return { goalMin, pct: Math.min(100, Math.round((minutes / goalMin) * 100)), shortMin: Math.max(0, goalMin - minutes) };
+}
+
 /** Where a request for help stands: nothing asked, asked and waiting, or someone helped. */
 export function helpState(i: Pick<ItemLike, "help_asked_of" | "help_received_from">): "none" | "waiting" | "received" {
   if (i.help_received_from?.trim()) return "received";

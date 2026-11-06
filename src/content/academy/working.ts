@@ -250,10 +250,11 @@ export const WORKING: Lesson[] = [
       },
       {
         heading: "Work Log for part-time and virtual team members",
-        text: "Time is for your own hours. The Work Log is for your team's. Each person clocks in, lists every thing they did with how many and how long, notes what got in the way and any help they asked for or got, then clocks out and submits the day. You review it. Open Work Log under Daily Operations. Waiting for your review sits at the top, and each day shows its lines, challenges and help. Press Approved, or Send back with a note that says what to change. Choose a person under Show to see just them, and press Download CSV for the week on screen. Each person sees only their own days, and only you see hourly rates and pay. Team members need the Work Log area under Settings > Team > Access. The Work Log does not change your scores.",
+        text: "Time is for your own hours. The Work Log is for your team's. Each person clocks in, lists every thing they did with how many and how long, notes what got in the way and any help they asked for or got, then clocks out and submits the day. You review it. Open Work Log under Daily Operations. Waiting for your review sits at the top, and each day shows its lines, challenges and help. Press Approved, or Send back with a note that says what to change. Choose a person under Show to see just them, and press Download CSV for the week on screen. Each person sees only their own days, and only you see hourly rates and pay. If you set a weekly hours goal for someone, they see their own progress toward it and you see everyone's. Team members need the Work Log area under Settings > Team > Access. The Work Log does not change your scores.",
         steps: [
           "Under Settings > Team > Access, give the person the Work Log area with edit access.",
-          "Open Work Log under Daily Operations. Under Hourly rates, set each person's rate and press Save rate.",
+          "Open Work Log under Daily Operations. Under Hourly rates and weekly goals, set each person's rate and press Save rate. Leave the rate empty for someone paid a flat amount.",
+          "If you expect a set number of hours a week, type it in that person's Goal box and press Save goal. You then see everyone's progress under Weekly hours goals.",
           "When a day is submitted, read it under Waiting for your review.",
           "Press Approved, or press Send back and say what to change.",
           "Check challenges noted and help still waiting in the cards at the top of the week.",

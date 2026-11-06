@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { canEditLines, cleanItem, csvCell, helpState, loggedMinutes, payFor, shiftMinutes, submitBlocker } from "../src/lib/workLog";
+import { canEditLines, cleanItem, csvCell, goalProgress, helpState, loggedMinutes, payFor, shiftMinutes, submitBlocker } from "../src/lib/workLog";
 import { featureApiAccess, featureForApi, featureForPage } from "../src/lib/teamRoles";
 
 test("shift minutes run from clock in to clock out, or to now while clocked in", () => {
@@ -83,4 +83,12 @@ test("the Work Log is its own team access area", () => {
   assert.equal(featureApiAccess({ work_log: "view" }, "/api/work-log", "GET").allow, true);
   assert.equal(featureApiAccess({ work_log: "none" }, "/api/work-log", "GET").allow, false);
   assert.equal(featureApiAccess({ tasks: "edit" }, "/api/work-log", "GET").allow, false); // a member saved before this area existed does not get it
+});
+
+test("weekly goal progress: percent of the goal, minutes still to go, capped at 100, empty without a goal", () => {
+  assert.deepEqual(goalProgress(390, 10), { goalMin: 600, pct: 65, shortMin: 210 });
+  assert.deepEqual(goalProgress(720, 10), { goalMin: 600, pct: 100, shortMin: 0 });
+  assert.equal(goalProgress(100, null), null);
+  assert.equal(goalProgress(100, 0), null);
+  assert.equal(goalProgress(100, ""), null);
 });

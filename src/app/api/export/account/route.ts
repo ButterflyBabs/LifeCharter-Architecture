@@ -44,7 +44,7 @@ const BY_PLAN = [
   "client_score_snapshots",
   "assistant_messages",
   "notifications",
-  "account_activity", "assessment_completions", "assistant_reports", "reminders", "custom_pages", "time_entries", "time_settings", "work_shifts", "work_log_items", "work_log_rates",
+  "account_activity", "assessment_completions", "assistant_reports", "reminders", "custom_pages", "time_entries", "time_settings", "work_shifts", "work_log_items", "work_log_rates", "work_log_goals",
   "projects", "project_milestones", "project_guests", "team_huddles",
   "seq_contacts", "contact_records", "contact_emails", "contact_activity_log", "crm_custom_fields", "crm_tag_history", "crm_tag_notes",
   "crm_forms", "crm_broadcasts", "crm_events", "crm_invite_lists", "crm_invites", "sequences", "landing_pages", "review_requests",
