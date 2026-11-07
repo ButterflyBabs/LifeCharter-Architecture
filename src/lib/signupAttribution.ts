@@ -2,7 +2,7 @@
 // affiliate or card code on the link. Pure and shared by the sign-up API and its tests.
 //
 // Tags written (all start mc-): mc-source-paid-ad | mc-source-<channel> | mc-source-affiliate | mc-source-direct,
-// plus mc-medium-<medium> and mc-campaign-<campaign> when the link carried them. Short links such as mc-ig-post
+// plus mc-medium-<medium>, mc-campaign-<campaign> and mc-content-<utm_content> when the link carried them. Short links such as mc-ig-post
 // carry utm_source=instagram, utm_medium=post, utm_campaign=masterclass; a Meta ad carries a click id (fbclid) or a
 // paid medium.
 
@@ -60,5 +60,8 @@ export function attributionFor(i: { utm?: unknown; ref?: string; card?: string }
   }
   if (medium) tags.push(`mc-medium-${slug(medium)}`);
   if (campaign) tags.push(`mc-campaign-${slug(campaign)}`);
+  // utm_content names the one post or video on the link, so its registrations can be counted apart from the channel's others.
+  const content = get("utm_content");
+  if (content) tags.push(`mc-content-${slug(content)}`);
   return { tags: Array.from(new Set(tags.filter((t) => t.length > 3))), paid, summary, detail };
 }

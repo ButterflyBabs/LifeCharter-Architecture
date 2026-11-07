@@ -20,3 +20,10 @@ test("affiliate, personal link and direct visits are told apart", () => {
   assert.deepEqual(attributionFor({ card: "k3j2" }).tags, ["mc-source-personal-link"]);
   assert.deepEqual(attributionFor({}).tags, ["mc-source-direct"]);
 });
+
+test("a link for one video adds a content tag so that video's registrations can be counted on their own", () => {
+  const a = attributionFor({ utm: { utm_source: "youtube", utm_medium: "organic-video", utm_campaign: "masterclass", utm_content: "three-big-questions" } });
+  assert.equal(a.paid, false);
+  assert.deepEqual(a.tags.sort(), ["mc-campaign-masterclass", "mc-content-three-big-questions", "mc-medium-organic-video", "mc-source-youtube"]);
+  assert.equal(a.detail.utm_content, "three-big-questions");
+});
