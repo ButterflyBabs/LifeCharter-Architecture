@@ -9,6 +9,8 @@ export const metadata: Metadata = {
 };
 
 const LANDING = "https://start.lccommandsuite.com/masterclass";
+// "Three Big Questions" video on YouTube, shown under the form (same video as the landing page).
+const YOUTUBE_VIDEO_ID = "n08FKXN5AOc";
 
 // Public page a MasterClass affiliate link sends people to. Shows the next session and registers them on Zoom.
 export default async function MasterclassSignupPage() {
@@ -40,6 +42,21 @@ export default async function MasterclassSignupPage() {
       <p className="mt-4 rounded-xl border-l-4 border-[#c9a227] bg-[#c9a227]/10 px-4 py-3 text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{next ? "Next session: " : ""}{when}</p>
       <p className="mt-3 text-sm font-semibold text-[#8a6a15] dark:text-[#d9b95a]">Join live and get a free 2027 digital planner for founders.</p>
       <SignupForm />
+      <section className="mt-10">
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#a8812b]">Watch this first · 5 minutes</p>
+        <h2 className="mt-2 text-xl font-bold leading-snug text-[#1a2b4a] dark:text-[#F8F5F0]">Built a business you don&apos;t even like? Start with three big questions.</h2>
+        <div className="relative mt-4 aspect-video w-full overflow-hidden rounded-2xl border border-[#1a2b4a]/10 bg-[#1a2b4a] shadow-md">
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${YOUTUBE_VIDEO_ID}?rel=0&modestbranding=1&cc_load_policy=1`}
+            title="Built a Business You Don't Even Like? Ask These 3 Questions"
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+            className="absolute inset-0 h-full w-full"
+          />
+        </div>
+      </section>
       <p className="mt-6 text-sm text-[#5a6472] dark:text-[#b8c2cf]">
         Want to see what we&apos;ll cover first? <a className="font-semibold text-[#2E7C83] underline" href={LANDING}>Read about the MasterClass</a>.
       </p>
