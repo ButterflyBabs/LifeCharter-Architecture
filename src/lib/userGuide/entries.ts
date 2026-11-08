@@ -1723,7 +1723,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "Forgot the timer? Use Add time by hand further down the page.",
       "Set your weekly hours and rates under Capacity and rates, then press Save capacity and rates.",
       "Check your week at the top, and press Download CSV for your records or invoicing.",
-      "If you have a team, scroll to Team work logs. It has its own week arrows (Sunday to Saturday) and a Person box. Each person's card shows their total time and their time on each project for the week, and each day lists their shift, what they logged, the tasks they finished, and a running Week so far total. It lists the people who have the Work Log area, so anyone who does not track hours is left out."
+      "If you have a team, scroll to Team work logs. It has its own week arrows (Sunday to Saturday) and one card per person (yours first, then each team member) showing total time and time on each project for the week. Click a card to open that person's day by day underneath: their shift, what they logged, the tasks they finished, and a running Week so far total."
     ],
     "health": "This does not change your scores. It shows where your hours go, so you can see whether your week matches your capacity.",
     "tips": [
@@ -1742,7 +1742,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       },
       {
         "q": "Where do I see what my team did each day?",
-        "a": "Under Team work logs, near the bottom of Time. Use its arrows to pick the week (Sunday to Saturday) and the Person box to look at one person. Week totals shows each person's total time and their time on each project. Day by day shows each shift (clock in and out, hours, and whether it is waiting for review), the things they logged, the tasks they finished, and a running Week so far total, overall and by project. Time on the clock that was not itemized shows as Time not itemized. Only the account owner sees it. To approve or send back a day, open Work Log."
+        "a": "Under Team work logs, near the bottom of Time. Use its arrows to pick the week (Sunday to Saturday). Week totals has a card for you and one for each team member with total time and time on each project; the day by day stays closed until you click a card. Day by day then shows each shift (clock in and out, hours, and whether it is waiting for review), the things they logged, the tasks they finished, and a running Week so far total, overall and by project. Time on the clock that was not itemized shows as Time not itemized. Only the account owner sees it. To approve or send back a day, open Work Log."
       },
       {
         "q": "What if I never set a weekly target?",

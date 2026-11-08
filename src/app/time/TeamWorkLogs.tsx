@@ -2,25 +2,26 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardList } from "lucide-react";
-import { hm } from "@/lib/timeTracking";
+import { hm, minutesOf } from "@/lib/timeTracking";
 import { STATUS_LABEL, loggedMinutes, shiftMinutes, type ShiftStatus } from "@/lib/workLog";
 
 type Item = { id: string; what: string; quantity: number | null; unit: string | null; minutes: number | null; taskId: number | null; projectId: string | null; challenge: string | null };
 type Shift = { id: string; personEmail: string; personName: string; clockIn: string; clockOut: string | null; status: ShiftStatus; items: Item[] };
 type Done = { id: number; title: string; completedAt: string; assignee: string | null; projectId: string | null };
 type Data = {
-  me: { reviewer: boolean };
+  me: { reviewer: boolean; name?: string; email?: string };
   shifts: Shift[];
   doneTasks?: Done[];
   taskTitles?: Record<string, string>;
   projects: { id: string; name: string }[];
-  team?: { name: string; email: string; tracksHours?: boolean }[];
+  team?: { name: string; email: string; tracksHours?: boolean; active?: boolean }[];
 };
+type TimeEntry = { id: string; person_email: string; project_id: string | null; note: string | null; started_at: string; ended_at: string | null; billable: boolean };
+type TimeData = { me: string; entries: TimeEntry[] };
 
 const card = "rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 shadow-[0_8px_24px_rgba(26,43,74,0.08)] dark:border-white/10 dark:bg-[#1a2b4a]/40";
 const h2 = "mb-3 flex items-center gap-2 text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]";
 const btn = "inline-flex items-center gap-1.5 rounded-full border border-[#1a2b4a]/15 px-3 py-1.5 text-xs font-semibold text-[#1a2b4a] hover:bg-[#1a2b4a]/5 disabled:opacity-50 dark:text-[#F8F5F0]";
-const input = "rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-1.5 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0] dark:border-white/15";
 const dayKey = (iso: string) => new Date(iso).toLocaleDateString("en-CA");
 const timeOf = (iso: string) => new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 const NO_PROJECT = "none";
@@ -45,7 +46,7 @@ const addDays = (d: Date, n: number) => {
   return x;
 };
 
-type Person = { key: string; name: string; email: string | null };
+type Person = { key: string; name: string; email: string | null; tracks?: boolean };
 type Totals = { total: number; logged: number; projects: Record<string, number> };
 const emptyTotals = (): Totals => ({ total: 0, logged: 0, projects: {} });
 
@@ -56,7 +57,8 @@ const emptyTotals = (): Totals => ({ total: 0, logged: 0, projects: {} });
  */
 export default function TeamWorkLogs() {
   const [week, setWeek] = useState(() => sundayStart());
-  const [who, setWho] = useState("all");
+  const [who, setWho] = useState<string | null>(null); // whose reports are open; none until a card is clicked
+  const [t, setT] = useState<TimeData | null>(null);
   const [d, setD] = useState<Data | null>(null);
   const settled = useRef(false); // the first look may step back one week; after that the arrows are the person's
 
@@ -84,6 +86,32 @@ export default function TeamWorkLogs() {
     };
   }, [week]);
 
+  // The owner's own time (timer and hand-added entries on the Time page) for the same week.
+  useEffect(() => {
+    let live = true;
+    void fetch(`/api/time?from=${week.toISOString()}&to=${addDays(week, 7).toISOString()}`, { cache: "no-store" })
+      .then((r) => r.json() as Promise<TimeData>)
+      .then((j) => live && setT(j && Array.isArray(j.entries) ? j : null))
+      .catch(() => live && setT(null));
+    return () => {
+      live = false;
+    };
+  }, [week]);
+
+  const mine = useMemo(() => {
+    if (!t || !d) return null;
+    const entries = t.entries.filter((e) => e.person_email === t.me).sort((a, b) => b.started_at.localeCompare(a.started_at));
+    const projects: Record<string, number> = {};
+    let total = 0;
+    for (const e of entries) {
+      const m = minutesOf(e);
+      total += m;
+      const k = e.project_id || NO_PROJECT;
+      projects[k] = (projects[k] ?? 0) + m;
+    }
+    return { name: d.me.name || "Me", entries, total, projects };
+  }, [t, d]);
+
   const view = useMemo(() => {
     if (!d?.me?.reviewer) return null;
     const lo = week.getTime();
@@ -92,15 +120,18 @@ export default function TeamWorkLogs() {
       const t = Date.parse(s.clockIn);
       return t >= lo && t < hi; // the API also returns unfinished shifts from other weeks
     });
-    // People who are not expected to track hours (no Work Log area) are left out, their finished tasks included.
-    const skip = new Set((d.team ?? []).filter((m) => m.tracksHours === false).map((m) => m.name.toLowerCase()));
     const done = (d.doneTasks ?? []).filter((t) => {
       const c = Date.parse(t.completedAt);
-      return c >= lo && c < hi && !skip.has((t.assignee || "").toLowerCase());
+      return c >= lo && c < hi;
     });
 
-    // Everyone on the team (so a person with no log shows 0 h), plus anyone who has a shift but is not on the list.
-    const people: Person[] = (d.team ?? []).filter((m) => m.tracksHours !== false).map((m) => ({ key: m.email.toLowerCase(), name: m.name, email: m.email.toLowerCase() }));
+    // Everyone active on the team, people who track hours first (so a person with no log still has a card). The owner has
+    // her own card, built from her Time page.
+    const ownEmail = (d.me.email || "").toLowerCase();
+    const people: Person[] = (d.team ?? [])
+      .filter((m) => m.active !== false)
+      .sort((a, b) => Number(b.tracksHours !== false) - Number(a.tracksHours !== false) || a.name.localeCompare(b.name))
+      .map((m) => ({ key: m.email.toLowerCase(), name: m.name, email: m.email.toLowerCase(), tracks: m.tracksHours !== false }));
     const byEmail = new Map(people.map((p) => [p.email!, p]));
     const byName = new Map(people.map((p) => [p.name.toLowerCase(), p]));
     const personOfShift = (s: Shift): Person => {
@@ -131,7 +162,7 @@ export default function TeamWorkLogs() {
       const m = cells.get(day) ?? cells.set(day, new Map()).get(day)!;
       return m.get(p.key) ?? m.set(p.key, { shifts: [], done: [] }).get(p.key)!;
     };
-    for (const s of shifts) cell(dayKey(s.clockIn), personOfShift(s)).shifts.push(s);
+    for (const s of shifts) if (s.personEmail.toLowerCase() !== ownEmail) cell(dayKey(s.clockIn), personOfShift(s)).shifts.push(s);
     for (const t of done) cell(dayKey(t.completedAt), personOfTask(t)).done.push(t);
 
     // Week totals per person, and the running total after each day they worked.
@@ -168,7 +199,7 @@ export default function TeamWorkLogs() {
   if (!view || !d) return null;
   const projectName = (k: string) => (k === NO_PROJECT ? "No project chosen" : k === UNLISTED ? "Time not itemized" : d.projects.find((p) => p.id === k)?.name ?? "A project");
   const project = (id: string | null) => (id ? d.projects.find((p) => p.id === id)?.name ?? null : null);
-  const shown = view.people.filter((p) => who === "all" || p.key === who);
+  const shown = who && who !== "me" ? view.people.filter((p) => p.key === who) : [];
   const label = `${week.toLocaleDateString("en-US", { month: "short", day: "numeric" })} to ${addDays(week, 6).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 
   /** A person's week as project lines, biggest first, with whatever on the clock was not itemized shown last. */
@@ -182,7 +213,7 @@ export default function TeamWorkLogs() {
     <section className={card}>
       <h2 className={h2}><ClipboardList className="h-5 w-5 text-[#2E7C83]" />Team work logs</h2>
       <p className="mb-3 text-sm text-[#5b5f73] dark:text-[#b8a898]">
-        Each person&apos;s week, Sunday to Saturday: total time, time on each project, what they logged and the tasks they finished, with a running total as the week goes.{" "}
+        Each person&apos;s week, Sunday to Saturday: total time and time on each project. Click a card to open that person&apos;s day by day, with what they logged, the tasks they finished and a running total as the week goes.{" "}
         <a className="font-semibold text-[#2E7C83] underline" href="/work-log">Review and approve in Work Log</a>
       </p>
       <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -190,28 +221,54 @@ export default function TeamWorkLogs() {
         <span className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{label}</span>
         <button className={btn} aria-label="Next team week" onClick={() => setWeek(addDays(week, 7))}><ChevronRight className="h-4 w-4" /></button>
         <button className={btn} onClick={() => setWeek(sundayStart())}>This week</button>
-        <label className="ml-auto flex items-center gap-2 text-sm">
-          <span className="text-xs font-semibold uppercase tracking-wide text-[#7b6b8d]">Person</span>
-          <select className={input} value={who} onChange={(e) => setWho(e.target.value)} aria-label="Show work logs for">
-            <option value="all">Everyone</option>
-            {view.people.map((p) => <option key={p.key} value={p.key}>{p.name}</option>)}
-          </select>
-        </label>
       </div>
 
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#7b6b8d]">Week totals</h3>
-      <div className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {shown.map((p) => {
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#7b6b8d]">Week totals. Click a card to open that person&apos;s day by day.</h3>
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {mine && (
+          <button
+            type="button"
+            aria-pressed={who === "me"}
+            onClick={() => setWho(who === "me" ? null : "me")}
+            className={`w-full rounded-xl border p-3 text-left transition dark:border-white/10 ${who === "me" ? "border-[#2E7C83] ring-2 ring-[#2E7C83]" : "border-[#1a2b4a]/10 hover:border-[#2E7C83]/60"}`}
+          >
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{mine.name} (you)</p>
+              <p className="text-xl font-semibold tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">{hm(mine.total)}</p>
+            </div>
+            <p className="text-xs text-[#7b6b8d]">From your Time page</p>
+            {!Object.keys(mine.projects).length ? <p className="mt-2 text-sm text-[#7b6b8d]">Nothing tracked this week.</p> : (
+              <ul className="mt-2 space-y-1.5 text-sm">
+                {Object.entries(mine.projects).sort((a, b) => b[1] - a[1]).map(([k, m]) => (
+                  <li key={k}>
+                    <div className="flex items-baseline justify-between gap-2"><span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{projectName(k)}</span><span className="tabular-nums text-[#5b5f73] dark:text-[#b8a898]">{hm(m)}</span></div>
+                    <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-[#1a2b4a]/10"><div className="h-full rounded-full bg-[#c9a227]" style={{ width: `${(m / Math.max(1, mine.total)) * 100}%` }} /></div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="mt-2 text-xs font-semibold text-[#2E7C83]">{who === "me" ? "Hide day by day" : "Open day by day"}</p>
+          </button>
+        )}
+        {view.people.map((p) => {
           const t = view.week$.get(p.key) ?? emptyTotals();
           const lines = projectLines(t);
+          const on = who === p.key;
+          const n = view.doneCount.get(p.key) ?? 0;
           return (
-            <div key={p.key} className="rounded-xl border border-[#1a2b4a]/10 p-3 dark:border-white/10">
+            <button
+              key={p.key}
+              type="button"
+              aria-pressed={on}
+              onClick={() => setWho(on ? null : p.key)}
+              className={`w-full rounded-xl border p-3 text-left transition dark:border-white/10 ${on ? "border-[#2E7C83] ring-2 ring-[#2E7C83]" : "border-[#1a2b4a]/10 hover:border-[#2E7C83]/60"}`}
+            >
               <div className="flex items-baseline justify-between gap-2">
                 <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{p.name}</p>
                 <p className="text-xl font-semibold tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">{hm(t.total)}</p>
               </div>
-              <p className="text-xs text-[#7b6b8d]">{view.doneCount.get(p.key) ?? 0} task{(view.doneCount.get(p.key) ?? 0) === 1 ? "" : "s"} done · {hm(t.logged)} itemized</p>
-              {!lines.length ? <p className="mt-2 text-sm text-[#7b6b8d]">Nothing logged this week.</p> : (
+              <p className="text-xs text-[#7b6b8d]">{n} task{n === 1 ? "" : "s"} done{p.tracks ? ` · ${hm(t.logged)} itemized` : " · does not track hours"}</p>
+              {!lines.length ? <p className="mt-2 text-sm text-[#7b6b8d]">{p.tracks ? "Nothing logged this week." : "No hours expected."}</p> : (
                 <ul className="mt-2 space-y-1.5 text-sm">
                   {lines.map(([k, m]) => (
                     <li key={k}>
@@ -221,13 +278,42 @@ export default function TeamWorkLogs() {
                   ))}
                 </ul>
               )}
-            </div>
+              <p className="mt-2 text-xs font-semibold text-[#2E7C83]">{on ? "Hide day by day" : "Open day by day"}</p>
+            </button>
           );
         })}
       </div>
 
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#7b6b8d]">Day by day</h3>
-      {!view.days.some((x) => x.rows.some((r) => shown.includes(r.p))) && <p className="text-sm text-[#7b6b8d]">No team work logged or tasks finished this week.</p>}
+      {who === "me" && mine && (
+        <div className="space-y-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-[#7b6b8d]">Day by day: {mine.name}</h3>
+          {!mine.entries.length && <p className="text-sm text-[#7b6b8d]">Nothing tracked this week. Start a timer or add time by hand above.</p>}
+          {Array.from(mine.entries.reduce((mp, e) => {
+            const k = dayKey(e.started_at);
+            return mp.set(k, [...(mp.get(k) ?? []), e]);
+          }, new Map<string, TimeEntry[]>()).entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([day, es]) => (
+            <div key={day}>
+              <p className="mb-1 flex justify-between border-b border-[#1a2b4a]/10 pb-1 text-xs font-semibold uppercase tracking-wide text-[#7b6b8d]">
+                <span>{new Date(`${day}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</span>
+                <span className="tabular-nums">{hm(es.reduce((n, e) => n + minutesOf(e), 0))}</span>
+              </p>
+              <ul className="divide-y divide-[#1a2b4a]/10 text-sm dark:divide-white/10">
+                {es.map((e) => (
+                  <li key={e.id} className="flex flex-wrap justify-between gap-2 py-1.5">
+                    <span className="min-w-0 text-[#1a2b4a] dark:text-[#F8F5F0]">{e.note || "No note"}<span className="text-[#5b5f73] dark:text-[#b8a898]"> · {e.project_id ? project(e.project_id) ?? "A project" : "No project chosen"}{e.billable ? "" : " · not billable"}</span></span>
+                    <span className="tabular-nums text-[#5b5f73] dark:text-[#b8a898]">{e.ended_at ? hm(minutesOf(e)) : "running"} · {timeOf(e.started_at)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {who && who !== "me" && (
+        <>
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#7b6b8d]">Day by day: {shown[0]?.name}</h3>
+      {!view.days.some((x) => x.rows.some((r) => shown.includes(r.p))) && <p className="text-sm text-[#7b6b8d]">Nothing logged and no tasks finished this week.</p>}
       <div className="space-y-6">
         {view.days.map(({ day, rows }) => {
           const mine = rows.filter((r) => shown.includes(r.p));
@@ -299,6 +385,8 @@ export default function TeamWorkLogs() {
           );
         })}
       </div>
+        </>
+      )}
     </section>
   );
 }

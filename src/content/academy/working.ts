@@ -246,7 +246,7 @@ export const WORKING: Lesson[] = [
       },
       {
         heading: "Reading your week",
-        text: "Three cards show This week against your weekly hours, Billable hours, and Billable value. Below them are totals By client and By project, then every entry by day. Use the arrows for other weeks, and This week to come back. Untick Only my time to see everyone's entries for that week. Download CSV gives you the week on screen, so choose the week and the Only my time box first. If you have a team, Team work logs sits further down the page with its own week arrows (Sunday to Saturday) and a Person box. It shows each person's total time and time on each project for the week, then day by day what they logged, the tasks they finished and a running Week so far total. It lists the people who have the Work Log area, so anyone who does not track hours is left out. Only the account owner sees it.",
+        text: "Three cards show This week against your weekly hours, Billable hours, and Billable value. Below them are totals By client and By project, then every entry by day. Use the arrows for other weeks, and This week to come back. Untick Only my time to see everyone's entries for that week. Download CSV gives you the week on screen, so choose the week and the Only my time box first. If you have a team, Team work logs sits further down the page with its own week arrows (Sunday to Saturday). It has a card for you and one for each team member showing total time and time on each project for the week. Click a card to open that person's day by day: what they logged, the tasks they finished and a running Week so far total. Only the account owner sees it.",
       },
       {
         heading: "Work Log for part-time and virtual team members",
