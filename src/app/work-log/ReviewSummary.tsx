@@ -2,16 +2,18 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { hm } from "@/lib/timeTracking";
+import { hm, minutesOf } from "@/lib/timeTracking";
 import { shiftMinutes, type ShiftStatus } from "@/lib/workLog";
 
 type Item = { minutes: number | null; projectId: string | null };
 type Shift = { id: string; personEmail: string; personName: string; clockIn: string; clockOut: string | null; status: ShiftStatus; items: Item[] };
-type Data = { me: { reviewer: boolean }; shifts: Shift[]; projects: { id: string; name: string }[]; team?: { name: string; email: string; tracksHours?: boolean; active?: boolean }[] };
+type Data = { me: { reviewer: boolean; name?: string; email?: string }; shifts: Shift[]; projects: { id: string; name: string }[]; team?: { name: string; email: string; tracksHours?: boolean; active?: boolean }[] };
 
 const card = "rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 shadow-[0_8px_24px_rgba(26,43,74,0.08)] dark:border-white/10 dark:bg-[#1a2b4a]/40";
 const label = "block text-[11px] font-semibold uppercase tracking-wide text-[#7b6b8d] dark:text-[#b8a898] mb-1";
 const btn = "inline-flex items-center gap-1.5 rounded-full border border-[#1a2b4a]/15 px-3 py-1.5 text-xs font-semibold text-[#1a2b4a] hover:bg-[#1a2b4a]/5 disabled:opacity-50 dark:text-[#F8F5F0]";
+type TimeEntry = { id: string; person_email: string; project_id: string | null; note: string | null; started_at: string; ended_at: string | null; billable: boolean };
+type TimeData = { me: string; entries: TimeEntry[]; projects: { id: string; name: string }[] };
 const NO_PROJECT = "none";
 const UNLISTED = "unlisted";
 
@@ -45,6 +47,7 @@ export default function ReviewSummary({ refreshKey, renderShift }: { refreshKey:
   const [month, setMonth] = useState(() => monthStart());
   const [m, setM] = useState<Data | null>(null);
   const [w, setW] = useState<Data | null>(null);
+  const [t, setT] = useState<TimeData | null>(null);
   const thisSunday = useMemo(() => sundayStart(), []);
   const lastSunday = useMemo(() => addDays(thisSunday, -7), [thisSunday]);
 
@@ -62,6 +65,41 @@ export default function ReviewSummary({ refreshKey, renderShift }: { refreshKey:
       live = false;
     };
   }, [lastSunday, thisSunday, refreshKey]);
+
+  // The owner's own time (timer and hand-added entries on the Time page), for the month and for last week.
+  useEffect(() => {
+    let live = true;
+    const hi = new Date(month.getFullYear(), month.getMonth() + 1, 1);
+    const from = month < lastSunday ? month : lastSunday;
+    const to = hi > thisSunday ? hi : thisSunday;
+    void fetch(`/api/time?from=${from.toISOString()}&to=${to.toISOString()}`, { cache: "no-store" })
+      .then((r) => r.json() as Promise<TimeData>)
+      .then((j) => live && setT(j && Array.isArray(j.entries) ? j : null))
+      .catch(() => live && setT(null));
+    return () => {
+      live = false;
+    };
+  }, [month, lastSunday, thisSunday, refreshKey]);
+
+  const mine = useMemo(() => {
+    if (!t || !m) return null;
+    const lo = month.getTime();
+    const hi = new Date(month.getFullYear(), month.getMonth() + 1, 1).getTime();
+    const wlo = lastSunday.getTime();
+    const whi = thisSunday.getTime();
+    const mineEntries = t.entries.filter((e) => e.person_email === t.me).sort((a, b) => b.started_at.localeCompare(a.started_at));
+    const inMonth = mineEntries.filter((e) => Date.parse(e.started_at) >= lo && Date.parse(e.started_at) < hi);
+    const projects: Record<string, number> = {};
+    let month$ = 0;
+    for (const e of inMonth) {
+      const mm = minutesOf(e);
+      month$ += mm;
+      const k = e.project_id || NO_PROJECT;
+      projects[k] = (projects[k] ?? 0) + mm;
+    }
+    const lastWeek = mineEntries.filter((e) => Date.parse(e.started_at) >= wlo && Date.parse(e.started_at) < whi).reduce((n, e) => n + minutesOf(e), 0);
+    return { name: m.me.name || "Me", month: month$, lastWeek, projects, entries: inMonth, projectNames: new Map(t.projects.map((p) => [p.id, p.name])) };
+  }, [t, m, month, lastSunday, thisSunday]);
 
   const v = useMemo(() => {
     if (!m?.me?.reviewer) return null;
@@ -221,8 +259,33 @@ export default function ReviewSummary({ refreshKey, renderShift }: { refreshKey:
       </div>
 
       <div>
-        <p className={label}>Each person, {monthLabel}. Click a card to open their reports.</p>
-        <div className="grid gap-3 md:grid-cols-3">
+        <p className={label}>You and your team, {monthLabel}. Click a card to open the reports.</p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {mine && (
+            <button
+              type="button"
+              aria-pressed={open === "me"}
+              onClick={() => setOpen(open === "me" ? null : "me")}
+              className={`${card} w-full text-left transition ${open === "me" ? "ring-2 ring-[#2E7C83]" : "hover:ring-1 hover:ring-[#2E7C83]/50"}`}
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{mine.name} (you)</p>
+                <p className="text-lg font-semibold tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">{hm(mine.month)}</p>
+              </div>
+              <p className="text-xs text-[#7b6b8d]">Last week {hm(mine.lastWeek)} · from your Time page</p>
+              {!Object.keys(mine.projects).length ? <p className="mt-2 text-sm text-[#7b6b8d]">Nothing tracked this month.</p> : (
+                <ul className="mt-2 space-y-1.5 text-sm">
+                  {Object.entries(mine.projects).sort((a, b) => b[1] - a[1]).map(([k, mm]) => (
+                    <li key={k}>
+                      <div className="flex items-baseline justify-between gap-2"><span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{k === NO_PROJECT ? "No project chosen" : mine.projectNames.get(k) ?? "A project"}</span><span className="tabular-nums text-[#5b5f73] dark:text-[#b8a898]">{hm(mm)}</span></div>
+                      <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-[#1a2b4a]/10"><div className="h-full rounded-full bg-[#c9a227]" style={{ width: `${(mm / Math.max(1, mine.month)) * 100}%` }} /></div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-2 text-xs font-semibold text-[#2E7C83]">{open === "me" ? "Hide reports" : "Open reports"}</p>
+            </button>
+          )}
           {v.cards.map(({ tracks, row: r }) => {
             const on = open === r.email;
             return (
@@ -254,7 +317,34 @@ export default function ReviewSummary({ refreshKey, renderShift }: { refreshKey:
           })}
         </div>
 
-        {open && (() => {
+        {open === "me" && mine && (
+          <div className="mt-4 space-y-4" aria-label="Your time reports">
+            <h3 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{mine.name}: your time for {monthLabel}</h3>
+            {!mine.entries.length && <p className="text-sm text-[#7b6b8d]">Nothing tracked for {monthLabel}. Start a timer or add time by hand on the Time page.</p>}
+            {Array.from(mine.entries.reduce((mp, e) => {
+              const k = new Date(e.started_at).toLocaleDateString("en-CA");
+              return mp.set(k, [...(mp.get(k) ?? []), e]);
+            }, new Map<string, TimeEntry[]>()).entries()).map(([day, es]) => (
+              <div key={day}>
+                <p className="mb-1 flex justify-between border-b border-[#1a2b4a]/10 pb-1 text-xs font-semibold uppercase tracking-wide text-[#7b6b8d] dark:border-white/10">
+                  <span>{new Date(`${day}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</span>
+                  <span className="tabular-nums">{hm(es.reduce((n, e) => n + minutesOf(e), 0))}</span>
+                </p>
+                <ul className={`${card} divide-y divide-[#1a2b4a]/10 py-2 text-sm dark:divide-white/10`}>
+                  {es.map((e) => (
+                    <li key={e.id} className="flex flex-wrap justify-between gap-2 py-1.5">
+                      <span className="min-w-0 text-[#1a2b4a] dark:text-[#F8F5F0]">{e.note || "No note"}<span className="text-[#5b5f73] dark:text-[#b8a898]"> · {e.project_id ? mine.projectNames.get(e.project_id) ?? "A project" : "No project chosen"}{e.billable ? "" : " · not billable"}</span></span>
+                      <span className="tabular-nums text-[#5b5f73] dark:text-[#b8a898]">{e.ended_at ? hm(minutesOf(e)) : "running"} · {new Date(e.started_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+            <a className="text-sm font-semibold text-[#2E7C83] underline" href="/time">Open the Time page to add or fix entries</a>
+          </div>
+        )}
+
+        {open && open !== "me" && (() => {
           const person = v.cards.find((c) => c.row.email === open)?.row;
           const theirs = v.shifts.filter((s) => s.personEmail.toLowerCase() === open);
           const byDay = new Map<string, Shift[]>();

@@ -1828,7 +1828,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "If the account owner gave you a weekly hours goal, a bar at the top shows your hours so far this week against it, such as 6h 30m of 10h.",
       "Press Clock out when you finish, and add a short note about your day if you like.",
       "Check your lines, then press Submit for review. The account owner marks it Approved, or sends it back with a note.",
-      "Account owner: the Hours summary at the top of the page shows the month's hours so far (use the arrows for other months), last week's hours (Sunday to Saturday), the hours waiting for your review, a running total by week, and a card for each team member with their hours on each project. Click a card to open that person's reports underneath, where you can approve or send back a day."
+      "Account owner: the Hours summary at the top of the page shows the month's hours so far (use the arrows for other months), last week's hours (Sunday to Saturday), the hours waiting for your review, a running total by week, and a card for you and one for each team member with hours on each project. Click a card to open that person's reports underneath, where you can approve or send back a day."
     ],
     "health": "This does not change your scores. It records what your team did, how long it took and where they got stuck.",
     "tips": [
@@ -1856,7 +1856,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       },
       {
         "q": "Where do I see my team's hours for the month and by project?",
-        "a": "At the top of Work Log, under Hours summary. It shows the month so far (the arrows go to other months), last week's hours, the hours waiting for your review, a running total week by week (Sunday to Saturday), and a card for each team member with their hours on each project. Click a card to open that person's reports for the month underneath; you can approve or send back a day right there. Time on the clock that was not itemized shows as Time not itemized. Only the account owner sees it."
+        "a": "At the top of Work Log, under Hours summary. It shows the month so far (the arrows go to other months), last week's hours, the hours waiting for your review, a running total week by week (Sunday to Saturday), and four cards in a row: yours (your own time and projects from the Time page) and one for each team member, with hours on each project. Click a card to open that person's reports for the month underneath; you can approve or send back a day right there. Time on the clock that was not itemized shows as Time not itemized. Only the account owner sees it."
       },
       {
         "q": "What happens after I submit a day?",
