@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, Play, Plus, Square, Timer, Trash2 } from "lucide-react";
 import ContactLookupInput, { lookupName, type LookupContact } from "@/components/crm/ContactLookupInput";
 import { hm, minutesOf, totals, weekStart } from "@/lib/timeTracking";
+import TeamWorkLogs from "./TeamWorkLogs";
 
 type Entry = { id: string; person_email: string; contact_id: string | null; project_id: string | null; task_id: number | null; note: string | null; started_at: string; ended_at: string | null; billable: boolean; rate: number | null };
 type Data = {
@@ -226,6 +227,8 @@ export default function TimeTracking() {
           ))}
         </div>
       </section>
+
+      <TeamWorkLogs />
 
       <section className={card}>
         <h2 className={h2}>Add time by hand</h2>

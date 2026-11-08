@@ -100,6 +100,19 @@ export async function GET(request: Request) {
     (v.reviewer ? db.from("work_log_goals").select("person_email, weekly_hours").eq("master_plan_id", a.planId) : db.from("work_log_goals").select("person_email, weekly_hours").eq("master_plan_id", a.planId).eq("person_email", v.email)),
   ]);
 
+  // The owner also sees which tasks the team marked done in this stretch, and the titles of any task a line points at
+  // (the pick list above holds only open tasks, so a finished task would otherwise show no name).
+  let doneTasks: { id: number; title: string; completedAt: string; assignee: string | null; projectId: string | null }[] | undefined;
+  let taskTitles: Record<string, string> | undefined;
+  if (v.reviewer) {
+    const memberName = new Map(members.map((m) => [m.id, m.name || m.email]));
+    const { data: doneRows } = await db.from("tasks").select("id, title, project_id, assignee_member_id, completed_at").eq("master_plan_id", a.planId).eq("status", "done").not("assignee_member_id", "is", null).gte("completed_at", from).lt("completed_at", to).order("completed_at", { ascending: false }).limit(500);
+    doneTasks = ((doneRows ?? []) as { id: number; title: string; project_id: string | null; assignee_member_id: string | null; completed_at: string }[]).map((t) => ({ id: t.id, title: t.title, completedAt: t.completed_at, assignee: t.assignee_member_id ? memberName.get(t.assignee_member_id) ?? null : null, projectId: t.project_id }));
+    const wanted = Array.from(new Set(items.map((i) => i.task_id).filter((x): x is number => !!x)));
+    const { data: titleRows } = wanted.length ? await db.from("tasks").select("id, title").eq("master_plan_id", a.planId).in("id", wanted) : { data: [] };
+    taskTitles = Object.fromEntries(((titleRows ?? []) as { id: number; title: string }[]).map((t) => [String(t.id), t.title]));
+  }
+
   const names = Array.from(new Set([...(members.map((m) => m.name || m.email)), ...(owner ? [owner] : []), ...(v.reviewer && v.name ? [v.name] : [])])).filter(Boolean);
   const outShifts = Array.from(all.values()).map((s) => ({
     id: s.id,
@@ -130,6 +143,8 @@ export async function GET(request: Request) {
     names,
     rates: v.reviewer ? Object.fromEntries(((ratesRes.data ?? []) as { person_email: string; hourly_rate: number }[]).map((r) => [r.person_email.toLowerCase(), Number(r.hourly_rate)])) : undefined,
     goals: Object.fromEntries(((goalsRes.data ?? []) as { person_email: string; weekly_hours: number | string }[]).map((g) => [g.person_email.toLowerCase(), Number(g.weekly_hours)])),
+    doneTasks,
+    taskTitles,
     team: v.reviewer ? members.map((m) => ({ name: m.name || m.email, email: m.email.toLowerCase() })) : undefined,
   }, { headers: { "Cache-Control": "no-store" } });
 }

@@ -164,18 +164,6 @@ export interface ZoomSchedule {
   next: ZoomOccurrence | null; // the next one that hasn't ended yet
 }
 
-// Sessions the Suite counts although Zoom's own list lacks them. Zoom cannot restore a deleted occurrence of a recurring meeting,
-// so Wed Nov 25, 2026 (deleted by mistake, 12:00 MT) is added here and hosted by starting the series from its meeting ID.
-const EXTRA_OCCURRENCES: Record<string, ZoomOccurrence[]> = {
-  [DEFAULT_MASTERCLASS_MEETING_ID]: [{ start: "2026-11-25T19:00:00.000Z", duration: 60 }],
-};
-
-/** A meeting's Zoom occurrences plus the Suite's extra sessions for it, oldest first, no duplicates. */
-export function withExtraOccurrences(meetingId: string, list: ZoomOccurrence[]): ZoomOccurrence[] {
-  const extra = (EXTRA_OCCURRENCES[meetingId] ?? []).filter((e) => !list.some((o) => o.start === e.start));
-  return extra.length ? [...list, ...extra].sort((a, b) => a.start.localeCompare(b.start)) : list;
-}
-
 // A recurring meeting's occurrences (GET /meetings/{id} → occurrences[], past
 // ones included via show_previous_occurrences), or a single meeting's own
 // start_time. `next` is the first whose start + duration is still ahead.
@@ -191,11 +179,10 @@ export async function meetingSchedule(meetingId: string, now: Date = new Date())
     occurrences?: Array<{ start_time?: string; duration?: number; status?: string }>;
   };
   const base = m.duration || 60;
-  const listZoom: ZoomOccurrence[] = (m.occurrences?.length ? m.occurrences : m.start_time ? [{ start_time: m.start_time, duration: base }] : [])
+  const list: ZoomOccurrence[] = (m.occurrences?.length ? m.occurrences : m.start_time ? [{ start_time: m.start_time, duration: base }] : [])
     .filter((o) => o.start_time && (o.status || "available") !== "deleted")
     .map((o) => ({ start: new Date(o.start_time!).toISOString(), duration: o.duration || base }))
     .sort((a, b) => a.start.localeCompare(b.start));
-  const list = withExtraOccurrences(meetingId, listZoom);
   const next = list.find((o) => new Date(o.start).getTime() + o.duration * 60_000 > now.getTime()) ?? null;
   return { occurrences: list, next };
 }
