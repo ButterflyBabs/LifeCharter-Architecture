@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardList } from "lucide-react";
 import { hm } from "@/lib/timeTracking";
 import { STATUS_LABEL, loggedMinutes, shiftMinutes, type ShiftStatus } from "@/lib/workLog";
@@ -58,12 +58,26 @@ export default function TeamWorkLogs() {
   const [week, setWeek] = useState(() => sundayStart());
   const [who, setWho] = useState("all");
   const [d, setD] = useState<Data | null>(null);
+  const settled = useRef(false); // the first look may step back one week; after that the arrows are the person's
 
   useEffect(() => {
     let live = true;
     void fetch(`/api/work-log?from=${week.toISOString()}&to=${addDays(week, 7).toISOString()}`, { cache: "no-store" })
       .then((r) => r.json())
-      .then((j: Data) => live && setD(j))
+      .then((j: Data) => {
+        if (!live) return;
+        // On a Sunday or Monday the new week is empty while the team's hours are in the week just ended: open on that one.
+        const lo = week.getTime();
+        const hi = addDays(week, 7).getTime();
+        const has = (j.shifts ?? []).some((s) => Date.parse(s.clockIn) >= lo && Date.parse(s.clockIn) < hi) || (j.doneTasks ?? []).length > 0;
+        if (!settled.current && j.me?.reviewer && !has) {
+          settled.current = true;
+          setWeek(addDays(week, -7));
+          return;
+        }
+        settled.current = true;
+        setD(j);
+      })
       .catch(() => live && setD(null));
     return () => {
       live = false;
