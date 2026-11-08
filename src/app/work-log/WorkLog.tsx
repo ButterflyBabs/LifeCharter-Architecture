@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, ChevronLeft, ChevronRight, ClipboardList, Download, LifeBuoy, LogIn, LogOut, Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import { hm, weekStart } from "@/lib/timeTracking";
+import ReviewSummary from "./ReviewSummary";
 import { STATUS_LABEL, goalProgress, helpState, loggedMinutes, payFor, shiftMinutes, submitBlocker, type ShiftStatus } from "@/lib/workLog";
 
 
@@ -359,6 +360,8 @@ export default function WorkLog() {
       </header>
       {msg && <p className="rounded-lg bg-[#2E7C83]/10 px-4 py-2 text-sm" role="status">{msg}</p>}
       {!d && <p className={muted}>Loading...</p>}
+
+      {d && reviewer && <ReviewSummary refreshKey={d.shifts.map((x) => `${x.id}${x.status}`).join()} />}
 
       {d && reviewer && waiting.length > 0 && (
         <section className="space-y-3" aria-label="Waiting for your review">
