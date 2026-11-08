@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { hm } from "@/lib/timeTracking";
 import { shiftMinutes, type ShiftStatus } from "@/lib/workLog";
 
 type Item = { minutes: number | null; projectId: string | null };
 type Shift = { id: string; personEmail: string; personName: string; clockIn: string; clockOut: string | null; status: ShiftStatus; items: Item[] };
-type Data = { me: { reviewer: boolean }; shifts: Shift[]; projects: { id: string; name: string }[]; team?: { name: string; email: string; tracksHours?: boolean }[] };
+type Data = { me: { reviewer: boolean }; shifts: Shift[]; projects: { id: string; name: string }[]; team?: { name: string; email: string; tracksHours?: boolean; active?: boolean }[] };
 
 const card = "rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 shadow-[0_8px_24px_rgba(26,43,74,0.08)] dark:border-white/10 dark:bg-[#1a2b4a]/40";
 const label = "block text-[11px] font-semibold uppercase tracking-wide text-[#7b6b8d] dark:text-[#b8a898] mb-1";
@@ -39,7 +39,9 @@ const get = (from: Date, to: Date) =>
  * The owner's hours summary at the top of Work Log: the month's running total (with arrows for other months), last week's hours
  * (the Sunday to Saturday week just ended), hours waiting for review, and each person's hours on each project.
  */
-export default function ReviewSummary({ refreshKey }: { refreshKey: string }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default function ReviewSummary({ refreshKey, renderShift }: { refreshKey: string; renderShift?: (s: any) => ReactNode }) {
+  const [open, setOpen] = useState<string | null>(null);
   const [month, setMonth] = useState(() => monthStart());
   const [m, setM] = useState<Data | null>(null);
   const [w, setW] = useState<Data | null>(null);
@@ -122,7 +124,14 @@ export default function ReviewSummary({ refreshKey }: { refreshKey: string }) {
     for (const [k, r] of Array.from(rows.entries())) if (!tracked.has(k) && !r.month && !r.lastWeek && !r.waiting) rows.delete(k);
     const list = Array.from(rows.values()).sort((a, b) => b.month - a.month || a.name.localeCompare(b.name));
     const sum = (f: (r: Row) => number) => list.reduce((n, r) => n + f(r), 0);
-    return { list, weeks, month: sum((r) => r.month), lastWeek: sum((r) => r.lastWeek), waiting: sum((r) => r.waiting), waitingShifts: sum((r) => r.waitingShifts) };
+    // One card per active team member (people who track hours first), even with no hours, so each can be opened.
+    const blank = (k: string, name: string): Row => ({ email: k, name, month: 0, lastWeek: 0, waiting: 0, waitingShifts: 0, projects: {}, logged: 0 });
+    const cards = (m.team ?? [])
+      .filter((t) => t.active !== false)
+      .map((t) => ({ tracks: t.tracksHours !== false, row: rows.get(t.email.toLowerCase()) ?? blank(t.email.toLowerCase(), t.name) }))
+      .sort((a, b) => Number(b.tracks) - Number(a.tracks) || a.row.name.localeCompare(b.row.name));
+    const shifts = m.shifts.filter((s) => seen.has(s.id)).sort((a, b) => b.clockIn.localeCompare(a.clockIn));
+    return { cards, shifts, list, weeks, month: sum((r) => r.month), lastWeek: sum((r) => r.lastWeek), waiting: sum((r) => r.waiting), waitingShifts: sum((r) => r.waitingShifts) };
   }, [m, w, month, lastSunday, thisSunday]);
 
   if (!v || !m) return null;
@@ -212,27 +221,62 @@ export default function ReviewSummary({ refreshKey }: { refreshKey: string }) {
       </div>
 
       <div>
-        <p className={label}>Hours on each project, {monthLabel}</p>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {v.list.map((r) => (
-            <div key={r.email} className={card}>
-              <div className="flex items-baseline justify-between gap-2">
-                <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{r.name}</p>
-                <p className="text-lg font-semibold tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">{hm(r.month)}</p>
-              </div>
-              {!lines(r).length ? <p className="mt-2 text-sm text-[#7b6b8d]">Nothing logged this month.</p> : (
-                <ul className="mt-2 space-y-1.5 text-sm">
-                  {lines(r).map(([k, mm]) => (
-                    <li key={k}>
-                      <div className="flex items-baseline justify-between gap-2"><span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{projectName(k)}</span><span className="tabular-nums text-[#5b5f73] dark:text-[#b8a898]">{hm(mm)}</span></div>
-                      <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-[#1a2b4a]/10"><div className={`h-full rounded-full ${k === UNLISTED ? "bg-[#1a2b4a]/25" : "bg-[#c9a227]"}`} style={{ width: `${(mm / Math.max(1, r.month)) * 100}%` }} /></div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ))}
+        <p className={label}>Each person, {monthLabel}. Click a card to open their reports.</p>
+        <div className="grid gap-3 md:grid-cols-3">
+          {v.cards.map(({ tracks, row: r }) => {
+            const on = open === r.email;
+            return (
+              <button
+                key={r.email}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setOpen(on ? null : r.email)}
+                className={`${card} w-full text-left transition ${on ? "ring-2 ring-[#2E7C83]" : "hover:ring-1 hover:ring-[#2E7C83]/50"}`}
+              >
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{r.name}</p>
+                  <p className="text-lg font-semibold tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">{hm(r.month)}</p>
+                </div>
+                <p className="text-xs text-[#7b6b8d]">{tracks ? `Last week ${hm(r.lastWeek)}${r.waitingShifts ? ` · ${r.waitingShifts} waiting for review` : ""}` : "Does not track hours"}</p>
+                {!lines(r).length ? <p className="mt-2 text-sm text-[#7b6b8d]">{tracks ? "Nothing logged this month." : "No work log reports."}</p> : (
+                  <ul className="mt-2 space-y-1.5 text-sm">
+                    {lines(r).map(([k, mm]) => (
+                      <li key={k}>
+                        <div className="flex items-baseline justify-between gap-2"><span className="text-[#1a2b4a] dark:text-[#F8F5F0]">{projectName(k)}</span><span className="tabular-nums text-[#5b5f73] dark:text-[#b8a898]">{hm(mm)}</span></div>
+                        <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-[#1a2b4a]/10"><div className={`h-full rounded-full ${k === UNLISTED ? "bg-[#1a2b4a]/25" : "bg-[#c9a227]"}`} style={{ width: `${(mm / Math.max(1, r.month)) * 100}%` }} /></div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="mt-2 text-xs font-semibold text-[#2E7C83]">{on ? "Hide reports" : "Open reports"}</p>
+              </button>
+            );
+          })}
         </div>
+
+        {open && (() => {
+          const person = v.cards.find((c) => c.row.email === open)?.row;
+          const theirs = v.shifts.filter((s) => s.personEmail.toLowerCase() === open);
+          const byDay = new Map<string, Shift[]>();
+          for (const s of theirs) {
+            const k = new Date(s.clockIn).toLocaleDateString("en-CA");
+            byDay.set(k, [...(byDay.get(k) ?? []), s]);
+          }
+          return (
+            <div className="mt-4 space-y-4" aria-label={`${person?.name ?? "Team member"} reports`}>
+              <h3 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{person?.name}: reports for {monthLabel}</h3>
+              {!theirs.length && <p className="text-sm text-[#7b6b8d]">No work log reports for {monthLabel}.</p>}
+              {Array.from(byDay.entries()).map(([day, list]) => (
+                <div key={day} className="space-y-3">
+                  <p className="border-b border-[#1a2b4a]/10 pb-1 text-xs font-semibold uppercase tracking-wide text-[#7b6b8d] dark:border-white/10">
+                    {new Date(`${day}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
+                  </p>
+                  {list.map((s) => <div key={s.id}>{renderShift ? renderShift(s) : null}</div>)}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </section>
   );

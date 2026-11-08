@@ -292,6 +292,7 @@ export default function WorkLog() {
   const [person, setPerson] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [bump, setBump] = useState(0); // any change made here makes the Hours summary look again
   const [rateEdit, setRateEdit] = useState<Record<string, string>>({});
   const [goalEdit, setGoalEdit] = useState<Record<string, string>>({});
   const [, tick] = useState(0);
@@ -317,6 +318,7 @@ export default function WorkLog() {
     }
     if (ok) setMsg(ok);
     await load();
+    setBump((n) => n + 1);
     return true;
   };
 
@@ -361,7 +363,7 @@ export default function WorkLog() {
       {msg && <p className="rounded-lg bg-[#2E7C83]/10 px-4 py-2 text-sm" role="status">{msg}</p>}
       {!d && <p className={muted}>Loading...</p>}
 
-      {d && reviewer && <ReviewSummary refreshKey={d.shifts.map((x) => `${x.id}${x.status}`).join()} />}
+      {d && reviewer && <ReviewSummary refreshKey={`${bump}|${d.shifts.map((x) => `${x.id}${x.status}`).join()}`} renderShift={(s: Shift) => <ShiftCard d={d} s={s} act={act} />} />}
 
       {d && reviewer && waiting.length > 0 && (
         <section className="space-y-3" aria-label="Waiting for your review">
