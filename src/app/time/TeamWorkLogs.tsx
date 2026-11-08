@@ -14,7 +14,7 @@ type Data = {
   doneTasks?: Done[];
   taskTitles?: Record<string, string>;
   projects: { id: string; name: string }[];
-  team?: { name: string; email: string }[];
+  team?: { name: string; email: string; tracksHours?: boolean }[];
 };
 
 const card = "rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 shadow-[0_8px_24px_rgba(26,43,74,0.08)] dark:border-white/10 dark:bg-[#1a2b4a]/40";
@@ -92,13 +92,15 @@ export default function TeamWorkLogs() {
       const t = Date.parse(s.clockIn);
       return t >= lo && t < hi; // the API also returns unfinished shifts from other weeks
     });
+    // People who are not expected to track hours (no Work Log area) are left out, their finished tasks included.
+    const skip = new Set((d.team ?? []).filter((m) => m.tracksHours === false).map((m) => m.name.toLowerCase()));
     const done = (d.doneTasks ?? []).filter((t) => {
       const c = Date.parse(t.completedAt);
-      return c >= lo && c < hi;
+      return c >= lo && c < hi && !skip.has((t.assignee || "").toLowerCase());
     });
 
     // Everyone on the team (so a person with no log shows 0 h), plus anyone who has a shift but is not on the list.
-    const people: Person[] = (d.team ?? []).map((m) => ({ key: m.email.toLowerCase(), name: m.name, email: m.email.toLowerCase() }));
+    const people: Person[] = (d.team ?? []).filter((m) => m.tracksHours !== false).map((m) => ({ key: m.email.toLowerCase(), name: m.name, email: m.email.toLowerCase() }));
     const byEmail = new Map(people.map((p) => [p.email!, p]));
     const byName = new Map(people.map((p) => [p.name.toLowerCase(), p]));
     const personOfShift = (s: Shift): Person => {

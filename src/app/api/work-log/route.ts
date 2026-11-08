@@ -113,6 +113,17 @@ export async function GET(request: Request) {
     taskTitles = Object.fromEntries(((titleRows ?? []) as { id: number; title: string }[]).map((t) => [String(t.id), t.title]));
   }
 
+  // Who tracks hours: the team members given the Work Log area. Someone without it (Marcello) is not expected to clock in,
+  // so the Time page's Team work logs leaves them out.
+  const tracksHours = new Set<string>();
+  if (v.reviewer && members.length) {
+    const { data: perms } = await db.from("workspace_members").select("id, permissions").in("id", members.map((m) => m.id));
+    for (const r of (perms ?? []) as { id: string; permissions: { features?: { work_log?: string } } | null }[]) {
+      const lvl = r.permissions?.features?.work_log;
+      if (lvl === "view" || lvl === "edit") tracksHours.add(r.id);
+    }
+  }
+
   const names = Array.from(new Set([...(members.map((m) => m.name || m.email)), ...(owner ? [owner] : []), ...(v.reviewer && v.name ? [v.name] : [])])).filter(Boolean);
   const outShifts = Array.from(all.values()).map((s) => ({
     id: s.id,
@@ -145,7 +156,7 @@ export async function GET(request: Request) {
     goals: Object.fromEntries(((goalsRes.data ?? []) as { person_email: string; weekly_hours: number | string }[]).map((g) => [g.person_email.toLowerCase(), Number(g.weekly_hours)])),
     doneTasks,
     taskTitles,
-    team: v.reviewer ? members.map((m) => ({ name: m.name || m.email, email: m.email.toLowerCase() })) : undefined,
+    team: v.reviewer ? members.map((m) => ({ name: m.name || m.email, email: m.email.toLowerCase(), tracksHours: tracksHours.has(m.id) })) : undefined,
   }, { headers: { "Cache-Control": "no-store" } });
 }
 

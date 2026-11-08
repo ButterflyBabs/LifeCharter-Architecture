@@ -1723,7 +1723,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "Forgot the timer? Use Add time by hand further down the page.",
       "Set your weekly hours and rates under Capacity and rates, then press Save capacity and rates.",
       "Check your week at the top, and press Download CSV for your records or invoicing.",
-      "If you have a team, scroll to Team work logs. It has its own week arrows (Sunday to Saturday) and a Person box. Each person's card shows their total time and their time on each project for the week, and each day lists their shift, what they logged, the tasks they finished, and a running Week so far total."
+      "If you have a team, scroll to Team work logs. It has its own week arrows (Sunday to Saturday) and a Person box. Each person's card shows their total time and their time on each project for the week, and each day lists their shift, what they logged, the tasks they finished, and a running Week so far total. It lists the people who have the Work Log area, so anyone who does not track hours is left out."
     ],
     "health": "This does not change your scores. It shows where your hours go, so you can see whether your week matches your capacity.",
     "tips": [
