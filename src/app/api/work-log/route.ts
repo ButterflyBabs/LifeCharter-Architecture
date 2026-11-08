@@ -191,6 +191,12 @@ export async function POST(request: Request) {
     }
     return out;
   }
+  /** A line must name its project when the account has any (hours by project drive payroll). Null when it does. */
+  async function projectMissing(l: { project_id: string | null }): Promise<string | null> {
+    if (l.project_id) return null;
+    const { count } = await db.from("projects").select("id", { count: "exact", head: true }).eq("master_plan_id", planId);
+    return (count ?? 0) > 0 ? "Choose the project this line belongs to." : null;
+  }
   const readTime = (key: string): string | null | undefined => {
     if (b[key] === undefined) return undefined;
     if (b[key] === null || b[key] === "") return null;
@@ -241,7 +247,10 @@ export async function POST(request: Request) {
       if (!canEditLines(s.status, v.reviewer)) return fail("That shift is waiting for review or approved, so it can't be changed.");
       const c = cleanItem(b);
       if ("error" in c) return fail(c.error);
-      const { error } = await db.from("work_log_items").insert({ shift_id: s.id, master_plan_id: planId, ...c.item, ...(await links()) });
+      const l = await links();
+      const missing = await projectMissing(l);
+      if (missing) return fail(missing);
+      const { error } = await db.from("work_log_items").insert({ shift_id: s.id, master_plan_id: planId, ...c.item, ...l });
       return error ? fail("That didn't save. Please try again.", 500) : NextResponse.json({ ok: true });
     }
     case "update_item": {
@@ -251,7 +260,10 @@ export async function POST(request: Request) {
       if (!canEditLines(s.status, v.reviewer)) return fail("That shift is waiting for review or approved, so it can't be changed.");
       const c = cleanItem(b);
       if ("error" in c) return fail(c.error);
-      const { error } = await db.from("work_log_items").update({ ...c.item, ...(await links()), updated_at: now }).eq("id", it.id as string);
+      const l = await links();
+      const missing = await projectMissing(l);
+      if (missing) return fail(missing);
+      const { error } = await db.from("work_log_items").update({ ...c.item, ...l, updated_at: now }).eq("id", it.id as string);
       return error ? fail("That didn't save. Please try again.", 500) : NextResponse.json({ ok: true });
     }
     case "delete_item": {

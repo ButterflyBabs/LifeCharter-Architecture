@@ -1822,7 +1822,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "steps": [
       "Open Work Log from the left menu, under Daily Operations.",
       "Press Clock in when you start. The date and time are saved for you.",
-      "Under Add what I did, say what you did, how many, what you counted (such as DMs or posts) and how long it took. Choose a project or task if it belongs to one.",
+      "Under Add what I did, say what you did, how many (a count, not hours), what you counted (such as DMs or posts) and how long it took in the hours and minutes boxes. Choose the project it belongs to (required when your account has projects), and a task if there is one.",
       "If something got in the way, write it under Did anything get in the way? If you asked someone for help, or got it, say who and what it was about.",
       "Press Add to my log. Add one line for each thing you did.",
       "If the account owner gave you a weekly hours goal, a bar at the top shows your hours so far this week against it, such as 6h 30m of 10h.",
@@ -1903,7 +1903,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       {
         "id": "what-you-log",
         "title": "What you list for each thing you did",
-        "body": "Each line is one thing you did. It has what you did, how many, what you counted, and how long it took. You can link it to a project or task. Under Did anything get in the way? you write what made it harder. Under Help I asked for and Help I got, you name who you asked, who helped, and what it was about. A line with help asked for but nobody named under Help I got shows as still waiting.",
+        "body": "Each line is one thing you did. It has what you did, how many, what you counted, and how long it took. How many is a count of things, not hours; the time goes in the hours and minutes boxes. Every line needs a project (when the account has projects) and can also link to a task. Under Did anything get in the way? you write what made it harder. Under Help I asked for and Help I got, you name who you asked, who helped, and what it was about. A line with help asked for but nobody named under Help I got shows as still waiting.",
         "keywords": [
           "activity",
           "how many",

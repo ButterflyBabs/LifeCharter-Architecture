@@ -952,7 +952,7 @@ export const FOUNDATIONS: Lesson[] = [
         text: "If the account owner has given you the Work Log area, it is where you show what you did and how long it took. It sits under Daily Operations. Press Clock in when you start, and add one line for each thing you did: what it was, how many, what you counted (such as DMs or posts) and how long. Say what got in the way, and who you asked for help and who helped. When you finish, press Clock out, check your lines, and press Submit for review. The owner marks the day Approved, or sends it back with a note. You see your own days and never anyone else's. Pay is never shown to team members. If the owner set you a weekly hours goal, a bar at the top shows your hours so far this week against it. The Work Log does not change scores.",
         steps: [
           "Open Work Log from the left menu and press Clock in.",
-          "Under Add what I did, say what you did, how many, what you counted and how long it took.",
+          "Under Add what I did, say what you did, how many (a count, not hours), what you counted, how long it took in the hours and minutes boxes, and choose the project it belongs to.",
           "Under Did anything get in the way? write what made it harder. Name who you asked for help and who helped.",
           "Press Add to my log after each thing you finish.",
           "Press Clock out, add a note about your day if you like, then press Submit for review.",

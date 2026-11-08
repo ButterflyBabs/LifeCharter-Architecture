@@ -84,7 +84,7 @@ function ItemForm({ d, shiftId, item, act, onDone }: { d: Data; shiftId: string;
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <label className={label} htmlFor={`${id}-qty`}>How many?</label>
+          <label className={label} htmlFor={`${id}-qty`}>How many? (a count, not hours)</label>
           <input id={`${id}-qty`} inputMode="decimal" className={input} value={qty} onChange={(e) => setQty(e.target.value)} placeholder="25" />
         </div>
         <div>
@@ -102,9 +102,9 @@ function ItemForm({ d, shiftId, item, act, onDone }: { d: Data; shiftId: string;
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className={label} htmlFor={`${id}-proj`}>Project (optional)</label>
+          <label className={label} htmlFor={`${id}-proj`}>Project (required)</label>
           <select id={`${id}-proj`} className={input} value={projectId} onChange={(e) => { setProjectId(e.target.value); setTaskId(""); }}>
-            <option value="">None</option>
+            <option value="">{d.projects.length ? "Choose a project" : "None"}</option>
             {d.projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
@@ -136,9 +136,10 @@ function ItemForm({ d, shiftId, item, act, onDone }: { d: Data; shiftId: string;
         <datalist id={`${id}-names`}>{d.names.map((n) => <option key={n} value={n} />)}</datalist>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <button className={primary} disabled={busy || !what.trim()} onClick={() => void save()}><Check className="h-4 w-4" />{item ? "Save changes" : "Add to my log"}</button>
+        <button className={primary} disabled={busy || !what.trim() || (d.projects.length > 0 && !projectId)} onClick={() => void save()}><Check className="h-4 w-4" />{item ? "Save changes" : "Add to my log"}</button>
         <button className={btn} disabled={busy} onClick={onDone}>Cancel</button>
         {total > 0 && <span className={muted}>{hm(total)}</span>}
+        {d.projects.length > 0 && !projectId && <span className={muted}>Choose a project to add this line.</span>}
       </div>
     </div>
   );
