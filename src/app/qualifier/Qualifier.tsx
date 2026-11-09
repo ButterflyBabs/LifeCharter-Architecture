@@ -154,11 +154,11 @@ function AddToPipeline({ boards, ids, platform, post, setMsg, onAdded, labelText
         disabled={busy || !ids.length}
         onClick={async () => {
           setBusy(true);
-          const r = (await post({ action: "add-to-pipeline", ids, boardId, platform })) as { added?: number; skipped?: number; already?: string[]; failed?: number; board?: string } | null;
+          const r = (await post({ action: "add-to-pipeline", ids, boardId, platform })) as { added?: number; skipped?: number; already?: string[]; failed?: number; board?: string; landed?: Record<string, number> } | null;
           setBusy(false);
           if (r) {
             const dup = r.skipped ? ` ${r.skipped} not added because ${r.skipped === 1 ? "they are" : "they are"} already on ${r.board}: ${(r.already ?? []).join(", ")}${r.skipped > (r.already ?? []).length ? ", and more" : ""}.` : "";
-            setMsg(`${r.added} added to ${r.board}.${dup}${r.failed ? ` ${r.failed} couldn't be added.` : ""}${r.added ? " High priority starts in To reach out; Medium and Low start in Nurture." : ""}`);
+            setMsg(`${r.added} added to ${r.board}.${dup}${r.failed ? ` ${r.failed} couldn't be added.` : ""}${r.added ? (r.landed && Object.keys(r.landed).length ? ` Started in: ${Object.entries(r.landed as Record<string, number>).map(([k, n]) => `${k} (${n})`).join(", ")}.` : " High priority starts in To reach out; Medium and Low start in Nurture.") : ""}`);
             onAdded();
           }
         }}

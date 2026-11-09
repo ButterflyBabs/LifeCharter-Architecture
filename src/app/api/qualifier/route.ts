@@ -212,10 +212,14 @@ export async function POST(request: Request) {
     const stages = await boardStages(db, a.planId, board.id);
     if (!stages.length) return NextResponse.json({ error: "Add a stage to that pipeline first." }, { status: 400 });
     const tz = await resolveUserTimeZone(str(b.tz, 60) || null);
-    const { data: quals } = await db.from("icp_qualifications").select("id, name, platform, profile_url, email, link_code, fit, level, priority, card_id, result").eq("master_plan_id", a.planId).in("id", ids);
+    const { data: quals } = await db.from("icp_qualifications").select("id, name, platform, profile_url, email, link_code, fit, level, priority, card_id, result, icp_id").eq("master_plan_id", a.planId).in("id", ids);
+    const icpIds = Array.from(new Set((quals ?? []).map((q) => q.icp_id as string | null).filter((x): x is string => !!x)));
+    const { data: icpRows } = icpIds.length ? await db.from("icp_profiles").select("id, purpose").eq("master_plan_id", a.planId).in("id", icpIds) : { data: [] as { id: string; purpose: string }[] };
+    const purposeOf = new Map((icpRows ?? []).map((r) => [r.id as string, r.purpose as string]));
     // Never twice on the same pipeline; being on another pipeline is allowed.
     const idx = await pipelineIndex(db, a.planId);
     let added = 0;
+    const landed: Record<string, number> = {};
     const already: string[] = [];
     let failed = 0;
     for (const q of quals ?? []) {
@@ -223,7 +227,7 @@ export async function POST(request: Request) {
       const email = normEmail(q.email as string | null);
       if (!q.name) { failed++; continue; }
       if (idx.boardsOf({ name: q.name as string, url, email }).includes(board.id)) { already.push(q.name as string); continue; }
-      const key = stageKeyFor(q.priority as string);
+      const key = stageKeyFor(q.priority as string, purposeOf.get(q.icp_id as string));
       const stage = stages.find((s) => s.key === key) ?? stages.find((s) => s.kind === "open") ?? stages[0];
       const platform = PLATFORM_IDS.includes(q.platform as string) ? (q.platform as string) : PLATFORM_IDS.includes(b.platform) ? (b.platform as string) : null;
       const why = str((q.result as { fitReason?: string; reason?: string })?.fitReason, 300) || str((q.result as { reason?: string })?.reason, 300);
@@ -240,8 +244,9 @@ export async function POST(request: Request) {
       await db.from("icp_qualifications").update({ card_id: r.card.id }).eq("id", q.id).eq("master_plan_id", a.planId);
       idx.add({ board_id: board.id, name: q.name as string, email: email || null, profile_url: url || null });
       added++;
+      landed[stage.name] = (landed[stage.name] ?? 0) + 1;
     }
-    return NextResponse.json({ added, skipped: already.length, already: already.slice(0, 12), failed, board: board.name });
+    return NextResponse.json({ added, skipped: already.length, already: already.slice(0, 12), failed, board: board.name, landed });
   }
 
   // Which people on a list are already on a pipeline (asked before scoring, so no score is spent on them).

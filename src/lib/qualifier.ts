@@ -208,8 +208,12 @@ export const cleanPriority = (v: unknown) => pick(v, PRIORITIES, "MEDIUM");
 export const cleanFit = (v: unknown) => pick(v, FITS, "BORDERLINE");
 
 // Where a newly added card starts, by priority: High is ready to reach out, Medium and Low wait in Nurture.
-export function stageKeyFor(priority: string | null | undefined): string {
-  return priority === "HIGH" ? "to_reach" : "nurture";
+// Coaching-partner scoring (the partner profile) is the exception while the first list is being built: Medium also
+// starts in To reach out (Babs, 2026-11-09); Low still waits in Nurture.
+export function stageKeyFor(priority: string | null | undefined, purpose?: IcpPurpose | string | null): string {
+  if (priority === "HIGH") return "to_reach";
+  if (purpose === "partner" && priority === "MEDIUM") return "to_reach";
+  return "nurture";
 }
 
 // Released to every account on 2026-10-08. Set to false to make it Babs-only again
