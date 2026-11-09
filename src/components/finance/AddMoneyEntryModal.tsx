@@ -9,6 +9,7 @@ import { CurrencySelect } from "@/components/money/CurrencySelect";
 import { useHomeCurrency } from "@/components/money/useHomeCurrency";
 import type { Currency } from "@/lib/currency";
 import { GstHstField, taxBody, showTaxFields, useSalesTax } from "@/components/finance/GstHst";
+import { backdropClick } from "@/lib/backdropClick";
 
 const FREQS = ["weekly", "biweekly", "monthly", "quarterly", "semiannual", "annual"] as const;
 
@@ -103,7 +104,7 @@ export default function AddMoneyEntryModal({ initialType, onClose, onSaved }: { 
   const input = "w-full h-10 px-3 text-sm rounded-lg border border-[#1a2b4a]/20 bg-white text-[#1a2b4a] outline-none focus:border-[#c9a227]";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true" aria-label="Add income or expense">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" onClick={backdropClick(onClose)} role="dialog" aria-modal="true" aria-label="Add income or expense">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-serif text-xl text-indigo-900">Add to your Financial Pulse</h3>

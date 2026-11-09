@@ -9,6 +9,7 @@ import ContactLookupInput, { lookupName } from "@/components/crm/ContactLookupIn
 import QualResult, { PriorityBadge, type Qual } from "@/components/qualifier/QualResult";
 import { QUALIFIER_OPEN_TO_ALL } from "@/lib/qualifier";
 import { LIST_TEMPLATE_CSV } from "@/lib/dmListParse";
+import { backdropClick } from "@/lib/backdropClick";
 import { NURTURE_TOTAL, PLATFORM_NAMES, dmLabel, stepOrder, suggestedStep } from "@/lib/dmSteps";
 import { EMAIL_LIST_TEMPLATE_CSV, mapPeople, parseCsv } from "@/lib/dmEmailList";
 
@@ -540,7 +541,7 @@ export const angleScript = (text: string): ScriptLite => ({ id: "", title: "Pers
 
 function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={backdropClick(onClose)}>
       <div role="dialog" aria-label={title} className={`w-full ${wide ? "max-w-3xl" : "max-w-lg"} max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-[#15233d]`} onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{title}</h3>

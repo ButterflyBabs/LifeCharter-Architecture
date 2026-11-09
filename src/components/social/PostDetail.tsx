@@ -7,6 +7,7 @@ import {
   type Offer, type PlannedPost, type PlatformDef,
 } from "@/lib/social/planner";
 import { CopyButton, PlatformChip, StatusSelect, cx } from "./ui";
+import { backdropClick } from "@/lib/backdropClick";
 
 // Text with [brackets] highlighted so the fill-ins stand out.
 function Highlighted({ text }: { text: string }) {
@@ -191,7 +192,7 @@ export function PostDetail({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-[#0F1A38]/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-[#0F1A38]/40" onClick={backdropClick(onClose)}>
       <div
         role="dialog"
         aria-modal="true"

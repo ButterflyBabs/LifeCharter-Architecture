@@ -5,6 +5,7 @@ import { Link2, Plus, X, Copy, CheckCircle, ExternalLink, Trash2, Pencil, Power,
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { shortUrlFor } from "@/lib/shortLinks";
+import { backdropClick } from "@/lib/backdropClick";
 
 const box = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 py-2 text-sm text-[#1a2b4a] dark:text-[#F8F5F0]";
 const day = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -43,7 +44,7 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={backdropClick(onClose)}>
       <div role="dialog" aria-label={title} className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-[#15233d]" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{title}</h3>

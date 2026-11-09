@@ -7,6 +7,7 @@ import { PLATFORMS, PLATFORM_LABELS } from "@/lib/postStreamConstants";
 import { MediaPicker, type MediaValue } from "@/components/content/MediaPicker";
 import { cx } from "@/components/social/ui";
 import type { PlannedPost } from "@/lib/social/planner";
+import { backdropClick } from "@/lib/backdropClick";
 
 // Create, schedule and publish a post — one composer, opened from the Content
 // Calendar. New posts land on the calendar; an existing calendar post can be
@@ -168,7 +169,7 @@ export function PostComposer({
   const canSchedule = !noPs;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-[#0F1A38]/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-[#0F1A38]/40" onClick={backdropClick(onClose)}>
       <div
         role="dialog"
         aria-modal="true"

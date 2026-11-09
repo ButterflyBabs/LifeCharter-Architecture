@@ -9,6 +9,7 @@ import { initials, linkify } from "@/lib/community/format";
 import { useFileUrl } from "@/lib/community/storage";
 import { splitMentions } from "@/lib/community/mentions";
 import Link from "next/link";
+import { backdropClick } from "@/lib/backdropClick";
 
 export const INK = "#1F2B3A";
 
@@ -195,7 +196,7 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-[#1F2B3A]/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-6" onClick={onClose}>
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-[#1F2B3A]/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-6" onClick={backdropClick(onClose)}>
       <div
         role="dialog"
         aria-modal="true"

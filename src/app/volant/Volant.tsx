@@ -7,6 +7,7 @@ import Recordings from "./Recordings";
 import ContactPicker, { personName, type PickedContact } from "@/app/contacts/ContactPicker";
 import { localInputValue } from "@/components/reminders/useReminders";
 import { buildClientEmail, buildClientEmailHtml, groupItems, reportToText, templateName, VOLANT_NAME, type ActionItem, type ItemFor, type VolantReport, type VolantTemplate } from "@/lib/volant";
+import { backdropClick } from "@/lib/backdropClick";
 
 type Contact = { first_name: string | null; last_name: string | null; email: string } | null;
 type Row = { id: string; template_key: string; title: string; session_date: string; contact_id: string | null; created_at: string; seq_contacts: Contact; items: number; approved: number };
@@ -623,7 +624,7 @@ function EmailClient({ r, report, template, onClose, onReport, onContact }: { r:
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Preview and email this report to your client" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Preview and email this report to your client" onClick={backdropClick(onClose)}>
       <div className="my-6 w-full max-w-4xl rounded-2xl bg-[#FAF8F3] p-5 shadow-xl dark:bg-[#14213a]" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-wrap items-center gap-3">
           <h3 className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Preview &amp; email to your client</h3>

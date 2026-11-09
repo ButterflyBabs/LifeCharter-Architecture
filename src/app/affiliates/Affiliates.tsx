@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import ContactLookupInput, { lookupName } from "@/components/crm/ContactLookupInput";
 import DmPipeline from "../dm-pipeline/DmPipeline";
 import MonthlyReport from "@/components/affiliates/MonthlyReport";
+import { backdropClick } from "@/lib/backdropClick";
 
 type Affiliate = {
   id: string;
@@ -53,7 +54,7 @@ const day = (d: string) => new Date(d.length === 10 ? `${d}T12:00:00` : d).toLoc
 
 function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={backdropClick(onClose)}>
       <div role="dialog" aria-label={title} className={`w-full ${wide ? "max-w-3xl" : "max-w-lg"} max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-[#15233d]`} onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-xl font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{title}</h3>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Trash2, X } from "lucide-react";
 import { COLUMNS, type PData, type PTask } from "./types";
+import { backdropClick } from "@/lib/backdropClick";
 
 const FIELD = "w-full rounded-lg border border-[#1a2b4a]/15 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/30 dark:text-[#F8F5F0]";
 const LABEL = "mb-1 block text-xs font-medium text-[#1a2b4a] dark:text-[#F8F5F0]";
@@ -34,7 +35,7 @@ export default function TaskDrawer({ task, data, onClose, onSave, onDelete, solo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={backdropClick(onClose)}>
       <aside className="h-full w-full max-w-md overflow-y-auto bg-[#F8F5F0] p-5 shadow-2xl dark:bg-[#14213a]" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Edit task">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Edit task</h2>

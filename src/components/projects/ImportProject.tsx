@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, ClipboardPaste, Upload, X } from "lucide-react";
 import { PROJECT_IMPORT_LIMITS, HOW_TO, SOURCE_LABEL, STATUS_LABEL, TARGET_LABELS, buildTasks, guessDateOrder, guessMapping, readProjectTable, suggestSectionUse, mapStatus, type DateOrder, type PTable, type SectionUse, type Target, type TaskStatus } from "@/lib/projectImport";
 import { fmtDay, tzParam } from "./types";
+import { backdropClick } from "@/lib/backdropClick";
 
 // Projects > Import a project. The file is read and understood right here in the browser; only the mapped tasks
 // go to /api/projects/import, which creates one new project.
@@ -140,7 +141,7 @@ export default function ImportProject({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={backdropClick(onClose)}>
       <div role="dialog" aria-label="Import a project" className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-[#F8F5F0] p-5 shadow-2xl dark:bg-[#14213a]" onClick={(e) => e.stopPropagation()}>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Import a project</h2>

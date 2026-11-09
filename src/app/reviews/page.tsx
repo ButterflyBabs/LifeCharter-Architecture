@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Star, Plus, Copy, Mail, Trash2, Loader2, Sparkles, CheckCircle2, X, Send } from "lucide-react";
 import { SocialProofRead } from "@/components/planning/AssistantPanels";
+import { backdropClick } from "@/lib/backdropClick";
 
 // Reviews & Testimonials — this client's own. They send a personal link to one
 // of THEIR clients; the review lands here to approve, feature and reuse in their
@@ -200,7 +201,7 @@ type Sender = (method: string, url: string, body?: unknown) => Promise<Record<st
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-[9998] bg-black/40 flex items-start justify-center overflow-y-auto p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[9998] bg-black/40 flex items-start justify-center overflow-y-auto p-4" onClick={backdropClick(onClose)}>
       <div role="dialog" aria-modal="true" aria-label={title} className="bg-white dark:bg-[#111d33] rounded-2xl shadow-2xl w-full max-w-lg my-8" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#1a2b4a]/10">
           <h2 className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{title}</h2>

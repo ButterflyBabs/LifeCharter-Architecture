@@ -5,6 +5,7 @@ import { Calendar, Check, Copy, FolderKanban, Plus, Search, Upload, Users, X, Bo
 import MyCalendar from "../sales-reference/MyCalendar";
 import Resources from "./Resources";
 import { LEADS_TEMPLATE_CSV, readLeadsCsv } from "@/lib/c2cLeads";
+import { backdropClick } from "@/lib/backdropClick";
 
 interface Stage { id: string; key: string | null; name: string; kind: string }
 interface Card {
@@ -212,7 +213,7 @@ function AddProspect({ onClose, onSave }: { onClose: () => void; onSave: (b: Rec
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF({ ...f, [k]: e.target.value });
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={backdropClick(onClose)}>
       <div role="dialog" aria-label="Add a prospect" className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-[#F8F5F0] p-5 shadow-2xl dark:bg-[#14213a]" onClick={(e) => e.stopPropagation()}>
         <div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">Add a prospect</h2><button onClick={onClose} aria-label="Close" className="rounded-lg p-1 text-[#7a8a99]"><X className="h-5 w-5" /></button></div>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -267,7 +268,7 @@ function Drawer({ card, data, stageName, onClose, post }: { card: Card; data: Da
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={backdropClick(onClose)}>
       <aside role="dialog" aria-label="Prospect" className="h-full w-full max-w-lg overflow-y-auto bg-[#F8F5F0] p-5 shadow-2xl dark:bg-[#14213a]" onClick={(e) => e.stopPropagation()}>
         <div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{card.name}</h2><button onClick={onClose} aria-label="Close" className="rounded-lg p-1 text-[#7a8a99]"><X className="h-5 w-5" /></button></div>
 
