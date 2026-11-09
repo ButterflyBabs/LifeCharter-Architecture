@@ -1,4 +1,4 @@
-import { authEnabled, isOwnerEmail, prefersTeamAccount, sessionUser, superAdminEmails } from "@/lib/authz";
+import { authEnabled, hasOwnAccount, isOwnerEmail, prefersTeamAccount, sessionUser, superAdminEmails } from "@/lib/authz";
 import { createServerClient } from "@/lib/supabase/server";
 import { DEFAULT_ASSISTANT_NAME } from "@/lib/ai/defaults";
 import { switcherAllowed } from "@/lib/accountSwitcher";
@@ -69,6 +69,35 @@ export async function readAccountKey(profileId: string | null): Promise<string> 
   return key;
 }
 
+// The house owner's profile, for a signed-in member of the house team workspace who owns no account of their own.
+// The house workspace has no owner row: its plan belongs to the super admin (the same test houseFeatureLevel uses).
+// Anyone else (a client, a member of a client's workspace, someone with their own account) gets null.
+async function houseTeamProfileFor(): Promise<{ id: string; name: string; instructions: string; notes: string } | null> {
+  try {
+    const user = await sessionUser();
+    if (!user?.email || isOwnerEmail(user.email)) return null;
+    if (await hasOwnAccount(user.id)) return null;
+    const db = createServerClient();
+    const { data: m } = await db.from("workspace_members").select("workspace_id").ilike("email", user.email).eq("status", "active").maybeSingle();
+    if (!m?.workspace_id) return null;
+    const { data: ws } = await db.from("workspaces").select("master_plan_id").eq("id", m.workspace_id).maybeSingle();
+    if (!ws?.master_plan_id) return null;
+    const { data: plan } = await db.from("client_master_plans").select("client_email").eq("id", ws.master_plan_id).maybeSingle();
+    const ownerEmail = ((plan?.client_email as string | undefined) || "").toLowerCase();
+    if (!ownerEmail || !superAdminEmails().includes(ownerEmail)) return null;
+    const { data: p } = await db.from("profiles").select("id, assistant_name, assistant_instructions, assistant_notes").ilike("email", ownerEmail).maybeSingle();
+    if (!p?.id) return null;
+    return {
+      id: p.id as string,
+      name: ((p.assistant_name as string) || "").trim(),
+      instructions: ((p.assistant_instructions as string) || "").trim(),
+      notes: ((p.assistant_notes as string) || "").trim(),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function resolveAiConfig(): Promise<{ name: string; key: string; instructions: string; notes: string }> {
   const envKey = process.env.OPENAI_API_KEY || process.env.openai_api_key || "";
   try {
@@ -88,6 +117,15 @@ export async function resolveAiConfig(): Promise<{ name: string; key: string; in
     }
     const own = await readAccountKey(account.profileId);
     if (!own && account.isOwner) rememberKey(envKey, account.profileId);
+    if (!own && !account.isOwner) {
+      // A member of the house team (Sumbal, Morgan) has a login profile that owns nothing, so it has no key. They work
+      // in the house account, so the house owner's AI is the one that runs (counted against their monthly cap).
+      const house = await houseTeamProfileFor();
+      if (house) {
+        const houseKey = await readAccountKey(house.id);
+        if (houseKey) return { name: house.name || name, key: houseKey, instructions: house.instructions, notes: house.notes };
+      }
+    }
     return { name, key: own || (account.isOwner ? envKey : ""), instructions, notes };
   } catch (e) {
     console.error("resolveAiConfig:", e);
