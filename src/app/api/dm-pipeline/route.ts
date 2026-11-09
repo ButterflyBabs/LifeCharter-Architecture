@@ -11,6 +11,7 @@ import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, moveCard, creat
 import { mapPeople, parseCsv } from "@/lib/dmEmailList";
 import { cleanLinkUrl } from "@/lib/coldEmail";
 import { zonedToUtcISO } from "@/lib/tz";
+import { isValidTimeZone } from "@/lib/timezones";
 import { isZoomConfigured, masterclassMeetingId, meetingSchedule } from "@/lib/zoom";
 
 export const dynamic = "force-dynamic";
@@ -72,6 +73,20 @@ async function allRows<T>(page: (from: number, to: number) => PromiseLike<{ data
 
 const KINDS = ["open", "booked", "closed"];
 
+// The time zone of the person who owns this account (their profile), else the viewer's.
+async function accountZone(db: ReturnType<typeof createServerClient>, planId: string, fallback: string): Promise<string> {
+  try {
+    const { data: plan } = await db.from("client_master_plans").select("client_email").eq("id", planId).maybeSingle();
+    const email = ((plan?.client_email as string | undefined) || "").trim();
+    if (!email) return fallback;
+    const { data: p } = await db.from("profiles").select("timezone").ilike("email", email).maybeSingle();
+    const z = ((p?.timezone as string | null) || "").trim();
+    return z && isValidTimeZone(z) ? z : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export async function GET(request: Request) {
   const a = await crmAccount();
   if ("denied" in a) return a.denied;
@@ -99,11 +114,24 @@ export async function GET(request: Request) {
     for (const r of sentRows) counts.set(r.card_id, (counts.get(r.card_id) ?? 0) + 1);
   }
   // A personal link only fills into a message once it has somewhere to go.
-  const { data: own } = await db.from("pipeline_boards").select("personal_link_url").eq("id", board.id).maybeSingle();
+  const { data: own } = await db.from("pipeline_boards").select("personal_link_url, daily_add_goal").eq("id", board.id).maybeSingle();
   const personalLinkUrl = (own?.personal_link_url as string | null) ?? "";
+  // "New people per workday": people added to this board today (and this week) in the account's time zone.
+  let addGoal: { goal: number; added: number; week: number; weekGoal: number; workday: boolean } | null = null;
+  const goal = Number(own?.daily_add_goal) || 0;
+  if (goal > 0) {
+    // Counted in the ACCOUNT OWNER's time zone, so a team member working from another zone sees the same day as the owner.
+    const gz = await accountZone(db, a.planId, tz);
+    const today = dateIn(gz, 0);
+    const dow = new Date(`${today}T00:00:00Z`).getUTCDay();
+    const monday = dateIn(gz, -((dow + 6) % 7));
+    const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: gz });
+    const days = ((cards ?? []) as { created_at: string | null }[]).map((c) => (c.created_at ? fmt.format(new Date(c.created_at)) : ""));
+    addGoal = { goal, added: days.filter((d) => d === today).length, week: days.filter((d) => d >= monday && d <= today).length, weekGoal: goal * 5, workday: dow >= 1 && dow <= 5 };
+  }
   const linksReady = a.house || Boolean(personalLinkUrl);
   const withCounts = ((cards ?? []) as { id: string }[]).map((c) => ({ ...c, dm_count: counts.get(c.id) ?? 0, ...(linksReady ? {} : { link_code: null }) }));
-  return NextResponse.json({ boards, board, stages, cards: withCounts, today: dateIn(tz, 0), nextSession, personalLinkUrl, dmUsage: await dmUsage(db, a.planId) });
+  return NextResponse.json({ boards, board, stages, cards: withCounts, today: dateIn(tz, 0), nextSession, personalLinkUrl, addGoal, dmUsage: await dmUsage(db, a.planId) });
 }
 
 export async function POST(request: Request) {
@@ -147,6 +175,10 @@ export async function POST(request: Request) {
       const url = cleanLinkUrl(b.personalLinkUrl);
       if (String(b.personalLinkUrl).trim() && !url) return NextResponse.json({ error: "Enter the whole web address, starting with https://" }, { status: 400 });
       patch.personal_link_url = url || null;
+    }
+    if (b.dailyAddGoal !== undefined) {
+      const n = Math.round(Number(b.dailyAddGoal));
+      patch.daily_add_goal = Number.isFinite(n) && n >= 1 ? Math.min(500, n) : null;
     }
     await db.from("pipeline_boards").update(patch).eq("id", board.id).eq("master_plan_id", a.planId);
     return NextResponse.json({ boards: await ensureBoards(db, a.planId, purpose), stages: await boardStages(db, a.planId, board.id) });

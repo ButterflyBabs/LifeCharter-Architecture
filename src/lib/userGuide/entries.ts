@@ -4227,6 +4227,10 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       {
         "q": "Can I have more than one pipeline?",
         "a": "Yes. Press New pipeline and start from DM outreach stages, Cold email stages or Three simple stages. Rename stages, tags and follow-ups under Stages & settings."
+      },
+      {
+        "q": "Can I set a goal for how many new people I add each workday?",
+        "a": "Yes. Under Stages & settings, fill in New people to add each workday with a number, for example 10, and save. A bar at the top of that pipeline then shows how many people you added today against that number, and how many you added this week out of five workdays' worth. Leave it empty for no goal."
       }
     ],
     "related": [

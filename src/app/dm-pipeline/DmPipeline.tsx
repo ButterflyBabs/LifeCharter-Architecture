@@ -40,6 +40,7 @@ export type Card = {
   stage_changed_at: string;
 };
 export type ScriptLite = { id: string; title: string; platforms: string[]; channel: string; content?: string };
+export type AddGoal = { goal: number; added: number; week: number; weekGoal: number; workday: boolean };
 export type DmUse = { sent: number; limit: number; opensAt: string | null; followUps?: number };
 export type Post = (b: Record<string, unknown>) => Promise<Record<string, unknown> | null>;
 
@@ -76,6 +77,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
   const [today, setToday] = useState("");
   const [nextSession, setNextSession] = useState<string | null>(null);
   const [personalLinkUrl, setPersonalLinkUrl] = useState("");
+  const [addGoal, setAddGoal] = useState<AddGoal | null>(null);
   const [dmUsage, setDmUsage] = useState<Record<string, DmUse>>({});
   const [sending, setSending] = useState<{ cardId: string; scriptId: string; angle?: string } | null>(null);
   // Prospect Qualifier on the cards: Babs only until it is opened to every account.
@@ -134,6 +136,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
       setToday(d.today ?? "");
       setNextSession(d.nextSession ?? null);
       setPersonalLinkUrl(d.personalLinkUrl ?? "");
+      setAddGoal(d.addGoal ?? null);
       setDmUsage(d.dmUsage ?? {});
       try {
         if (d.board?.id) localStorage.setItem(`pipelines-board-${purpose}`, d.board.id);
@@ -302,6 +305,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
         </button>
       )}
 
+      {purpose === "outreach" && addGoal && <AddGoalBar g={addGoal} />}
       {purpose === "outreach" && <DmLimitBar usage={dmUsage} onSetLimit={(pl, limit) => void post({ action: "dm-limit", platform: pl, limit }).then((r) => { const u = (r as { dmUsage?: Record<string, DmUse> } | null)?.dmUsage; if (u) setDmUsage(u); })} />}
       {dueCount > 0 && dueOpen && (
         <section id="due-now" aria-label="Follow-ups due now" className="mb-5 rounded-2xl border border-[#C76F56]/40 bg-[#C76F56]/5 p-4">
@@ -517,6 +521,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
         <BoardSettings
           board={board}
           personalLinkUrl={personalLinkUrl}
+          addGoal={addGoal?.goal ?? null}
           stages={stages}
           cards={cards ?? []}
           canDelete={boards.length > 1}
@@ -1221,6 +1226,26 @@ function ColdEmailSenderCard({ boardId }: { boardId: string | null }) {
   );
 }
 
+// "New people added today 4 / 10": how many people were added to this pipeline today against the workday goal, plus the week.
+function AddGoalBar({ g }: { g: AddGoal }) {
+  const pct = g.goal > 0 ? Math.min(100, Math.round((g.added / g.goal) * 100)) : 0;
+  const met = g.added >= g.goal;
+  const weekPct = g.weekGoal > 0 ? Math.min(100, Math.round((g.week / g.weekGoal) * 100)) : 0;
+  return (
+    <div className="mb-3 rounded-xl border border-[#1a2b4a]/10 bg-white p-3 dark:bg-[#1a2b4a]/40" aria-label="New people added to this pipeline">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <span className="text-sm font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">New people added today</span>
+        <span className="tabular-nums text-sm font-bold text-[#1a2b4a] dark:text-[#F8F5F0]">{g.added} / {g.goal}</span>
+      </div>
+      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[#1a2b4a]/10"><div className={`h-full rounded-full ${met ? "bg-[#2E7C83]" : "bg-[#c9a227]"}`} style={{ width: `${pct}%` }} /></div>
+      <p className={`mt-1 text-xs ${met ? "font-semibold text-[#1F5E63]" : "text-[#7a8a99]"}`}>
+        {met ? "Goal reached for today." : g.workday ? `${g.goal - g.added} to go today.` : "Today is not a workday, so no goal today."} This week: {g.week} of {g.weekGoal}.
+      </p>
+      <div className="mt-1 h-1 overflow-hidden rounded-full bg-[#1a2b4a]/10"><div className="h-full rounded-full bg-[#1a2b4a]/40" style={{ width: `${weekPct}%` }} /></div>
+    </div>
+  );
+}
+
 function DmLimitBar({ usage, onSetLimit }: { usage: Record<string, DmUse>; onSetLimit: (platform: string, limit: number) => void }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [val, setVal] = useState("");
@@ -1704,10 +1729,11 @@ function NewBoard({ onClose, onCreated, post }: { onClose: () => void; onCreated
   );
 }
 
-function BoardSettings({ board, personalLinkUrl, stages: initialStages, cards, canDelete, onClose, onDeleted, post }: { board: Board; personalLinkUrl: string; stages: Stage[]; cards: Card[]; canDelete: boolean; onClose: () => void; onDeleted: () => void; post: Post }) {
+function BoardSettings({ board, personalLinkUrl, addGoal, stages: initialStages, cards, canDelete, onClose, onDeleted, post }: { board: Board; personalLinkUrl: string; addGoal: number | null; stages: Stage[]; cards: Card[]; canDelete: boolean; onClose: () => void; onDeleted: () => void; post: Post }) {
   const [name, setName] = useState(board.name);
   const [tag, setTag] = useState(board.tag ?? "");
   const [link, setLink] = useState(personalLinkUrl);
+  const [goalText, setGoalText] = useState(addGoal ? String(addGoal) : "");
   const [stages, setStages] = useState(initialStages);
   const [edits, setEdits] = useState<Record<string, { name: string; followUpDays: string; tag: string; kind: Stage["kind"] }>>(() =>
     Object.fromEntries(initialStages.map((s) => [s.id, { name: s.name, followUpDays: s.followUpDays == null ? "" : String(s.followUpDays), tag: s.tag ?? "", kind: s.kind }]))
@@ -1722,8 +1748,8 @@ function BoardSettings({ board, personalLinkUrl, stages: initialStages, cards, c
 
   async function saveAll() {
     setSaving(true);
-    if (name.trim() !== board.name || (tag.trim() || "") !== (board.tag ?? "") || link.trim() !== personalLinkUrl) {
-      const r = (await post({ action: "board-update", boardId: board.id, name, tag, personalLinkUrl: link })) as { stages?: Stage[] } | null;
+    if (name.trim() !== board.name || (tag.trim() || "") !== (board.tag ?? "") || link.trim() !== personalLinkUrl || goalText.trim() !== (addGoal ? String(addGoal) : "")) {
+      const r = (await post({ action: "board-update", boardId: board.id, name, tag, personalLinkUrl: link, dailyAddGoal: goalText.trim() === "" ? null : Number(goalText) })) as { stages?: Stage[] } | null;
       if (!r) {
         setSaving(false);
         return;
@@ -1747,6 +1773,7 @@ function BoardSettings({ board, personalLinkUrl, stages: initialStages, cards, c
         <label className="block text-xs font-medium text-[#5a6472]">Pipeline tag (everyone on it)<Input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="e.g. masterclass-dm" /></label>
       </div>
       <label className="mb-4 block text-xs font-medium text-[#5a6472]">Personal links go to (your own page)<Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://" /></label>
+      <label className="mb-4 block text-xs font-medium text-[#5a6472]">New people to add each workday (goal, optional)<Input inputMode="numeric" value={goalText} onChange={(e) => setGoalText(e.target.value.replace(/\D/g, "").slice(0, 3))} placeholder="e.g. 10, leave empty for none" /></label>
       <p className="mb-2 text-sm text-[#7a8a99]">Each stage&rsquo;s tag goes on a person&rsquo;s contact record while they&rsquo;re in that stage. Follow-up days set their next task when they land there; leave empty for none.</p>
       <div className="space-y-2">
         <div className="hidden sm:grid grid-cols-[64px_1fr_80px_1fr_150px_32px] gap-2 text-[11px] font-semibold uppercase tracking-wide text-[#7a8a99]">

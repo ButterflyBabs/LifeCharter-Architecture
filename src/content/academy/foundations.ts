@@ -1069,7 +1069,7 @@ export const FOUNDATIONS: Lesson[] = [
           "Choose where to move them under After you send it, and press I sent it.",
           "Drag a card to its next stage at any time.",
         ],
-        tips: ["Press New pipeline and start from DM outreach stages, Cold email stages or Three simple stages. Rename stages, tags and follow-ups under Stages & settings.", "Add an email to a card that says Not in Contacts. That puts them in Contacts and tags them.", "A column with a lot of people draws its first 150 cards and a Show 150 more button. The number at the top of the column is the full count, and Search finds anyone on the pipeline."],
+        tips: ["Press New pipeline and start from DM outreach stages, Cold email stages or Three simple stages. Rename stages, tags and follow-ups under Stages & settings.", "Add an email to a card that says Not in Contacts. That puts them in Contacts and tags them.", "A column with a lot of people draws its first 150 cards and a Show 150 more button. The number at the top of the column is the full count, and Search finds anyone on the pipeline.", "Under Stages & settings, fill in New people to add each workday with a number, for example 10. A bar at the top of that pipeline then shows how many people you added today and this week against that goal. It counts days in the account owner's time zone."],
         image: { src: "/academy/outreach-pipelines.jpg", alt: "The outreach board with DM Pipeline and Cold Outreach tabs, a daily counter for each platform showing 0 of 25, and an All outreach every pipeline table of people by stage", caption: "Daily counters on top, and everyone's stage in one table. This is a sample account." },
       },
       {
