@@ -945,7 +945,7 @@ export const ADVANCED: Lesson[] = [
     sections: [
       {
         heading: "Why this matters",
-        text: "An affiliate program connects several pages: your forms and calendars credit sign-ups, your connected Stripe credits sales, and a commission you mark Paid becomes an expense in Finance. It also feeds a score. How many affiliates you have and how many people they refer both feed your Referral Process pillar, which counts toward your Operations dimension.",
+        text: "An affiliate program connects several pages: your forms, calendars and event pages credit sign-ups, your connected Stripe credits sales, and a commission you mark Paid becomes an expense in Finance. It also feeds a score. How many affiliates you have and how many people they refer both feed your Referral Process pillar, which counts toward your Operations dimension.",
       },
       {
         heading: "Where it is",
@@ -966,7 +966,7 @@ export const ADVANCED: Lesson[] = [
       },
       {
         heading: "How a sale gets credited",
-        text: "A visitor is remembered for 365 days, and sign-ups and bookings from your Suite forms and calendars are credited to the affiliate. When someone buys through your connected Stripe and is already in your Contacts, matched by email, the sale is credited to the affiliate who referred them. Each charge counts once. Press Add sale for anything sold elsewhere.",
+        text: "A visitor is remembered for 365 days, and sign-ups and bookings from your Suite forms, calendars and event pages are credited to the affiliate. When someone buys through your connected Stripe and is already in your Contacts, matched by email, the sale is credited to the affiliate who referred them. Each charge counts once. Press Add sale for anything sold elsewhere.",
       },
       {
         heading: "From sale to Finance",
@@ -1372,7 +1372,7 @@ export const ADVANCED: Lesson[] = [
       },
       {
         heading: "How credit works",
-        text: "A visitor is remembered for 365 days. Sign-ups and bookings from Suite forms and calendars are credited to the affiliate. A buyer through connected Stripe who is already in Contacts, matched by email, is credited to the affiliate who referred them. Each charge counts once, and a sale with no commission rate waits as Needs a %.",
+        text: "A visitor is remembered for 365 days. Sign-ups and bookings from Suite forms, calendars and event pages are credited to the affiliate. A buyer through connected Stripe who is already in Contacts, matched by email, is credited to the affiliate who referred them. Each charge counts once, and a sale with no commission rate waits as Needs a %.",
       },
       {
         heading: "Reading a sale",

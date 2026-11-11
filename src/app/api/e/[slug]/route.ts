@@ -3,6 +3,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import { brandFor } from "@/lib/portal";
 import { register, type EventRow } from "@/lib/events";
 import { smsAccount } from "@/lib/smsServer";
+import { cookies } from "next/headers";
+import { AFF_COOKIE, affiliateByCode, recordReferral } from "@/lib/affiliates";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -35,5 +37,12 @@ export async function POST(request: Request, { params }: { params: { slug: strin
   const s = (v: unknown) => (typeof v === "string" ? v : "");
   const r = await register(db, e, { email: s(b.email), firstName: s(b.firstName), lastName: s(b.lastName), timezone: s(b.timezone) || null, phone: s(b.phone) || null, smsOk: b.smsOk === true, cardCode: s(b.c) || null });
   if (!r.ok) return NextResponse.json({ error: r.error }, { status: 400 });
+  // Came through an affiliate's link (their cookie, or ?ref passed along as _ref): credit the sign-up.
+  const code = s(b._ref) || cookies().get(AFF_COOKIE)?.value || "";
+  if (code) {
+    const aff = await affiliateByCode(db, e.master_plan_id, code).catch(() => null);
+    const { data: c } = aff ? await db.from("seq_contacts").select("id").eq("master_plan_id", e.master_plan_id).eq("email", s(b.email).trim().toLowerCase()).maybeSingle() : { data: null };
+    if (aff && c) await recordReferral(db, e.master_plan_id, aff, c.id as string, "lead", `event:${e.slug}`).catch((err) => console.error("affiliate event lead:", err));
+  }
   return NextResponse.json({ ok: true, already: r.already, challenge: e.kind === "challenge" ? `/e/${e.slug}/c/${r.token}` : null });
 }

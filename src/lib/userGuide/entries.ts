@@ -4964,7 +4964,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       {
         "id": "product-links",
         "title": "Product links",
-        "body": "Give an affiliate one tracked link per product, each with its own code and landing page. A visitor is remembered for 365 days, and sign-ups and bookings from your Suite forms and calendars are credited to the affiliate.",
+        "body": "Give an affiliate one tracked link per product, each with its own code and landing page. A visitor is remembered for 365 days, and sign-ups and bookings from your Suite forms, calendars and event pages are credited to the affiliate.",
         "keywords": [
           "product links",
           "tracked link",
