@@ -1,3 +1,4 @@
+import { tieredProjects } from "@/lib/projects/tiers";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveActor } from "@/lib/authz";
@@ -16,18 +17,6 @@ export const dynamic = "force-dynamic";
 //                  | "approve" | "return" | "set_rate" | "set_goal", ... }
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const SHIFT_COLS = "id, person_email, person_name, clock_in, clock_out, status, summary, hourly_rate, submitted_at, reviewed_at, reviewed_by, review_note";
-// Top-tier projects first, each followed by its secondary-tier projects named "Top › Secondary", so the picker and the log read as tiers.
-function tieredProjects(rows: { id: string; name: string; parent_id: string | null }[]): { id: string; name: string }[] {
-  const byId = new Map(rows.map((r) => [r.id, r]));
-  const tops = rows.filter((r) => !r.parent_id || !byId.has(r.parent_id));
-  const out: { id: string; name: string }[] = [];
-  for (const t of tops) {
-    out.push({ id: t.id, name: t.name });
-    for (const c of rows.filter((r) => r.parent_id === t.id)) out.push({ id: c.id, name: `${t.name} › ${c.name}` });
-  }
-  return out;
-}
-
 const ITEM_COLS = "id, shift_id, what, quantity, unit, minutes, task_id, project_id, challenge, help_asked_of, help_received_from, help_note, created_at";
 
 type Shift = { id: string; person_email: string; person_name: string | null; clock_in: string; clock_out: string | null; status: ShiftStatus; summary: string | null; hourly_rate: number | string | null; submitted_at: string | null; reviewed_at: string | null; reviewed_by: string | null; review_note: string | null };
