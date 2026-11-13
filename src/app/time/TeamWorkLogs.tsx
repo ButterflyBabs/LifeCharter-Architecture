@@ -6,7 +6,7 @@ import { hm, minutesOf } from "@/lib/timeTracking";
 import { STATUS_LABEL, loggedMinutes, shiftMinutes, type ShiftStatus } from "@/lib/workLog";
 
 type Item = { id: string; what: string; quantity: number | null; unit: string | null; minutes: number | null; taskId: number | null; projectId: string | null; challenge: string | null };
-type Shift = { id: string; personEmail: string; personName: string; clockIn: string; clockOut: string | null; status: ShiftStatus; items: Item[] };
+type Shift = { id: string; personEmail: string; personName: string; clockIn: string; clockOut: string | null; breakMinutes?: number; breakStartedAt?: string | null; status: ShiftStatus; items: Item[] };
 type Done = { id: number; title: string; completedAt: string; assignee: string | null; projectId: string | null };
 type Data = {
   me: { reviewer: boolean; name?: string; email?: string };
@@ -177,7 +177,7 @@ export default function TeamWorkLogs() {
         const t = week$.get(p.key) ?? emptyTotals();
         let dayMin = 0;
         for (const s of c.shifts) {
-          const m = shiftMinutes({ clock_in: s.clockIn, clock_out: s.clockOut });
+          const m = shiftMinutes({ clock_in: s.clockIn, clock_out: s.clockOut, break_minutes: s.breakMinutes, break_started_at: s.breakStartedAt });
           dayMin += m;
           t.total += m;
           t.logged += loggedMinutes(s.items);
@@ -332,7 +332,7 @@ export default function TeamWorkLogs() {
                       <p className="text-xs tabular-nums text-[#5b5f73] dark:text-[#b8a898]">Today {hm(dayMin)} · <span className="font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Week so far {hm(running.total)}</span></p>
                     </div>
                     {c.shifts.map((s) => {
-                      const mins = shiftMinutes({ clock_in: s.clockIn, clock_out: s.clockOut });
+                      const mins = shiftMinutes({ clock_in: s.clockIn, clock_out: s.clockOut, break_minutes: s.breakMinutes, break_started_at: s.breakStartedAt });
                       return (
                         <div key={s.id} className="mt-2 text-sm">
                           <p className="flex flex-wrap items-center gap-2 text-[#5b5f73] dark:text-[#b8a898]">

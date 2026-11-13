@@ -5,7 +5,7 @@ import { resolveActor } from "@/lib/authz";
 import { planMembers } from "@/lib/taskAssignees";
 import { crmAccount } from "../crm/guard";
 import { memberAccessExpired } from "@/lib/teamRoles";
-import { canEditLines, cleanItem, csvCell, payFor, shiftMinutes, submitBlocker, type ShiftStatus } from "@/lib/workLog";
+import { breakMinutes, canEditLines, cleanItem, csvCell, payFor, shiftMinutes, submitBlocker, type ShiftStatus } from "@/lib/workLog";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +16,10 @@ export const dynamic = "force-dynamic";
 //   POST { action: "clock_in" | "clock_out" | "update_shift" | "add_item" | "update_item" | "delete_item" | "submit"
 //                  | "approve" | "return" | "set_rate" | "set_goal", ... }
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
-const SHIFT_COLS = "id, person_email, person_name, clock_in, clock_out, status, summary, hourly_rate, submitted_at, reviewed_at, reviewed_by, review_note";
+const SHIFT_COLS = "id, person_email, person_name, clock_in, clock_out, break_minutes, break_started_at, status, summary, hourly_rate, submitted_at, reviewed_at, reviewed_by, review_note";
 const ITEM_COLS = "id, shift_id, what, quantity, unit, minutes, task_id, project_id, challenge, help_asked_of, help_received_from, help_note, created_at";
 
-type Shift = { id: string; person_email: string; person_name: string | null; clock_in: string; clock_out: string | null; status: ShiftStatus; summary: string | null; hourly_rate: number | string | null; submitted_at: string | null; reviewed_at: string | null; reviewed_by: string | null; review_note: string | null };
+type Shift = { id: string; person_email: string; person_name: string | null; clock_in: string; clock_out: string | null; break_minutes: number | null; break_started_at: string | null; status: ShiftStatus; summary: string | null; hourly_rate: number | string | null; submitted_at: string | null; reviewed_at: string | null; reviewed_by: string | null; review_note: string | null };
 type Item = { id: string; shift_id: string; what: string; quantity: number | string | null; unit: string | null; minutes: number | null; task_id: number | null; project_id: string | null; challenge: string | null; help_asked_of: string | null; help_received_from: string | null; help_note: string | null; created_at: string };
 
 /** Who is asking: their address and name, and whether they review (the account owner, or someone working their own account). */
@@ -77,12 +77,12 @@ export async function GET(request: Request) {
   if (u.searchParams.get("format") === "csv") {
     const byShift = new Map<string, Item[]>();
     for (const i of items) byShift.set(i.shift_id, [...(byShift.get(i.shift_id) ?? []), i]);
-    const head = ["Person", "Date", "Clock in", "Clock out", "Shift minutes", "Status", "What was done", "How many", "What was counted", "Minutes", "Challenge", "Help asked of", "Help received from", "About the help", ...(v.reviewer ? ["Hourly rate", "Shift pay"] : [])];
+    const head = ["Person", "Date", "Clock in", "Clock out", "Shift minutes", "Break minutes", "Status", "What was done", "How many", "What was counted", "Minutes", "Challenge", "Help asked of", "Help received from", "About the help", ...(v.reviewer ? ["Hourly rate", "Shift pay"] : [])];
     const rows: string[][] = [];
     for (const s of shifts) {
       const mins = shiftMinutes(s);
       const pay = v.reviewer ? payFor(mins, s.hourly_rate) : null;
-      const base = [s.person_name || s.person_email, s.clock_in.slice(0, 10), s.clock_in, s.clock_out ?? "", String(mins), s.status];
+      const base = [s.person_name || s.person_email, s.clock_in.slice(0, 10), s.clock_in, s.clock_out ?? "", String(mins), String(breakMinutes(s)), s.status];
       const its = byShift.get(s.id) ?? [];
       const tail = v.reviewer ? [s.hourly_rate == null ? "" : String(s.hourly_rate), pay == null ? "" : String(pay)] : [];
       if (!its.length) rows.push([...base, "", "", "", "", "", "", "", "", ...tail]);
@@ -135,6 +135,8 @@ export async function GET(request: Request) {
     personName: s.person_name || s.person_email,
     clockIn: s.clock_in,
     clockOut: s.clock_out,
+    breakMinutes: s.break_minutes ?? 0,
+    breakStartedAt: s.break_started_at,
     status: s.status,
     summary: s.summary,
     submittedAt: s.submitted_at,
@@ -221,8 +223,32 @@ export async function POST(request: Request) {
       const at = readTime("clockOut") ?? now;
       if (Date.parse(at) < Date.parse(s.clock_in)) return fail("Clock out can't be before clock in.");
       const patch: Record<string, unknown> = { clock_out: at, updated_at: now };
+      // Clocking out during a break ends the break at that moment.
+      if (s.break_started_at) {
+        const ended = Math.max(0, Math.round((Math.min(Date.parse(at), Date.now()) - Date.parse(s.break_started_at)) / 60_000));
+        patch.break_minutes = (s.break_minutes ?? 0) + ended;
+        patch.break_started_at = null;
+      }
       if (typeof b.summary === "string") patch.summary = str(b.summary, 2000) || null;
       await db.from("work_shifts").update(patch).eq("id", s.id);
+      return NextResponse.json({ ok: true });
+    }
+    case "break_start": {
+      const s = await shiftFor(b.id);
+      if (!s) return fail("That shift wasn't found.", 404);
+      if (s.clock_out) return fail("That shift is already clocked out.");
+      if (s.break_started_at) return fail("You are already on a break.");
+      if (!canEditLines(s.status, v.reviewer)) return fail("That shift can't be changed now.");
+      await db.from("work_shifts").update({ break_started_at: now, updated_at: now }).eq("id", s.id);
+      return NextResponse.json({ ok: true });
+    }
+    case "break_end": {
+      const s = await shiftFor(b.id);
+      if (!s) return fail("That shift wasn't found.", 404);
+      if (!s.break_started_at) return fail("You are not on a break.");
+      if (!canEditLines(s.status, v.reviewer)) return fail("That shift can't be changed now.");
+      const ended = Math.max(0, Math.round((Date.now() - Date.parse(s.break_started_at)) / 60_000));
+      await db.from("work_shifts").update({ break_minutes: (s.break_minutes ?? 0) + ended, break_started_at: null, updated_at: now }).eq("id", s.id);
       return NextResponse.json({ ok: true });
     }
     case "update_shift": {

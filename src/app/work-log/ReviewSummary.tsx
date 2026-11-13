@@ -6,7 +6,7 @@ import { hm, minutesOf } from "@/lib/timeTracking";
 import { shiftMinutes, type ShiftStatus } from "@/lib/workLog";
 
 type Item = { minutes: number | null; projectId: string | null };
-type Shift = { id: string; personEmail: string; personName: string; clockIn: string; clockOut: string | null; status: ShiftStatus; items: Item[] };
+type Shift = { id: string; personEmail: string; personName: string; clockIn: string; clockOut: string | null; breakMinutes?: number; breakStartedAt?: string | null; status: ShiftStatus; items: Item[] };
 type Data = { me: { reviewer: boolean; name?: string; email?: string }; shifts: Shift[]; projects: { id: string; name: string }[]; team?: { name: string; email: string; tracksHours?: boolean; active?: boolean }[] };
 
 const card = "rounded-2xl border border-[#1a2b4a]/10 bg-white p-5 shadow-[0_8px_24px_rgba(26,43,74,0.08)] dark:border-white/10 dark:bg-[#1a2b4a]/40";
@@ -31,7 +31,7 @@ const sundayStart = (d = new Date()) => {
 };
 const monthStart = (d = new Date()) => new Date(d.getFullYear(), d.getMonth(), 1);
 const shortDay = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-const mins = (s: Shift) => shiftMinutes({ clock_in: s.clockIn, clock_out: s.clockOut });
+const mins = (s: Shift) => shiftMinutes({ clock_in: s.clockIn, clock_out: s.clockOut, break_minutes: s.breakMinutes, break_started_at: s.breakStartedAt });
 const get = (from: Date, to: Date) =>
   fetch(`/api/work-log?from=${from.toISOString()}&to=${to.toISOString()}`, { cache: "no-store" })
     .then((r) => r.json() as Promise<Data>)

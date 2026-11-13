@@ -1826,6 +1826,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "If something got in the way, write it under Did anything get in the way? If you asked someone for help, or got it, say who and what it was about.",
       "Press Add to my log. Add one line for each thing you did.",
       "If the account owner gave you a weekly hours goal, a bar at the top shows your hours so far this week against it, such as 6h 30m of 10h.",
+      "Stepping away for dinner or a rest? Press Take a break. The clock pauses and shows On a break. Press Back from break when you return, and the clock starts again. Break time is not counted in your hours.",
       "Press Clock out when you finish, and add a short note about your day if you like.",
       "Check your lines, then press Submit for review. The account owner marks it Approved, or sends it back with a note.",
       "Account owner: the Hours summary at the top of the page shows the month's hours so far (use the arrows for other months), last week's hours (Sunday to Saturday), the hours waiting for your review, a running total by week, and a card for you and one for each team member with hours on each project. Click a card to open that person's reports underneath, where you can approve or send back a day."
@@ -1838,6 +1839,10 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "A day that is sent back shows the owner's note. Change what it asks, then submit it again."
     ],
     "questions": [
+      {
+        "q": "Can I pause the clock for a break?",
+        "a": "Yes. Press Take a break on your open shift. The clock pauses until you press Back from break, and the break minutes are left out of your hours. If you press Clock out while on a break, the break ends at that moment."
+      },
       {
         "q": "I forgot to clock out. What do I do?",
         "a": "Open Fix clock times on your shift, enter the time you really finished under Clocked out, and press Save times."

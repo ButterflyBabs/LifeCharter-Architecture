@@ -955,6 +955,7 @@ export const FOUNDATIONS: Lesson[] = [
           "Under Add what I did, say what you did, how many (a count, not hours), what you counted, how long it took in the hours and minutes boxes, and choose the project it belongs to.",
           "Under Did anything get in the way? write what made it harder. Name who you asked for help and who helped.",
           "Press Add to my log after each thing you finish.",
+          "Stepping away for a meal or a rest? Press Take a break, and press Back from break when you return. The break is not counted in your hours.",
           "Press Clock out, add a note about your day if you like, then press Submit for review.",
         ],
         tips: [

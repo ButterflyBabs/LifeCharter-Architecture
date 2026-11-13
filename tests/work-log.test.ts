@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { canEditLines, cleanItem, csvCell, goalProgress, helpState, mondayOfDay, loggedMinutes, payFor, shiftMinutes, submitBlocker } from "../src/lib/workLog";
+import { breakMinutes, canEditLines, cleanItem, csvCell, goalProgress, helpState, mondayOfDay, loggedMinutes, payFor, shiftMinutes, submitBlocker } from "../src/lib/workLog";
 import { featureApiAccess, featureForApi, featureForPage } from "../src/lib/teamRoles";
 
 test("shift minutes run from clock in to clock out, or to now while clocked in", () => {
@@ -97,4 +97,18 @@ test("the week runs Monday to Sunday: the Monday of a Friday, a Monday and a Sun
   assert.equal(mondayOfDay("2026-11-06", 5), "2026-11-02");
   assert.equal(mondayOfDay("2026-11-02", 1), "2026-11-02");
   assert.equal(mondayOfDay("2026-11-08", 0), "2026-11-02");
+});
+
+test("breaks are not counted in the hours worked", () => {
+  // 4h shift with 45 minutes of finished breaks = 3h15m.
+  assert.equal(shiftMinutes({ clock_in: "2026-11-02T16:00:00Z", clock_out: "2026-11-02T20:00:00Z", break_minutes: 45 }), 195);
+  // Still clocked in and on a break that started 20 minutes ago: the clock holds at the minutes worked before the break.
+  const now = Date.parse("2026-11-02T18:00:00Z");
+  const onBreak = { clock_in: "2026-11-02T16:00:00Z", clock_out: null, break_minutes: 10, break_started_at: "2026-11-02T17:40:00Z" };
+  assert.equal(breakMinutes(onBreak, now), 30);
+  assert.equal(shiftMinutes(onBreak, now), 90);
+  assert.equal(shiftMinutes(onBreak, now + 15 * 60_000), 90);
+  // A shift with no break data behaves as before, and breaks never push the total below zero.
+  assert.equal(shiftMinutes({ clock_in: "2026-11-02T16:00:00Z", clock_out: "2026-11-02T17:00:00Z", break_minutes: null }), 60);
+  assert.equal(shiftMinutes({ clock_in: "2026-11-02T16:00:00Z", clock_out: "2026-11-02T16:10:00Z", break_minutes: 30 }), 0);
 });

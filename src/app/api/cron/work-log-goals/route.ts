@@ -38,8 +38,8 @@ async function run(request: Request) {
   if (!list.length) return NextResponse.json({ skipped: "no goals set" });
 
   const from = zonedToUtcISO(mondayOfDay(day, weekday), "00:00", TEAM_TZ);
-  const { data: shifts } = await db.from("work_shifts").select("person_email, person_name, clock_in, clock_out").eq("master_plan_id", planId).gte("clock_in", from).lte("clock_in", now.toISOString()).limit(2000);
-  const rows = (shifts ?? []) as { person_email: string; person_name: string | null; clock_in: string; clock_out: string | null }[];
+  const { data: shifts } = await db.from("work_shifts").select("person_email, person_name, clock_in, clock_out, break_minutes, break_started_at").eq("master_plan_id", planId).gte("clock_in", from).lte("clock_in", now.toISOString()).limit(2000);
+  const rows = (shifts ?? []) as { person_email: string; person_name: string | null; clock_in: string; clock_out: string | null; break_minutes: number | null; break_started_at: string | null }[];
 
   const short: string[] = [];
   for (const g of list) {

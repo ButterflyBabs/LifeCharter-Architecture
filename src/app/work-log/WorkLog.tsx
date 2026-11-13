@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, ClipboardList, Download, LifeBuoy, LogIn, LogOut, Pencil, Plus, Trash2, Undo2 } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, Coffee, ChevronRight, ClipboardList, Download, LifeBuoy, LogIn, LogOut, Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import { hm, weekStart } from "@/lib/timeTracking";
 import ReviewSummary from "./ReviewSummary";
 import { STATUS_LABEL, goalProgress, helpState, loggedMinutes, payFor, shiftMinutes, submitBlocker, type ShiftStatus } from "@/lib/workLog";
 
 
 type Item = { id: string; what: string; quantity: number | null; unit: string | null; minutes: number | null; taskId: number | null; projectId: string | null; challenge: string | null; helpAskedOf: string | null; helpReceivedFrom: string | null; helpNote: string | null };
-type Shift = { id: string; personEmail: string; personName: string; clockIn: string; clockOut: string | null; status: ShiftStatus; summary: string | null; submittedAt: string | null; reviewedAt: string | null; reviewedBy: string | null; reviewNote: string | null; hourlyRate?: number | null; items: Item[] };
+type Shift = { id: string; personEmail: string; personName: string; clockIn: string; clockOut: string | null; breakMinutes?: number; breakStartedAt?: string | null; status: ShiftStatus; summary: string | null; submittedAt: string | null; reviewedAt: string | null; reviewedBy: string | null; reviewNote: string | null; hourlyRate?: number | null; items: Item[] };
 type Data = {
   me: { email: string; name: string; reviewer: boolean };
   shifts: Shift[];
@@ -45,7 +45,7 @@ const STATUS_STYLE: Record<ShiftStatus, string> = {
   returned: "bg-[#8a2f2f]/12 text-[#8a2f2f] dark:text-[#f0a0a0]",
 };
 
-const minsOf = (s: Shift) => shiftMinutes({ clock_in: s.clockIn, clock_out: s.clockOut });
+const minsOf = (s: Shift) => shiftMinutes({ clock_in: s.clockIn, clock_out: s.clockOut, break_minutes: s.breakMinutes, break_started_at: s.breakStartedAt });
 
 type Act = (body: Record<string, unknown>, ok?: string) => Promise<boolean>;
 
@@ -210,7 +210,7 @@ function ShiftCard({ d, s, act, live }: { d: Data; s: Shift; act: Act; live?: bo
         <div>
           <p className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{reviewer && !mine ? `${s.personName} · ` : ""}{dayOf(s.clockIn)}</p>
           <p className={muted}>
-            {timeOf(s.clockIn)} to {s.clockOut ? timeOf(s.clockOut) : "still clocked in"} · {hm(mins)}
+            {timeOf(s.clockIn)} to {s.clockOut ? timeOf(s.clockOut) : s.breakStartedAt ? "on a break" : "still clocked in"} · {hm(mins)}{(s.breakMinutes ?? 0) > 0 && !s.breakStartedAt ? ` (${hm(s.breakMinutes ?? 0)} of breaks not counted)` : ""}
             {pay != null && <> · <strong>{usd(pay)}</strong> at {usd(Number(s.hourlyRate))}/h</>}
           </p>
         </div>
@@ -259,6 +259,13 @@ function ShiftCard({ d, s, act, live }: { d: Data; s: Shift; act: Act; live?: bo
       )}
 
       <div className="flex flex-wrap items-center gap-2">
+        {mine && editable && !s.clockOut && (
+          s.breakStartedAt ? (
+            <button className={primary} disabled={busy} onClick={() => void run({ action: "break_end", id: s.id }, "Welcome back. The clock is running again.")}><Coffee className="h-4 w-4" />Back from break</button>
+          ) : (
+            <button className={btn} disabled={busy} onClick={() => void run({ action: "break_start", id: s.id }, "Break started. The clock is paused until you press Back from break.")}><Coffee className="h-3.5 w-3.5" />Take a break</button>
+          )
+        )}
         {mine && editable && !s.clockOut && (
           <button className="inline-flex items-center gap-2 rounded-full bg-[#8a2f2f] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={busy} onClick={() => void run({ action: "clock_out", id: s.id, summary }, "Clocked out. Add anything you still need to, then submit your day.")}><LogOut className="h-4 w-4" />Clock out</button>
         )}
@@ -379,9 +386,9 @@ export default function WorkLog() {
             <>
               <div className={`${card} flex flex-wrap items-center justify-between gap-3`}>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2E7C83]">Clocked in</p>
+                  <p className={`text-[11px] font-semibold uppercase tracking-wide ${live.breakStartedAt ? "text-[#8a6a15]" : "text-[#2E7C83]"}`}>{live.breakStartedAt ? "On a break · the clock is paused" : "Clocked in"}</p>
                   <p className="text-3xl font-semibold tabular-nums text-[#1a2b4a] dark:text-[#F8F5F0]">{hm(minsOf(live))}</p>
-                  <p className={muted}>Since {timeOf(live.clockIn)} on {dayOf(live.clockIn)}</p>
+                  <p className={muted}>Since {timeOf(live.clockIn)} on {dayOf(live.clockIn)}{live.breakStartedAt ? ` · break started at ${timeOf(live.breakStartedAt)}` : ""}{(live.breakMinutes ?? 0) > 0 ? ` · ${hm(live.breakMinutes ?? 0)} of breaks so far` : ""}</p>
                 </div>
               </div>
               <ShiftCard d={d} s={live} act={act} live />

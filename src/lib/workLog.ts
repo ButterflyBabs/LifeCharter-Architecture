@@ -2,14 +2,20 @@
 
 export type ShiftStatus = "open" | "submitted" | "approved" | "returned";
 
-export interface ShiftLike { clock_in: string; clock_out: string | null; hourly_rate?: number | string | null }
+export interface ShiftLike { clock_in: string; clock_out: string | null; hourly_rate?: number | string | null; break_minutes?: number | null; break_started_at?: string | null }
 export interface ItemLike { what: string; minutes: number | null; challenge?: string | null; help_asked_of?: string | null; help_received_from?: string | null }
 
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 
-/** Minutes between clock-in and clock-out (a shift still clocked in counts up to now). */
-export const shiftMinutes = (s: Pick<ShiftLike, "clock_in" | "clock_out">, now = Date.now()) =>
-  Math.max(0, Math.round(((s.clock_out ? Date.parse(s.clock_out) : now) - Date.parse(s.clock_in)) / 60_000));
+type ClockLike = Pick<ShiftLike, "clock_in" | "clock_out" | "break_minutes" | "break_started_at">;
+
+/** Minutes spent on breaks: finished breaks plus the one running now (a shift already clocked out has none running). */
+export const breakMinutes = (s: Pick<ShiftLike, "clock_out" | "break_minutes" | "break_started_at">, now = Date.now()) =>
+  Math.max(0, s.break_minutes ?? 0) + (s.break_started_at && !s.clock_out ? Math.max(0, Math.round((now - Date.parse(s.break_started_at)) / 60_000)) : 0);
+
+/** Minutes worked: clock-in to clock-out (a shift still clocked in counts up to now), minus breaks. */
+export const shiftMinutes = (s: ClockLike, now = Date.now()) =>
+  Math.max(0, Math.round(((s.clock_out ? Date.parse(s.clock_out) : now) - Date.parse(s.clock_in)) / 60_000) - breakMinutes(s, now));
 
 /** Minutes the person has accounted for on their activity lines. */
 export const loggedMinutes = (items: Pick<ItemLike, "minutes">[]) => items.reduce((n, i) => n + (i.minutes ?? 0), 0);
