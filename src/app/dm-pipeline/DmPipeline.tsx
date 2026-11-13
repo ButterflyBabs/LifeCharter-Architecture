@@ -207,6 +207,15 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
     return () => { window.removeEventListener("focus", onFocus); document.removeEventListener("visibilitychange", onFocus); };
   }, [load, board?.id]);
 
+  // Takes one person off this pipeline (anyone who can use the pipeline can; they stay in Contacts).
+  async function removeCard(c: Card) {
+    if (!confirm(`Take ${c.name} off this pipeline? Their open follow-up task and this stage's tag come off; they stay in Contacts.`)) return;
+    if (await post({ action: "delete", cardId: c.id })) {
+      setCards((cs) => (cs ?? []).filter((x) => x.id !== c.id));
+      setMsg(`${c.name} was taken off this pipeline.`);
+    }
+  }
+
   async function move(cardId: string, stageId: string) {
     const card = cards?.find((c) => c.id === cardId);
     if (!card || card.stage_id === stageId) return;
@@ -471,6 +480,9 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
                             </div>
                           </button>
                           <DmSentPick card={c} scripts={scripts} stages={stages} onPick={(sid) => openSend(c.id, sid)} />
+                          <button type="button" onClick={() => void removeCard(c)} className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-[#A4523C] hover:underline" aria-label={`Remove ${c.name} from this pipeline`}>
+                            <Trash2 className="h-3 w-3" /> Remove from pipeline
+                          </button>
                         </article>
                       );
                     })}
