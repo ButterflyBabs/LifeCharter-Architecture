@@ -2084,7 +2084,7 @@ export const WORKING: Lesson[] = [
           "Paste their profile text.",
           "Press Score this prospect.",
           "Read the priority, the fit, their level, the gap and the warm DM angle.",
-          "Choose a pipeline and press Add to pipeline if you want to reach out.",
+          "Choose a pipeline and press Add to pipeline if you want to reach out. If the score is Skip, the button reads Add anyway, and you can still add them. They start in To reach out.",
         ],
         tips: [
           "For the best read, paste their profile page and their recent posts.",

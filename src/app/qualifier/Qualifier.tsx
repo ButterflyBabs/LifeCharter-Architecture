@@ -139,7 +139,7 @@ function PlatformPick({ value, onChange }: { value: string; onChange: (v: string
   );
 }
 
-function AddToPipeline({ boards, ids, platform, post, setMsg, onAdded, labelText }: { boards: Board[]; ids: string[]; platform?: string; post: Post; setMsg: (m: string) => void; onAdded: () => void; labelText?: string }) {
+function AddToPipeline({ boards, ids, platform, post, setMsg, onAdded, labelText, force }: { boards: Board[]; ids: string[]; platform?: string; force?: boolean; post: Post; setMsg: (m: string) => void; onAdded: () => void; labelText?: string }) {
   const [boardId, setBoardId] = useState(boards[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
   if (!boards.length) return null;
@@ -154,7 +154,7 @@ function AddToPipeline({ boards, ids, platform, post, setMsg, onAdded, labelText
         disabled={busy || !ids.length}
         onClick={async () => {
           setBusy(true);
-          const r = (await post({ action: "add-to-pipeline", ids, boardId, platform })) as { added?: number; skipped?: number; already?: string[]; failed?: number; board?: string; landed?: Record<string, number> } | null;
+          const r = (await post({ action: "add-to-pipeline", ids, boardId, platform, force: !!force })) as { added?: number; skipped?: number; already?: string[]; failed?: number; board?: string; landed?: Record<string, number> } | null;
           setBusy(false);
           if (r) {
             const dup = r.skipped ? ` ${r.skipped} not added because ${r.skipped === 1 ? "they are" : "they are"} already on ${r.board}: ${(r.already ?? []).join(", ")}${r.skipped > (r.already ?? []).length ? ", and more" : ""}.` : "";
@@ -229,7 +229,12 @@ function OneTab({ icps, boards, recent, post, setMsg, onChanged }: { icps: Icp[]
               </div>
               {shown.priority !== "SKIP" ? (
                 <AddToPipeline boards={boards} ids={[shown.id]} platform={shown.platform ?? undefined} post={post} setMsg={setMsg} onAdded={() => onChanged()} />
-              ) : null}
+              ) : (
+                <div className="flex flex-col items-start gap-1">
+                  <AddToPipeline boards={boards} ids={[shown.id]} platform={shown.platform ?? undefined} post={post} setMsg={setMsg} onAdded={() => onChanged()} labelText="Add anyway" force />
+                  <span className="text-xs text-[#7a8a99]">Scored Skip, but you can still add them. They start in To reach out.</span>
+                </div>
+              )}
             </div>
             {onNames(shown) && <p className="mb-3 rounded-lg bg-[#c9a227]/10 px-3 py-2 text-sm text-[#6b5410] dark:text-[#e6d28a]">Already on: <strong>{onNames(shown)}</strong>. They can&rsquo;t be added to the same pipeline twice.</p>}
             <QualResult q={shown} />

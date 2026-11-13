@@ -4670,7 +4670,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "Reword the levels to fit your market, mark This is my ideal client on one, and press Save profile.",
       "Open Qualify a prospect, pick the profile under Score against, and paste their profile text.",
       "Press Score this prospect. Read the priority, the fit, their level, the gap and the warm DM angle.",
-      "Choose a pipeline and press Add to pipeline if you want to reach out."
+      "Choose a pipeline and press Add to pipeline if you want to reach out. If the score is Skip, the button reads Add anyway, and you can still add them. They start in To reach out."
     ],
     "health": "Scoring prospects does not change your scores or your plans. Draft it for me reads your plans and offers, but it does not change them. This page helps you spend your outreach time on the right people.",
     "tips": [

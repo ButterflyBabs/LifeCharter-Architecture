@@ -227,7 +227,8 @@ export async function POST(request: Request) {
       const email = normEmail(q.email as string | null);
       if (!q.name) { failed++; continue; }
       if (idx.boardsOf({ name: q.name as string, url, email }).includes(board.id)) { already.push(q.name as string); continue; }
-      const key = stageKeyFor(q.priority as string, purposeOf.get(q.icp_id as string));
+      // "Add anyway" on a Skip result is a person's own call to reach out, so it starts in To reach out.
+      const key = b.force === true ? "to_reach" : stageKeyFor(q.priority as string, purposeOf.get(q.icp_id as string));
       const stage = stages.find((s) => s.key === key) ?? stages.find((s) => s.kind === "open") ?? stages[0];
       const platform = PLATFORM_IDS.includes(q.platform as string) ? (q.platform as string) : PLATFORM_IDS.includes(b.platform) ? (b.platform as string) : null;
       const why = str((q.result as { fitReason?: string; reason?: string })?.fitReason, 300) || str((q.result as { reason?: string })?.reason, 300);
