@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import type { EmailFooter } from "@/lib/email/accountSender";
+import { nextClassLabel } from "@/lib/masterclass/results";
 
 // Turns a sequence step into a branded email (HTML + plain text) with the
 // legally required footer: business address and a one-click unsubscribe.
@@ -76,7 +77,12 @@ export interface RenderInput {
 
 export function renderStep(r: RenderInput) {
   const first = (r.contact.first_name || "").trim();
-  const fill = (s: string) => s.replace(/\{\{\s*first_name\s*\}\}/gi, first || "friend").replace(/\{\{\s*greeting\s*\}\}/gi, first ? `Hi ${first},` : "Hi there,");
+  // {{next_class}} is the date of the next MasterClass ("Wednesday, January 6"), so an email never promises a class in a skipped week.
+  const fill = (s: string) =>
+    s
+      .replace(/\{\{\s*first_name\s*\}\}/gi, first || "friend")
+      .replace(/\{\{\s*greeting\s*\}\}/gi, first ? `Hi ${first},` : "Hi there,")
+      .replace(/\{\{\s*next_class\s*\}\}/gi, () => nextClassLabel() ?? "the next Wednesday");
   const subject = fill(r.subject);
   const body = fill(r.body);
   const unsub = unsubscribeUrl(r.contact.id, r.list);

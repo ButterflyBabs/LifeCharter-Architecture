@@ -51,6 +51,18 @@ function sessionDates(): string[] {
   return out.filter((d) => !SKIP.includes(d));
 }
 
+/**
+ * The next class strictly after today (Mountain time), written for an email: "Wednesday, January 6".
+ * Skipped weeks are passed over, so a follow-up sent the week before a skipped class names the class that really runs.
+ * Used by the {{next_class}} field in sequence emails. Null when no class is left.
+ */
+export function nextClassLabel(now = new Date()): string | null {
+  const today = todayMT(now);
+  const d = sessionDates().find((x) => x > today);
+  if (!d) return null;
+  return new Intl.DateTimeFormat("en-US", { timeZone: "UTC", weekday: "long", month: "long", day: "numeric" }).format(new Date(`${d}T12:00:00Z`));
+}
+
 export interface FunnelInput {
   now: Date;
   registrants: { email: string; at: string; details?: Record<string, string> | null }[]; // MasterClass Zoom registrations (time they registered, what they typed)
