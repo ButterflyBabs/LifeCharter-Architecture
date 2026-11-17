@@ -1,5 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { zonedToUtcISO } from "@/lib/tz";
+import { isHousePlan } from "@/lib/housePlan";
+import { SKIP as NO_CLASS_DATES } from "@/lib/masterclass/results";
 import { EMPTY_GOALS, buildReport, guidance, type AdRow, type Goals, type Guidance, type Outcomes, type Report } from "@/lib/metaAdsReport";
 
 type Db = ReturnType<typeof createServerClient>;
@@ -38,6 +40,8 @@ export async function loadGoals(db: Db, planId: string): Promise<Goals> {
     cycleDays: n(data.cycle_days),
     cycleHour: n(data.cycle_hour),
     answers: (data.answers as Record<string, string>) ?? {},
+    // Babs's weekly MasterClass has weeks with no class; other accounts' events run every cycle.
+    skipDates: (await isHousePlan(planId, db)) ? NO_CLASS_DATES : undefined,
   };
 }
 

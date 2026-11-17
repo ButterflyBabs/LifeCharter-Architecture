@@ -29,13 +29,14 @@ export type Goals = {
   cycleDays: number | null; // days between events, e.g. 14 (null or 0 = not tied to events)
   cycleHour: number | null; // hour the count starts again on event day, Mountain time (default 19)
   answers: Record<string, string>;
+  skipDates?: string[]; // event dates with no event (cancelled or holiday weeks); their sign-ups count toward the next event
 };
 
 export const EMPTY_GOALS: Goals = { targetCpl: null, dailyBudget: null, customerValue: null, goalLeads: null, goalBy: null, monthlyLimit: null, eventAnchor: null, cycleDays: null, cycleHour: null, answers: {} };
 
 export function cycleSetup(g: Goals): CycleSetup | null {
   if (!g.eventAnchor || !g.cycleDays || g.cycleDays < 1) return null;
-  return { anchor: g.eventAnchor, days: g.cycleDays, hour: g.cycleHour ?? 19, goal: g.goalLeads };
+  return { anchor: g.eventAnchor, days: g.cycleDays, hour: g.cycleHour ?? 19, goal: g.goalLeads, skip: g.skipDates };
 }
 
 // What happened to the people the ads brought in, counted from the Suite's own contacts.

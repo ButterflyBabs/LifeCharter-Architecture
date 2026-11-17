@@ -7,7 +7,9 @@ import { dayInTz, zonedToUtcISO } from "@/lib/tz";
 export const TZ = "America/Denver";
 const DAY = 86_400_000;
 
-export type CycleSetup = { anchor: string; days: number; hour: number; goal: number | null };
+// skip: event dates with no event (a cancelled or holiday week). A skipped date does not close a count; its sign-ups
+// roll into the next event that does run, so "14 sign-ups for Nov 18" shows as Nov 25 when there is no class on Nov 18.
+export type CycleSetup = { anchor: string; days: number; hour: number; goal: number | null; skip?: string[] };
 
 export type Cycle = {
   eventDate: string; // the event that closes this cycle
@@ -72,23 +74,33 @@ function spendBetween(rows: SpendRow[], firstDay: string, lastDay: string): numb
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+const eventDay = (setup: CycleSetup, k: number) => addDays(setup.anchor, k * setup.days);
+const skipped = (setup: CycleSetup, k: number) => !!setup.skip?.includes(eventDay(setup, k));
+
 /** The open cycle and the ones before it, newest first. */
 export function buildCycles(setup: CycleSetup, signupTimes: Date[], spendRows: SpendRow[], now: Date, back = 3): Cycle[] {
-  const cur = currentIndex(setup, now);
+  // A skipped event never closes a count: the open count runs on to the next event that really happens.
+  let cur = currentIndex(setup, now);
+  while (skipped(setup, cur)) cur++;
   const out: Cycle[] = [];
   // Events that closed before the ads (or any sign-ups) began are left out: a count of zero for them means nothing.
   const dataDays = [...signupTimes.map((x) => dayInTz(x, TZ)), ...spendRows.map((r) => r.periodStart)].sort();
   const firstData = dataDays[0] ?? "0000-00-00";
-  for (let k = cur; k >= cur - back; k--) {
-    if (k !== cur && addDays(setup.anchor, k * setup.days) < firstData) break;
-    const start = boundary(setup, k - 1);
+  let k = cur;
+  for (let n = 0; n <= back; n++) {
+    const eventDate = eventDay(setup, k);
+    if (k !== cur && eventDate < firstData) break;
+    // The count starts at the close of the last event that ran, however many skipped weeks lie between.
+    let p = k - 1;
+    while (skipped(setup, p)) p--;
+    const span = (k - p) * setup.days;
+    const start = boundary(setup, p);
     const end = boundary(setup, k);
-    const eventDate = addDays(setup.anchor, k * setup.days);
-    const firstDay = addDays(eventDate, -setup.days + 1);
+    const firstDay = addDays(eventDate, -span + 1);
     const signups = signupTimes.filter((t) => t >= start && t < end).length;
     const isCurrent = k === cur;
     const spend = spendBetween(spendRows, firstDay, eventDate);
-    const elapsed = Math.min(setup.days, Math.max(1, Math.floor((now.getTime() - start.getTime()) / DAY) + 1));
+    const elapsed = Math.min(span, Math.max(1, Math.floor((now.getTime() - start.getTime()) / DAY) + 1));
     out.push({
       eventDate,
       start: start.toISOString(),
@@ -98,11 +110,12 @@ export function buildCycles(setup: CycleSetup, signupTimes: Date[], spendRows: S
       costPer: signups > 0 && spend > 0 ? round2(spend / signups) : null,
       goal: setup.goal,
       current: isCurrent,
-      daysTotal: setup.days,
-      dayNumber: isCurrent ? elapsed : setup.days,
+      daysTotal: span,
+      dayNumber: isCurrent ? elapsed : span,
       daysLeft: isCurrent ? Math.max(0, Math.ceil((end.getTime() - now.getTime()) / DAY)) : 0,
-      projected: isCurrent ? Math.round(((signups / Math.max(1, (now.getTime() - start.getTime()) / DAY)) * setup.days) * 10) / 10 : null,
+      projected: isCurrent ? Math.round(((signups / Math.max(1, (now.getTime() - start.getTime()) / DAY)) * span) * 10) / 10 : null,
     });
+    k = p;
   }
   return out;
 }
@@ -129,7 +142,7 @@ export function buildMonths(setup: CycleSetup, signupTimes: Date[], spendRows: S
     const k0 = Math.floor((Date.parse(`${first}T00:00:00Z`) - Date.parse(`${setup.anchor}T00:00:00Z`)) / (setup.days * DAY)) - 1;
     for (let k = k0; k <= k0 + Math.ceil(31 / setup.days) + 2; k++) {
       const d = addDays(setup.anchor, k * setup.days);
-      if (d >= first && d <= last && d >= firstData) events.push(d);
+      if (d >= first && d <= last && d >= firstData && !setup.skip?.includes(d)) events.push(d);
     }
     const signups = signupTimes.filter((t) => dayInTz(t, TZ).slice(0, 7) === m).length;
     const spend = spendBetween(spendRows, first, last);

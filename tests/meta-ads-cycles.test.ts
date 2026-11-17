@@ -79,3 +79,25 @@ test("events that closed before any ads or sign-ups are left out of the list", (
   const d = buildCycles(setup, signups, spend, new Date("2026-11-20T18:00:00Z"));
   assert.deepEqual(d.map((x) => x.eventDate), ["2026-12-03", "2026-11-19", "2026-11-05", "2026-10-22"]); // Dec 3 is the open count after the Nov 19 event
 });
+
+// Weekly MasterClass: Nov 18 has no class, so those sign-ups belong to the Nov 25 event.
+test("a week with no event rolls its sign-ups into the next event", () => {
+  const weekly: CycleSetup = { anchor: "2026-10-28", days: 7, hour: 13, goal: 30, skip: ["2026-11-18", "2026-12-23", "2026-12-30"] };
+  const times = ["2026-11-10T17:00:00Z", "2026-11-12T17:00:00Z", "2026-11-16T15:00:00Z"].map((s) => new Date(s));
+  const c = buildCycles(weekly, times, [], new Date("2026-11-16T18:00:00Z"));
+  assert.equal(c[0].eventDate, "2026-11-25");
+  assert.equal(c[0].current, true);
+  assert.equal(c[0].signups, 2); // Nov 12 and Nov 16; the Nov 10 one counted for the Nov 11 class
+  assert.equal(c[0].daysTotal, 14);
+  assert.equal(c[1].eventDate, "2026-11-11");
+  assert.equal(c[1].signups, 1);
+  assert.equal(c[1].daysTotal, 7);
+  // Without the skip list the same sign-ups show against Nov 18.
+  assert.equal(buildCycles({ ...weekly, skip: undefined }, times, [], new Date("2026-11-16T18:00:00Z"))[0].eventDate, "2026-11-18");
+});
+
+test("skipped dates are not counted as events in the month goal", () => {
+  const weekly: CycleSetup = { anchor: "2026-10-28", days: 7, hour: 13, goal: 30, skip: ["2026-11-18"] };
+  const nov = buildMonths(weekly, [new Date("2026-11-02T17:00:00Z"), new Date("2026-11-12T17:00:00Z")], [], new Date("2026-11-16T18:00:00Z")).find((m) => m.month === "2026-11");
+  assert.deepEqual(nov?.events, ["2026-11-04", "2026-11-11", "2026-11-25"]); // the Nov 18 event is not counted
+});
