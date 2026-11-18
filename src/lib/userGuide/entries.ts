@@ -4679,12 +4679,14 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "Reword the levels to fit your market, mark This is my ideal client on one, and press Save profile.",
       "Open Qualify a prospect, pick the profile under Score against, and paste their profile text.",
       "Press Score this prospect. Read the priority, the fit, their level, the gap and the warm DM angle.",
-      "Choose a pipeline and press Add to pipeline if you want to reach out. If the score is Skip, the button reads Add anyway, and you can still add them. They start in To reach out."
+      "Choose a pipeline and press Add to pipeline if you want to reach out. If the score is Skip, the button reads Add anyway, and you can still add them. They start in To reach out. Use Start in to choose a different stage.",
+      "If the score is wrong, open Not right? under the result. Tell it what you know about them that is not on the profile, paste any more of their profile, and press Score again with this. Or press High, Medium, Low or Skip to make the call yourself."
     ],
     "health": "Scoring prospects does not change your scores or your plans. Draft it for me reads your plans and offers, but it does not change them. This page helps you spend your outreach time on the right people.",
     "tips": [
       "Keep one Ideal Client Profile for each offer, because each has a different ideal client.",
-      "For the best read, paste their profile page and their recent posts.",
+      "For the best read, paste their profile page and their recent posts. LinkedIn keeps some of a profile on separate pages, so paste those into More of their profile.",
+      "If you know something the profile does not show, such as a referral or a company that is about to hire a coach, say so in What do you know about them that isn't on the profile. The score treats it as true.",
       "Use a list score to see who to look at first, then do the full score on that person's pipeline card."
     ],
     "questions": [
@@ -4699,6 +4701,10 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       {
         "q": "Why does it say to connect my AI key?",
         "a": "Scoring runs on your own AI key. Add it under AI Assistant, then try again."
+      },
+      {
+        "q": "The score says Skip, but I know this person is a real opportunity. What do I do?",
+        "a": "Open Not right? under the result. Write what you know, for example that it was a referral or that they are looking for coaching, and press Score again with this. It re-reads the profile you already pasted with your note, so you do not paste anything twice. Or press High, Medium, Low or Skip to set the priority yourself, which uses no AI request. Setting it yourself does not write a new DM angle."
       }
     ],
     "related": [
@@ -4742,7 +4748,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       {
         "id": "qualify-a-prospect",
         "title": "Qualify a prospect",
-        "body": "Paste one person's profile text to get a fit of yes, borderline or no, their level, the gap, a warm DM angle and a priority of High, Medium, Low or Skip, with what to do next. Past scores sit under Recently scored.",
+        "body": "Paste one person's profile text to get a fit of yes, borderline or no, their level, the gap, a warm DM angle and a priority of High, Medium, Low or Skip, with what to do next. Past scores sit under Recently scored. Two optional boxes help the score: More of their profile (another page, Experience or more posts) and What do you know about them that isn't on the profile (a referral, a stated need).",
         "keywords": [
           "qualify a prospect",
           "score this prospect",
@@ -4781,11 +4787,14 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       {
         "id": "qualifier-on-a-pipeline-card",
         "title": "On a pipeline card",
-        "body": "Open any card on an Outreach Pipeline and use its Prospect Qualifier section. The score stays on the card, and you can press Score again later.",
+        "body": "Open any card on an Outreach Pipeline and use its Prospect Qualifier section. The score stays on the card, and you can press Score again later. Under the result, Not right? lets you add what you know about the person and score again without pasting the profile a second time, or set the priority yourself. Setting it yourself changes the card's priority badge and adds a line to the card's notes.",
         "keywords": [
           "pipeline card",
           "score on a card",
           "score again",
+          "not right",
+          "set the priority",
+          "override",
           "outreach pipeline card"
         ]
       }

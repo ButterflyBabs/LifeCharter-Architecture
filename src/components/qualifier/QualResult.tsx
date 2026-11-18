@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PRIORITY_INFO, type Priority } from "@/lib/qualifier";
+import { PRIORITIES, PRIORITY_INFO, type Priority } from "@/lib/qualifier";
 
 export type Qual = {
   id: string;
@@ -128,5 +128,70 @@ export default function QualResult({ q, compact, angleAction }: { q: Qual; compa
         </>
       )}
     </div>
+  );
+}
+
+type Call = (body: Record<string, unknown>) => Promise<{ qualification?: Qual; card?: unknown; error?: string } | null>;
+
+// "Not right?": tell the scorer what the profile doesn't show (a referral, a stated need, more pages) and score again from
+// the profile text already saved, or set the priority yourself. Your own call always stands: it costs no AI request.
+export function QualAdjust({ q, call, onUpdated, startOpen }: { q: Qual; call: Call; onUpdated: (q: Qual, card?: unknown) => void; startOpen?: boolean }) {
+  const [open, setOpen] = useState(!!startOpen);
+  const [context, setContext] = useState(txt(q.result?.context));
+  const [more, setMore] = useState("");
+  const [busy, setBusy] = useState("");
+  const [err, setErr] = useState("");
+  const overridden = (q.result?.override ?? null) as { from?: string; to?: string } | null;
+  async function run(label: string, body: Record<string, unknown>) {
+    setBusy(label);
+    setErr("");
+    const d = await call(body);
+    setBusy("");
+    if (!d?.qualification) { setErr(d?.error || "Couldn't do that. Try again."); return; }
+    if (body.action === "qualify") setMore("");
+    onUpdated(d.qualification, d.card);
+  }
+  return (
+    <section className="rounded-xl border border-dashed border-[#7b6b8d]/40 p-4">
+      <button onClick={() => setOpen(!open)} className="text-sm font-semibold text-[#5b4d6b] hover:underline dark:text-[#cbbfd8]">
+        {open ? "Hide" : "Not right? Add what you know, or set the priority yourself"}
+      </button>
+      {overridden?.to && <p className="mt-1 text-xs text-[#7a8a99]">You set this to {PRIORITY_INFO[overridden.to as Priority]?.label ?? overridden.to}{overridden.from ? ` (the score said ${PRIORITY_INFO[overridden.from as Priority]?.label ?? overridden.from})` : ""}.</p>}
+      {open && (
+        <div className="mt-3 space-y-3">
+          <label className="block text-xs font-medium text-[#5a6472] dark:text-[#b8c2cf]">What do you know about them that isn&rsquo;t on the profile?
+            <textarea rows={3} value={context} onChange={(e) => setContext(e.target.value)} className="mt-1 w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/20 dark:text-[#F8F5F0]" placeholder="e.g. A referral. Her company is about to ask for coaching proposals, so this is a coaching opportunity, not a keynote." />
+          </label>
+          <label className="block text-xs font-medium text-[#5a6472] dark:text-[#b8c2cf]">More of their profile (optional): another page, Experience, or more posts
+            <textarea rows={3} value={more} onChange={(e) => setMore(e.target.value)} className="mt-1 w-full rounded-lg border border-[#1a2b4a]/20 bg-white px-3 py-2 text-sm text-[#1a2b4a] dark:bg-[#1a2b4a]/20 dark:text-[#F8F5F0]" placeholder="Paste it here. It is added to the profile already saved, so you don't paste that again." />
+          </label>
+          <button
+            disabled={!!busy || (!context.trim() && !more.trim())}
+            onClick={() => void run("score", { action: "qualify", qualId: q.id, icpId: q.icp_id, context, extraText: more })}
+            className="rounded-full bg-[#2E7C83] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#2E7C83]/90 disabled:opacity-50"
+          >
+            {busy === "score" ? "Scoring…" : "Score again with this"}
+          </button>
+          <div>
+            <p className="mb-1.5 text-xs font-medium text-[#5a6472] dark:text-[#b8c2cf]">Or make the call yourself (no AI request)</p>
+            <div className="flex flex-wrap gap-2">
+              {PRIORITIES.map((p) => (
+                <button
+                  key={p}
+                  disabled={!!busy}
+                  aria-pressed={q.priority === p}
+                  onClick={() => void run(p, { action: "override", qualId: q.id, priority: p, tz: Intl.DateTimeFormat().resolvedOptions().timeZone })}
+                  className={`rounded-full border px-4 py-1.5 text-sm font-medium ${q.priority === p ? "border-[#2E7C83] bg-[#2E7C83]/10 text-[#1F5E63] dark:text-[#8fd0d6]" : "border-[#1a2b4a]/20 text-[#1a2b4a] hover:bg-[#1a2b4a]/5 dark:text-[#F8F5F0]"}`}
+                >
+                  {busy === p ? "Saving…" : PRIORITY_INFO[p].label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1.5 text-xs text-[#7a8a99]">Changing the priority doesn&rsquo;t write a new DM. If there is no DM angle yet, score again with what you know.</p>
+          </div>
+          {err && <p className="text-sm text-[#A4523C]">{err}</p>}
+        </div>
+      )}
+    </section>
   );
 }

@@ -9,7 +9,7 @@ import { memberAiGate } from "@/lib/ai/memberCap";
 import { buildAssistantKnowledge } from "@/lib/ai/assistantContext";
 import { logEvent } from "@/lib/crm";
 import { CARD_PLATFORMS, ensureBoards, boardStages, createCard, dateIn } from "@/lib/dmPipeline";
-import { DEFAULT_LEVELS, ICP_COLUMNS, QUALIFIER_OPEN_TO_ALL, audiencePrompt, cleanFit, cleanPriority, icpRow, profilePrompt, shapeIcp, stageKeyFor, type Icp } from "@/lib/qualifier";
+import { DEFAULT_LEVELS, ICP_COLUMNS, QUALIFIER_OPEN_TO_ALL, audiencePrompt, cleanFit, cleanPriority, icpRow, PRIORITIES, profilePrompt, shapeIcp, stageKeyFor, type Icp } from "@/lib/qualifier";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -22,8 +22,11 @@ export const maxDuration = 60;
 //   icp-save { id?, name, offerId?, whoServe, helpDo, signatureOffer, coreProblem, alreadyHas, missing, redFlags, levels }
 //   icp-draft { offerId? }                              (Mariposa drafts the answers from the plans and offers; nothing saved)
 //   icp-delete { id }
-//   qualify { icpId, profileText, platform?, name?, profileUrl?, warm?, cardId? }   (one AI request; saved; badge on the card)
-//   add-to-pipeline { ids: [qualification], boardId, platform? }
+//   qualify { icpId, profileText, platform?, name?, profileUrl?, warm?, context?, extraText?, cardId?, qualId? }   (one AI request; saved; badge on the card)
+//     context = what the person knows that is not on the profile (a referral, a stated need); extraText = more profile pages;
+//     qualId = score the same person again from the saved profile text, in place (profileText then optional)
+//   override { qualId, priority }                       (the person's own call: no AI request; the card's badge follows)
+//   add-to-pipeline { ids: [qualification], boardId, stageId?, platform? }   (stageId = start in that stage instead of the one the priority picks)
 //   audience-create { name, icpId, total }
 //   audience-score { audienceId, rows: [{ name, url?, code?, facts }] }             (up to 10 rows per request)
 //   audience-delete { id } · delete { id }
@@ -141,6 +144,7 @@ export async function GET(request: Request) {
     icps: (icps ?? []).map(shapeIcp),
     offers: (offers ?? []).map((o) => ({ id: o.id, name: o.name, transformation: o.transformation ?? "", idealClient: o.ideal_client ?? "", notFor: o.not_for ?? "" })),
     boards,
+    stages: Object.fromEntries(await Promise.all(boards.map(async (b) => [b.id, (await boardStages(db, a.planId, b.id)).map((x) => ({ id: x.id, name: x.name }))] as const))),
     recent: await (async () => {
       if (!recent?.length) return [];
       const idx = await pipelineIndex(db, a.planId);
@@ -229,7 +233,8 @@ export async function POST(request: Request) {
       if (idx.boardsOf({ name: q.name as string, url, email }).includes(board.id)) { already.push(q.name as string); continue; }
       // "Add anyway" on a Skip result is a person's own call to reach out, so it starts in To reach out.
       const key = b.force === true ? "to_reach" : stageKeyFor(q.priority as string, purposeOf.get(q.icp_id as string));
-      const stage = stages.find((s) => s.key === key) ?? stages.find((s) => s.kind === "open") ?? stages[0];
+      // A stage the person picked wins over the one the priority would choose.
+      const stage = stages.find((s) => s.id === str(b.stageId, 40)) ?? stages.find((s) => s.key === key) ?? stages.find((s) => s.kind === "open") ?? stages[0];
       const platform = PLATFORM_IDS.includes(q.platform as string) ? (q.platform as string) : PLATFORM_IDS.includes(b.platform) ? (b.platform as string) : null;
       const why = str((q.result as { fitReason?: string; reason?: string })?.fitReason, 300) || str((q.result as { reason?: string })?.reason, 300);
       const notes = `[${dateIn(tz, 0)}] Qualifier: ${q.priority} priority · Fit ${q.fit}${q.level ? ` · ${q.level}` : ""}${why ? `\n${why}` : ""}`;
@@ -256,6 +261,31 @@ export async function POST(request: Request) {
     const people = (Array.isArray(b.people) ? b.people : []).slice(0, 2000) as Person[];
     const on = people.map((p) => idx.names(idx.boardsOf({ name: str(p.name, 120), url: str(p.url, 500), email: str(p.email, 200) })).map((x) => x.name));
     return NextResponse.json({ on });
+  }
+
+  // The person's own call on a score: no AI request. The card (if any) takes the new priority and keeps a note of it.
+  if (b.action === "override") {
+    const priority = PRIORITIES.find((p) => p === str(b.priority, 10).toUpperCase());
+    if (!priority) return NextResponse.json({ error: "Choose High, Medium, Low or Skip." }, { status: 400 });
+    const { data: q } = await db.from("icp_qualifications").select(QUAL_COLUMNS).eq("id", str(b.qualId, 40)).eq("master_plan_id", a.planId).maybeSingle();
+    if (!q) return NextResponse.json({ error: "That score wasn't found." }, { status: 404 });
+    const was = (q.priority as string) || "";
+    const result = { ...((q.result as Record<string, unknown>) ?? {}), override: { from: was, to: priority, at: new Date().toISOString() } };
+    const { data: saved, error } = await db.from("icp_qualifications").update({ priority, result }).eq("id", q.id).eq("master_plan_id", a.planId).select(QUAL_COLUMNS).single();
+    if (error || !saved) return NextResponse.json({ error: "Couldn't save that." }, { status: 500 });
+    let cardOut: Record<string, unknown> | null = null;
+    if (q.card_id) {
+      const tz = await resolveUserTimeZone(str(b.tz, 60) || null);
+      const { data: card } = await db.from("dm_cards").select("id, notes, contact_id").eq("id", q.card_id as string).eq("master_plan_id", a.planId).maybeSingle();
+      if (card) {
+        const line = `[${dateIn(tz, 0)}] Priority set by you: ${priority}${was && was !== priority ? ` (the score said ${was})` : ""}`;
+        const notes = `${(card.notes as string) ?? ""}\n\n${line}`.trim().slice(-2000);
+        const { data: c } = await db.from("dm_cards").update({ qual_priority: priority, notes, updated_at: new Date().toISOString() }).eq("id", card.id as string).eq("master_plan_id", a.planId).select("*").single();
+        cardOut = c ?? null;
+        if (card.contact_id) await logEvent(a.planId, card.contact_id as string, "manual", line.replace(/^\[[^\]]*\] /, ""), { dm_card: card.id, qualification: q.id }, db as never).catch(() => {});
+      }
+    }
+    return NextResponse.json({ qualification: saved, card: cardOut });
   }
 
   // ── Everything below spends an AI request ──
@@ -294,20 +324,29 @@ export async function POST(request: Request) {
   }
 
   if (b.action === "qualify") {
-    const icp = await loadIcp(db, a.planId, str(b.icpId, 40));
+    // Scoring the same person again starts from the profile text saved last time, so nothing has to be pasted twice.
+    let prior: { id: string; name: string; platform: string | null; profile_url: string | null; source_text: string | null; card_id: string | null; icp_id: string | null } | null = null;
+    if (str(b.qualId, 40)) {
+      const { data } = await db.from("icp_qualifications").select("id, name, platform, profile_url, source_text, card_id, icp_id").eq("id", str(b.qualId, 40)).eq("master_plan_id", a.planId).eq("kind", "profile").maybeSingle();
+      prior = data ?? null;
+      if (!prior) return NextResponse.json({ error: "That score wasn't found." }, { status: 404 });
+    }
+    const icp = await loadIcp(db, a.planId, str(b.icpId, 40) || prior?.icp_id || "");
     if (!icp) return NextResponse.json({ error: "Choose an Ideal Client Profile first." }, { status: 400 });
-    const text = str(b.profileText, 24000);
+    const context = str(b.context, 1500);
+    // More pages of the same profile (About, Experience, a second page of posts) are added to what is already there.
+    const text = [str(b.profileText, 24000) || prior?.source_text || "", str(b.extraText, 12000)].filter(Boolean).join("\n\n").slice(0, 36000);
     if (text.length < 80) return NextResponse.json({ error: "Paste more of their profile: headline, About, and a few recent posts give the best read." }, { status: 400 });
-    const platform = PLATFORM_IDS.includes(b.platform) ? (b.platform as string) : null;
+    const platform = PLATFORM_IDS.includes(b.platform) ? (b.platform as string) : PLATFORM_IDS.includes(prior?.platform ?? "") ? (prior!.platform as string) : null;
     let card: { id: string; name: string; contact_id: string | null; board_id: string; notes: string | null; platform: string | null; profile_url: string | null } | null = null;
-    if (str(b.cardId, 40)) {
-      const { data } = await db.from("dm_cards").select("id, name, contact_id, board_id, notes, platform, profile_url").eq("id", str(b.cardId, 40)).eq("master_plan_id", a.planId).maybeSingle();
+    if (str(b.cardId, 40) || prior?.card_id) {
+      const { data } = await db.from("dm_cards").select("id, name, contact_id, board_id, notes, platform, profile_url").eq("id", str(b.cardId, 40) || (prior!.card_id as string)).eq("master_plan_id", a.planId).maybeSingle();
       card = data ?? null;
       if (!card) return NextResponse.json({ error: "That card wasn't found." }, { status: 404 });
     }
     let out: Record<string, unknown> | null;
     try {
-      out = await askJson(key, profilePrompt(icp, platform ?? card?.platform ?? null, { warm: str(b.warm, 400), voice: instructions.slice(0, 600) }), `${card?.name || str(b.name, 120) ? `Name on my list: ${card?.name || str(b.name, 120)}\n` : ""}PROFILE TEXT:\n${text}`, 1500, PROFILE_MODEL);
+      out = await askJson(key, profilePrompt(icp, platform ?? card?.platform ?? null, { warm: str(b.warm, 400), context, voice: instructions.slice(0, 600) }), `${card?.name || prior?.name || str(b.name, 120) ? `Name on my list: ${card?.name || prior?.name || str(b.name, 120)}\n` : ""}PROFILE TEXT:\n${text}`, 1500, PROFILE_MODEL);
     } catch (e) {
       console.error("qualifier qualify:", e);
       return NextResponse.json({ error: "Couldn't reach the AI just now. Try again." }, { status: 502 });
@@ -317,27 +356,26 @@ export async function POST(request: Request) {
     const priority = fit === "NO" ? "SKIP" : cleanPriority(out.priority);
     const level = str(out.level, 60);
     const dmAngle = fit === "NO" ? "" : str(out.dmAngle, 1500).replace(/\s*—\s*/g, ", ");
-    const name = card?.name || str(b.name, 120) || str(out.name, 120) || "Unnamed prospect";
-    const { data: saved, error } = await db
-      .from("icp_qualifications")
-      .insert({
-        master_plan_id: a.planId,
-        icp_id: icp.id,
-        icp_name: icp.name,
-        kind: "profile",
-        card_id: card?.id ?? null,
-        name,
-        platform: platform ?? card?.platform ?? null,
-        profile_url: str(b.profileUrl, 500) || card?.profile_url || null,
-        source_text: text,
-        fit,
-        level,
-        priority,
-        dm_angle: dmAngle,
-        result: { ...out, fit, priority, dmAngle },
-      })
-      .select(QUAL_COLUMNS)
-      .single();
+    const name = card?.name || prior?.name || str(b.name, 120) || str(out.name, 120) || "Unnamed prospect";
+    const row = {
+      icp_id: icp.id,
+      icp_name: icp.name,
+      card_id: card?.id ?? null,
+      name,
+      platform: platform ?? card?.platform ?? null,
+      profile_url: str(b.profileUrl, 500) || card?.profile_url || prior?.profile_url || null,
+      source_text: text,
+      fit,
+      level,
+      priority,
+      dm_angle: dmAngle,
+      // What the person told the scorer is kept with the score, so it is clear what the read was based on.
+      result: { ...out, fit, priority, dmAngle, ...(context ? { context } : {}) },
+    };
+    // Scoring again replaces the old score; a new person gets a new row.
+    const { data: saved, error } = prior
+      ? await db.from("icp_qualifications").update(row).eq("id", prior.id).eq("master_plan_id", a.planId).select(QUAL_COLUMNS).single()
+      : await db.from("icp_qualifications").insert({ ...row, master_plan_id: a.planId, kind: "profile" }).select(QUAL_COLUMNS).single();
     if (error || !saved) return NextResponse.json({ error: "Scored, but couldn't save it. Try again." }, { status: 500 });
     let cardOut: Record<string, unknown> | null = null;
     if (card) {

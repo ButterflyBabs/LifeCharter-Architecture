@@ -6,7 +6,7 @@ import { MessageSquare, Plus, X, Settings2, ExternalLink, Trash2, CalendarClock,
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import ContactLookupInput, { lookupName } from "@/components/crm/ContactLookupInput";
-import QualResult, { PriorityBadge, type Qual } from "@/components/qualifier/QualResult";
+import QualResult, { PriorityBadge, QualAdjust, type Qual } from "@/components/qualifier/QualResult";
 import { QUALIFIER_OPEN_TO_ALL } from "@/lib/qualifier";
 import { LIST_TEMPLATE_CSV } from "@/lib/dmListParse";
 import { backdropClick } from "@/lib/backdropClick";
@@ -1619,6 +1619,7 @@ function CardQualify({ card, onAngle, onScored }: { card: Card; onAngle: (text: 
   const [icpId, setIcpId] = useState("");
   const [text, setText] = useState("");
   const [warm, setWarm] = useState("");
+  const [context, setContext] = useState("");
   const [form, setForm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -1658,6 +1659,9 @@ function CardQualify({ card, onAngle, onScored }: { card: Card; onAngle: (text: 
           <label className="block text-xs font-medium text-[#5a6472]">Have they engaged with you before? (optional)
             <Input value={warm} onChange={(e) => setWarm(e.target.value)} placeholder="e.g. accepted my connection, commented last week" />
           </label>
+          <label className="block text-xs font-medium text-[#5a6472]">What do you know about them that isn't on the profile? (optional)
+            <textarea rows={2} value={context} onChange={(e) => setContext(e.target.value)} className={box} placeholder="e.g. A referral. Her company is about to ask for coaching proposals." />
+          </label>
           {err && <p className="text-sm text-[#A4523C]">{err}</p>}
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -1665,12 +1669,13 @@ function CardQualify({ card, onAngle, onScored }: { card: Card; onAngle: (text: 
               onClick={async () => {
                 setBusy(true);
                 setErr("");
-                const r = await fetch("/api/qualifier", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "qualify", cardId: card.id, icpId, profileText: text, warm, platform: card.platform, tz }) });
+                const r = await fetch("/api/qualifier", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "qualify", cardId: card.id, icpId, profileText: text, warm, context, platform: card.platform, tz }) });
                 const d = await r.json().catch(() => ({}));
                 setBusy(false);
                 if (!r.ok || !d.qualification) { setErr(d.error || "Couldn't score that. Try again."); return; }
                 setQ(d.qualification);
                 setText("");
+                setContext("");
                 setForm(false);
                 if (d.card) onScored(d.card as Card);
               }}
@@ -1688,6 +1693,19 @@ function CardQualify({ card, onAngle, onScored }: { card: Card; onAngle: (text: 
           angleAction={q.dm_angle ? <button onClick={() => onAngle(q.dm_angle as string)} className="rounded-full bg-[#1a2b4a] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#1a2b4a]/90">Open in the DM window</button> : null}
         />
       ) : null}
+      {q && !form && (
+        <div className="mt-3">
+          <QualAdjust
+            q={q}
+            call={async (b) => {
+              const r = await fetch("/api/qualifier", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...b, cardId: card.id, tz }) });
+              const d = await r.json().catch(() => ({}));
+              return r.ok ? d : { error: d.error };
+            }}
+            onUpdated={(q2, c) => { setQ(q2); if (c) onScored(c as Card); }}
+          />
+        </div>
+      )}
     </div>
   );
 }

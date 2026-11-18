@@ -6,12 +6,13 @@ import Link from "next/link";
 import { UserCheck, Plus, Trash2, Upload, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import QualResult, { PriorityBadge, type Qual } from "@/components/qualifier/QualResult";
+import QualResult, { PriorityBadge, QualAdjust, type Qual } from "@/components/qualifier/QualResult";
 import { DEFAULT_LEVELS, PARTNER_SHEET_HEADERS, PARTNER_TEMPLATE_CSV, PRIORITIES, type Icp, type IcpLevel } from "@/lib/qualifier";
 import { parseDelimited } from "@/lib/contactImport";
 import { LIST_TEMPLATE_CSV } from "@/lib/dmListParse";
 
 type Board = { id: string; name: string };
+type Stages = Record<string, { id: string; name: string }[]>;
 type Offer = { id: string; name: string; transformation: string; idealClient: string; notFor: string };
 type Audience = { id: string; name: string; icp_id: string | null; total: number; created_at: string };
 type ListRow = { name: string; url: string; code: string; email: string; facts: string };
@@ -44,6 +45,7 @@ export default function Qualifier() {
   const [icps, setIcps] = useState<Icp[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [boards, setBoards] = useState<Board[]>([]);
+  const [stages, setStages] = useState<Stages>({});
   const [recent, setRecent] = useState<Qual[]>([]);
   const [audiences, setAudiences] = useState<Audience[]>([]);
   const [msg, setMsg] = useState("");
@@ -53,6 +55,7 @@ export default function Qualifier() {
     setIcps(d.icps ?? []);
     setOffers(d.offers ?? []);
     setBoards(d.boards ?? []);
+    setStages(d.stages ?? {});
     setRecent(d.recent ?? []);
     setAudiences(d.audiences ?? []);
     if (!loaded && !(d.icps ?? []).length) setTab("icp");
@@ -101,9 +104,9 @@ export default function Qualifier() {
           <Button className="mt-3" onClick={() => setTab("icp")}><Plus className="mr-1 h-4 w-4" /> Create your first Ideal Client Profile</Button>
         </div>
       ) : tab === "one" ? (
-        <OneTab icps={icps} boards={boards} recent={recent} post={post} setMsg={setMsg} onChanged={load} />
+        <OneTab icps={icps} boards={boards} stages={stages} recent={recent} post={post} setMsg={setMsg} onChanged={load} />
       ) : (
-        <ListTab icps={icps} boards={boards} audiences={audiences} post={post} setMsg={setMsg} onChanged={load} />
+        <ListTab icps={icps} boards={boards} stages={stages} audiences={audiences} post={post} setMsg={setMsg} onChanged={load} />
       )}
     </div>
   );
@@ -139,22 +142,32 @@ function PlatformPick({ value, onChange }: { value: string; onChange: (v: string
   );
 }
 
-function AddToPipeline({ boards, ids, platform, post, setMsg, onAdded, labelText, force }: { boards: Board[]; ids: string[]; platform?: string; force?: boolean; post: Post; setMsg: (m: string) => void; onAdded: () => void; labelText?: string }) {
+function AddToPipeline({ boards, stages, ids, platform, post, setMsg, onAdded, labelText, force }: { boards: Board[]; stages?: Stages; ids: string[]; platform?: string; force?: boolean; post: Post; setMsg: (m: string) => void; onAdded: () => void; labelText?: string }) {
   const [boardId, setBoardId] = useState(boards[0]?.id ?? "");
+  const [stageId, setStageId] = useState("");
   const [busy, setBusy] = useState(false);
   if (!boards.length) return null;
+  const boardStages = stages?.[boardId] ?? [];
   return (
     <div className="flex flex-wrap items-end gap-2">
       <label className={label}>Pipeline
-        <select value={boardId} onChange={(e) => setBoardId(e.target.value)} className={`${box} h-10 min-w-[220px]`}>
+        <select value={boardId} onChange={(e) => { setBoardId(e.target.value); setStageId(""); }} className={`${box} h-10 min-w-[220px]`}>
           {boards.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
       </label>
+      {boardStages.length > 0 && (
+        <label className={label}>Start in
+          <select value={stageId} onChange={(e) => setStageId(e.target.value)} className={`${box} h-10 min-w-[180px]`}>
+            <option value="">Where the priority puts them</option>
+            {boardStages.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+          </select>
+        </label>
+      )}
       <Button
         disabled={busy || !ids.length}
         onClick={async () => {
           setBusy(true);
-          const r = (await post({ action: "add-to-pipeline", ids, boardId, platform, force: !!force })) as { added?: number; skipped?: number; already?: string[]; failed?: number; board?: string; landed?: Record<string, number> } | null;
+          const r = (await post({ action: "add-to-pipeline", ids, boardId, stageId: stageId || undefined, platform, force: !!force })) as { added?: number; skipped?: number; already?: string[]; failed?: number; board?: string; landed?: Record<string, number> } | null;
           setBusy(false);
           if (r) {
             const dup = r.skipped ? ` ${r.skipped} not added because ${r.skipped === 1 ? "they are" : "they are"} already on ${r.board}: ${(r.already ?? []).join(", ")}${r.skipped > (r.already ?? []).length ? ", and more" : ""}.` : "";
@@ -170,12 +183,14 @@ function AddToPipeline({ boards, ids, platform, post, setMsg, onAdded, labelText
 }
 
 // ── One prospect: paste their profile, get the full qualification ──
-function OneTab({ icps, boards, recent, post, setMsg, onChanged }: { icps: Icp[]; boards: Board[]; recent: Qual[]; post: Post; setMsg: (m: string) => void; onChanged: () => void }) {
+function OneTab({ icps, boards, stages, recent, post, setMsg, onChanged }: { icps: Icp[]; boards: Board[]; stages: Stages; recent: Qual[]; post: Post; setMsg: (m: string) => void; onChanged: () => void }) {
   const [icpId, setIcpId] = useState(() => lastIcp(icps));
   const [platform, setPlatform] = useState("LI");
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const [warm, setWarm] = useState("");
+  const [context, setContext] = useState("");
+  const [more, setMore] = useState("");
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [shown, setShown] = useState<Qual | null>(null);
@@ -183,7 +198,7 @@ function OneTab({ icps, boards, recent, post, setMsg, onChanged }: { icps: Icp[]
   async function run() {
     setBusy(true);
     setMsg("");
-    const r = (await post({ action: "qualify", icpId, platform, name, profileUrl: url, warm, profileText: text })) as { qualification?: Qual } | null;
+    const r = (await post({ action: "qualify", icpId, platform, name, profileUrl: url, warm, context, extraText: more, profileText: text })) as { qualification?: Qual } | null;
     setBusy(false);
     if (r?.qualification) {
       setShown(r.qualification);
@@ -191,6 +206,8 @@ function OneTab({ icps, boards, recent, post, setMsg, onChanged }: { icps: Icp[]
       setName("");
       setUrl("");
       setWarm("");
+      setContext("");
+      setMore("");
       onChanged();
     }
   }
@@ -214,6 +231,12 @@ function OneTab({ icps, boards, recent, post, setMsg, onChanged }: { icps: Icp[]
         <label className={label}>Have they engaged with you before? (optional)
           <Input value={warm} onChange={(e) => setWarm(e.target.value)} placeholder="e.g. commented on my post last week" />
         </label>
+        <label className={label}>More of their profile (optional): another page, Experience, or more posts
+          <textarea rows={3} value={more} onChange={(e) => setMore(e.target.value)} className={box} placeholder="LinkedIn keeps some of a profile on separate pages. Paste those here." />
+        </label>
+        <label className={label}>What do you know about them that isn&rsquo;t on the profile? (optional)
+          <textarea rows={3} value={context} onChange={(e) => setContext(e.target.value)} className={box} placeholder="e.g. A referral. Her company is about to ask for coaching proposals." />
+        </label>
         <Button disabled={busy || text.trim().length < 80 || !icpId} onClick={() => void run()}>
           <Sparkles className="mr-1 h-4 w-4" /> {busy ? "Scoring…" : "Score this prospect"}
         </Button>
@@ -228,16 +251,21 @@ function OneTab({ icps, boards, recent, post, setMsg, onChanged }: { icps: Icp[]
                 {shown.profile_url && <a href={shown.profile_url} target="_blank" rel="noreferrer" className="text-sm text-[#2E7C83] hover:underline">Open their profile</a>}
               </div>
               {shown.priority !== "SKIP" ? (
-                <AddToPipeline boards={boards} ids={[shown.id]} platform={shown.platform ?? undefined} post={post} setMsg={setMsg} onAdded={() => onChanged()} />
+                <AddToPipeline boards={boards} stages={stages} ids={[shown.id]} platform={shown.platform ?? undefined} post={post} setMsg={setMsg} onAdded={() => onChanged()} />
               ) : (
                 <div className="flex flex-col items-start gap-1">
-                  <AddToPipeline boards={boards} ids={[shown.id]} platform={shown.platform ?? undefined} post={post} setMsg={setMsg} onAdded={() => onChanged()} labelText="Add anyway" force />
+                  <AddToPipeline boards={boards} stages={stages} ids={[shown.id]} platform={shown.platform ?? undefined} post={post} setMsg={setMsg} onAdded={() => onChanged()} labelText="Add anyway" force />
                   <span className="text-xs text-[#7a8a99]">Scored Skip, but you can still add them. They start in To reach out.</span>
                 </div>
               )}
             </div>
             {onNames(shown) && <p className="mb-3 rounded-lg bg-[#c9a227]/10 px-3 py-2 text-sm text-[#6b5410] dark:text-[#e6d28a]">Already on: <strong>{onNames(shown)}</strong>. They can&rsquo;t be added to the same pipeline twice.</p>}
             <QualResult q={shown} />
+            {shown.kind === "profile" && (
+              <div className="mt-3">
+                <QualAdjust q={shown} call={(b) => post(b) as never} onUpdated={(q2) => { setShown(q2); onChanged(); }} />
+              </div>
+            )}
           </div>
         ) : (
           <div className={`${panel} text-sm text-[#7a8a99]`}>The qualification shows here: fit, level, the gap, a warm DM angle and the priority.</div>
@@ -291,7 +319,7 @@ function rowsFromTable(table: string[][]): ListRow[] {
   }).filter((r) => r.name && r.facts);
 }
 
-function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: Icp[]; boards: Board[]; audiences: Audience[]; post: Post; setMsg: (m: string) => void; onChanged: () => void }) {
+function ListTab({ icps, boards, stages, audiences, post, setMsg, onChanged }: { icps: Icp[]; boards: Board[]; stages: Stages; audiences: Audience[]; post: Post; setMsg: (m: string) => void; onChanged: () => void }) {
   const [icpId, setIcpId] = useState(() => lastIcp(icps));
   const isPartner = icps.find((i) => i.id === icpId)?.purpose === "partner";
   const [platform, setPlatform] = useState("LI");
@@ -490,7 +518,7 @@ function ListTab({ icps, boards, audiences, post, setMsg, onChanged }: { icps: I
               </div>
             </div>
             <div className="flex flex-wrap items-end gap-3">
-              <AddToPipeline boards={boards} ids={Array.from(picked)} platform={platform} post={post} setMsg={setMsg} onAdded={() => void openAudience(open.id)} labelText={`Add ${picked.size} selected to pipeline`} />
+              <AddToPipeline boards={boards} stages={stages} ids={Array.from(picked)} platform={platform} post={post} setMsg={setMsg} onAdded={() => void openAudience(open.id)} labelText={`Add ${picked.size} selected to pipeline`} />
               <button onClick={async () => { if (confirm(`Delete the list “${open.name}” and its scores? Anyone already added to a pipeline stays there.`) && (await post({ action: "audience-delete", id: open.id }))) { setOpenId(null); setRows([]); onChanged(); } }} className="inline-flex items-center gap-1 pb-2.5 text-sm text-[#C76F56] hover:underline"><Trash2 className="h-4 w-4" /> Delete list</button>
             </div>
           </div>
