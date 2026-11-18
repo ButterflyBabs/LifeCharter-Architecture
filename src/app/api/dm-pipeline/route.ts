@@ -7,7 +7,7 @@ import { upsertContact, logEvent, EMAIL_RE } from "@/lib/crm";
 import { parseList } from "@/lib/dmListParse";
 import { isSameCard, sameLinkSamePerson, type CardKey } from "@/lib/dmCardDuplicate";
 import { landingStage } from "@/lib/dmLanding";
-import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, moveCard, createCard, dateIn, platformTag, retagContact, slugTag, shapeStage, movesForward, markDoNotContact, type Board, setFollowUp, nurtureStepOf, NURTURE_GAP_DAYS } from "@/lib/dmPipeline";
+import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, moveCard, moveCardToBoard, createCard, dateIn, platformTag, retagContact, slugTag, shapeStage, movesForward, markDoNotContact, type Board, setFollowUp, nurtureStepOf, NURTURE_GAP_DAYS } from "@/lib/dmPipeline";
 import { mapPeople, parseCsv } from "@/lib/dmEmailList";
 import { cleanLinkUrl } from "@/lib/coldEmail";
 import { zonedToUtcISO } from "@/lib/tz";
@@ -29,6 +29,7 @@ export const dynamic = "force-dynamic";
 // POST (card-level)
 //   add    { boardId, name, handle?, profileUrl?, email?, platform?, contactId?, stageId?, scriptId?, scriptTitle?, notes? }
 //   move   { cardId, stageId, sortOrder? }
+//   move-board { cardId, boardId, stageId? }              (to a stage on another pipeline; stageId defaults to the matching or first stage)
 //   update { cardId, name?, handle?, profileUrl?, email?, platform?, notes?, followUpOn? }
 //   delete { cardId }
 //   dm-limit { platform, limit }                          (the daily DM limit shown on the pipeline page; default 25 per platform)
@@ -131,7 +132,9 @@ export async function GET(request: Request) {
   }
   const linksReady = a.house || Boolean(personalLinkUrl);
   const withCounts = ((cards ?? []) as { id: string }[]).map((c) => ({ ...c, dm_count: counts.get(c.id) ?? 0, ...(linksReady ? {} : { link_code: null }) }));
-  return NextResponse.json({ boards, board, stages, cards: withCounts, today: dateIn(tz, 0), nextSession, personalLinkUrl, addGoal, dmUsage: await dmUsage(db, a.planId) });
+  // Every pipeline's stages, for "move to another pipeline".
+  const stagesByBoard = Object.fromEntries(await Promise.all(boards.map(async (bd) => [bd.id, (await boardStages(db, a.planId, bd.id)).map((x) => ({ id: x.id, name: x.name }))] as const)));
+  return NextResponse.json({ boards, board, stages, stagesByBoard, cards: withCounts, today: dateIn(tz, 0), nextSession, personalLinkUrl, addGoal, dmUsage: await dmUsage(db, a.planId) });
 }
 
 export async function POST(request: Request) {
@@ -477,6 +480,27 @@ export async function POST(request: Request) {
     if (!stage) return NextResponse.json({ error: "Unknown stage." }, { status: 400 });
     const saved = await moveCard(db, a.planId, card.id as string, stage, board.name, tz, typeof b.sortOrder === "number" ? b.sortOrder : undefined);
     return saved ? NextResponse.json({ card: saved }) : NextResponse.json({ error: "Couldn't move it." }, { status: 500 });
+  }
+
+  if (b.action === "move-board") {
+    const to = boardOf(b.boardId);
+    if (!to) return NextResponse.json({ error: "Pick a pipeline." }, { status: 400 });
+    if (to.id === board.id) return NextResponse.json({ error: "They're already on that pipeline." }, { status: 400 });
+    const toStages = await boardStages(db, a.planId, to.id);
+    const { data: cur } = await db.from("dm_stages").select("key").eq("id", card.stage_id).maybeSingle();
+    const first = toStages.find((s) => s.kind === "open") ?? toStages[0];
+    const stage = toStages.find((s) => s.id === b.stageId) ?? (b.stageId ? undefined : toStages.find((s) => s.key && s.key === cur?.key) ?? first);
+    if (!stage) return NextResponse.json({ error: "Pick a stage on that pipeline." }, { status: 400 });
+    // Already on the other pipeline? Checked the same way as adding a person, so nobody ends up there twice.
+    const { data: me } = await db.from("dm_cards").select("name, profile_url, handle, platform").eq("id", card.id).maybeSingle();
+    const onBoard = await allRows<CardKey>((from, upTo) => db.from("dm_cards").select("name, profile_url, handle, platform").eq("board_id", to.id).order("id").range(from, upTo));
+    const dupeContact = card.contact_id ? (await db.from("dm_cards").select("id").eq("board_id", to.id).eq("contact_id", card.contact_id as string).maybeSingle()).data : null;
+    const mine = me as { name: string; profile_url: string | null; handle: string | null; platform: string | null } | null;
+    if (dupeContact || (mine && onBoard.some((c) => isSameCard(c, { name: mine.name, profileUrl: mine.profile_url, handle: mine.handle, platform: mine.platform })))) {
+      return NextResponse.json({ error: `They're already in ${to.name}.` }, { status: 409 });
+    }
+    const saved = await moveCardToBoard(db, a.planId, card.id as string, board, to, stage, tz);
+    return saved ? NextResponse.json({ card: saved, boardName: to.name, stageName: stage.name }) : NextResponse.json({ error: "Couldn't move them." }, { status: 500 });
   }
 
   if (b.action === "dm-sent") {

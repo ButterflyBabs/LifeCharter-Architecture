@@ -251,6 +251,30 @@ export async function moveCard(db: Db, planId: string, cardId: string, stage: Dm
   return saved;
 }
 
+// Moves a card to a stage on a DIFFERENT pipeline. Everything about the person goes with it (notes, DM history, link, score);
+// the follow-up task is replaced to suit the new stage, the old pipeline's tags come off the contact and the new ones go on.
+export async function moveCardToBoard(db: Db, planId: string, cardId: string, from: Board, to: Board, stage: DmStage, tz: string) {
+  const { data: card } = await db.from("dm_cards").select(CARD_SEL).eq("id", cardId).eq("master_plan_id", planId).maybeSingle();
+  if (!card || card.board_id !== from.id || stage.boardId !== to.id || from.id === to.id) return null;
+  const now = new Date().toISOString();
+  const { data: old } = await db.from("dm_stages").select("tag, name").eq("id", card.stage_id).maybeSingle();
+  const patch: Record<string, unknown> = { updated_at: now, board_id: to.id, stage_id: stage.id, stage_changed_at: now };
+  Object.assign(patch, await setFollowUp(db, planId, card as Card, stage, to.name, tz));
+  if (stage.key === "sent" || stage.key === "followed_up") patch.last_contacted_at = now;
+  if (stage.kind === "booked") patch.deal_id = await bookDeal(db, planId, card as Card, to.name);
+  if (stage.key === "affiliate_active") await ensureAffiliate(db, planId, card as Card).catch((e) => console.error("affiliate from pipeline:", e));
+  const { data: saved, error } = await db.from("dm_cards").update(patch).eq("id", cardId).eq("master_plan_id", planId).select("*").single();
+  if (error || !saved) return null;
+  // The DMs already sent stay with the person, so "2 DMs sent" still shows on the new pipeline.
+  await db.from("dm_sends").update({ board_id: to.id }).eq("master_plan_id", planId).eq("card_id", cardId).then(({ error: e }) => { if (e) console.error("move-board dm_sends:", e.message); });
+  const { platform } = card as { platform: string | null };
+  await retagContact(db, planId, card.contact_id as string | null, [to.tag, stage.tag, platformTag(platform)], [from.tag, (old?.tag as string) ?? null]);
+  if (card.contact_id) {
+    await logEvent(planId, card.contact_id as string, "manual", `Moved from ${from.name}${old?.name ? ` (${old.name})` : ""} to ${to.name}: ${stage.name}`, { dm_card: card.id }, db as never).catch(() => {});
+  }
+  return saved;
+}
+
 // True when a card sitting in stage (curKey, curKind) may be moved forward to toKey: only forward, never out of a closed stage.
 export function movesForward(curKey: string | null | undefined, curKind: string | null | undefined, toKey: string): boolean {
   if (curKind === "closed") return false;

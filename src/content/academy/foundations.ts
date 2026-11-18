@@ -1069,9 +1069,15 @@ export const FOUNDATIONS: Lesson[] = [
           "Fill in anything in [brackets], press Copy message and Open their profile, then paste and send it yourself.",
           "Choose where to move them under After you send it, and press I sent it.",
           "Drag a card to its next stage at any time.",
+          "To put someone on a different pipeline, press Move to another pipeline on their card, choose the pipeline and the stage, and press Move them.",
         ],
         tips: ["Press New pipeline and start from DM outreach stages, Cold email stages or Three simple stages. Rename stages, tags and follow-ups under Stages & settings.", "Add an email to a card that says Not in Contacts. That puts them in Contacts and tags them.", "A column with a lot of people draws its first 150 cards and a Show 150 more button. The number at the top of the column is the full count, and Search finds anyone on the pipeline.", "Under Stages & settings, fill in New people to add each workday with a number, for example 10. A bar at the top of that pipeline then shows how many people you added today and this week against that goal. It counts days in the account owner's time zone.", "To take someone off a pipeline, press Remove from pipeline at the bottom of their card and confirm. Anyone who uses the pipeline can do this, and the person stays in Contacts."],
         image: { src: "/academy/outreach-pipelines.jpg", alt: "The outreach board with DM Pipeline and Cold Outreach tabs, a daily counter for each platform showing 0 of 25, and an All outreach every pipeline table of people by stage", caption: "Daily counters on top, and everyone's stage in one table. This is a sample account." },
+      },
+      {
+        heading: "Moving someone to another pipeline",
+        text: "When you have more than one pipeline, every card shows Move to another pipeline, and the same link is in the card window. You can also drag a card up onto another pipeline's tab. Choose the pipeline and the stage to start them in, then press Move them. Their notes, DMs sent, link and score go with them. The follow-up task is reset for the new stage, the old pipeline's tags come off their contact record, and the new ones go on. If they are already on that pipeline, the Suite says so and does not make a second card. Your assistant's move tool only moves people between stages of one pipeline.",
+        tips: ["Use this when someone's conversation changes shape, such as a LinkedIn lead who becomes a MasterClass invite, instead of removing and re-adding them and losing their history."],
       },
       {
         heading: "You send every message",
@@ -1120,6 +1126,7 @@ export const FOUNDATIONS: Lesson[] = [
       { id: "s1-2", q: "A script is missing from Choose a DM to send. Why?", right: "It has not been approved in Scripts & Templates", wrong: ["It is too long", "The person has no email", "The pipeline is full"], why: "Only approved scripts show in that menu." },
       { id: "s1-3", q: "You move a card to a Booked stage. What happens?", right: "The person is added to the Pipeline as a deal", wrong: ["An email goes out", "The card is deleted", "They get an invoice"], why: "A Booked stage adds the person to your Pipeline as a deal." },
       { id: "s1-5", q: "How do you get a series of nurture messages offered in order?", right: "Name the scripts Nurture 1, Nurture 2 and so on", wrong: ["Tick Series on each script", "Move the card to Booked", "Ask the assistant to send them"], why: "Scripts named Nurture 1, 2 and so on are offered in order for cards in Nurture, and the Suite sets each next date." },
+      { id: "s1-6", q: "You want someone on a different pipeline without losing their notes and DM history. What do you do?", right: "Press Move to another pipeline on their card and choose the pipeline and stage", wrong: ["Remove them and add them again", "Drag them to the last stage", "Ask the assistant to send them"], why: "Moving keeps their notes, DMs sent, link and score, resets the follow-up and swaps the pipeline tags." },
       { id: "s1-4", q: "You upload a list. Do those people get marketing emails?", right: "No, an upload does not add them to marketing contacts", wrong: ["Yes, right away", "Yes, after one day", "Only if they have a tag"], why: "An upload does not add anyone to marketing contacts." },
     ],
   },

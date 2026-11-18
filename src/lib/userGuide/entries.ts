@@ -4206,10 +4206,12 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "On a card, use Choose a DM to send and pick one of your scripts. Scripts for the card's platform are listed first, in pipeline order, and the one that fits the column the card is in is suggested at the top.",
       "In the small window, fill in anything in [brackets], press Copy message and Open their profile, then paste and send it yourself.",
       "Choose where to move them under After you send it, and press I sent it.",
-      "Drag a card to its next stage at any time. Its follow-up date sets itself and becomes a task."
+      "Drag a card to its next stage at any time. Its follow-up date sets itself and becomes a task.",
+      "To put someone on a different pipeline, press Move to another pipeline on their card (or in their card window), or drag their card up onto that pipeline's tab. Choose the pipeline and the stage to start them in, and press Move them."
     ],
     "health": "Each DM you log with I sent it counts as a sales activity. Your activity in the last 30 days feeds your Sales dimension and your Customer Acquisition pillar. Follow-ups made here are regular tasks, so finishing them counts toward your task follow-through.",
     "tips": [
+      "Moving someone to another pipeline keeps their notes, DMs sent, link and score. Their follow-up task is reset for the new stage, and the old pipeline's tags come off their contact record while the new ones go on. If they are already on that pipeline, the Suite tells you instead of making a second card.",
       "Your scripts must be approved in Scripts & Templates to show in the Choose a DM to send menu. The DM scripts & templates button takes you there.",
       "Add an email to a card that says Not in Contacts. That puts them in Contacts and tags them.",
       "On LinkedIn, send a connection request first and wait in Connect request sent: waiting until they accept.",

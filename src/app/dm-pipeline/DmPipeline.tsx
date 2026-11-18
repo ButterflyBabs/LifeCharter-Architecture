@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { MessageSquare, Plus, X, Settings2, ExternalLink, Trash2, CalendarClock, AlertCircle, ChevronLeft, ChevronRight, Tag, FileText } from "lucide-react";
+import { MessageSquare, Plus, X, Settings2, ExternalLink, Trash2, CalendarClock, AlertCircle, ChevronLeft, ChevronRight, Tag, FileText, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import ContactLookupInput, { lookupName } from "@/components/crm/ContactLookupInput";
@@ -73,6 +73,10 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
   const [boards, setBoards] = useState<Board[]>([]);
   const [board, setBoard] = useState<Board | null>(null);
   const [stages, setStages] = useState<Stage[]>([]);
+  const [stagesByBoard, setStagesByBoard] = useState<Record<string, { id: string; name: string }[]>>({});
+  // The card being moved to another pipeline (and the pipeline it was dropped on, if dragged to a tab).
+  const [moving, setMoving] = useState<{ cardId: string; boardId?: string } | null>(null);
+  const [overTab, setOverTab] = useState<string | null>(null);
   const [cards, setCards] = useState<Card[] | null>(null);
   const [today, setToday] = useState("");
   const [nextSession, setNextSession] = useState<string | null>(null);
@@ -132,6 +136,7 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
       setBoards(d.boards ?? []);
       setBoard(d.board ?? null);
       setStages(d.stages ?? []);
+      setStagesByBoard(d.stagesByBoard ?? {});
       setCards(d.cards ?? []);
       setToday(d.today ?? "");
       setNextSession(d.nextSession ?? null);
@@ -298,7 +303,10 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
             role="tab"
             aria-selected={b.id === board?.id}
             onClick={() => void load(b.id)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium ${b.id === board?.id ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/10"}`}
+            onDragOver={(e) => { if (dragId && b.id !== board?.id) { e.preventDefault(); setOverTab(b.id); } }}
+            onDragLeave={() => setOverTab((t) => (t === b.id ? null : t))}
+            onDrop={(e) => { e.preventDefault(); setOverTab(null); if (dragId && b.id !== board?.id) { setMoving({ cardId: dragId, boardId: b.id }); setDragId(null); } }}
+            className={`rounded-full px-4 py-1.5 text-sm font-medium ${overTab === b.id ? "ring-2 ring-[#c9a227] bg-[#c9a227]/20 text-[#1a2b4a] dark:text-[#F8F5F0]" : b.id === board?.id ? "bg-[#1a2b4a] text-white" : "bg-[#1a2b4a]/5 text-[#1a2b4a] dark:text-[#F8F5F0] hover:bg-[#1a2b4a]/10"} ${dragId && b.id !== board?.id && overTab !== b.id ? "ring-1 ring-dashed ring-[#c9a227]/60" : ""}`}
           >
             {b.name}
           </button>
@@ -307,6 +315,8 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
           <Plus className="w-4 h-4" /> {purpose === "affiliate" ? "New recruiting board" : "New pipeline"}
         </button>
       </div>
+
+      {dragId && boards.length > 1 && <p className="mb-3 text-xs text-[#7b6b8d]">Drop them on a stage to move them along, or on another pipeline above to move them there.</p>}
 
       {msg && (
         <button onClick={() => setMsg("")} className="mb-4 block w-full text-left rounded-lg bg-[#2E7C83]/10 px-4 py-2 text-sm">
@@ -480,9 +490,14 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
                             </div>
                           </button>
                           <DmSentPick card={c} scripts={scripts} stages={stages} onPick={(sid) => openSend(c.id, sid)} />
-                          <button type="button" onClick={() => void removeCard(c)} className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-[#A4523C] hover:underline" aria-label={`Remove ${c.name} from this pipeline`}>
+                          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                          {boards.length > 1 && <button type="button" onClick={() => setMoving({ cardId: c.id })} className="inline-flex items-center gap-1 text-[11px] font-medium text-[#2E7C83] hover:underline" aria-label={`Move ${c.name} to another pipeline`}>
+                            <ArrowRightLeft className="h-3 w-3" /> Move to another pipeline
+                          </button>}
+                          <button type="button" onClick={() => void removeCard(c)} className="inline-flex items-center gap-1 text-[11px] font-medium text-[#A4523C] hover:underline" aria-label={`Remove ${c.name} from this pipeline`}>
                             <Trash2 className="h-3 w-3" /> Remove from pipeline
                           </button>
+                          </div>
                         </article>
                       );
                     })}
@@ -528,7 +543,21 @@ export default function DmPipeline({ purpose = "outreach", embedded = false }: {
           post={post}
         />
       )}
-      {open && <CardDetail card={open} stages={stages} scripts={scripts} qualOn={qualOn} onAngle={(text) => openSend(open.id, "angle", text)} onPick={(sid) => openSend(open.id, sid)} onClose={() => setOpenId(null)} onMove={(sid) => void move(open.id, sid)} onSaved={(c) => setCards((cs) => (cs ?? []).map((x) => (x.id === c.id ? { ...x, ...c } : x)))} onDeleted={() => { setCards((cs) => (cs ?? []).filter((x) => x.id !== open.id)); setOpenId(null); }} post={post} />}
+      {open && <CardDetail card={open} stages={stages} scripts={scripts} qualOn={qualOn} onAngle={(text) => openSend(open.id, "angle", text)} onPick={(sid) => openSend(open.id, sid)} onClose={() => setOpenId(null)} onMove={(sid) => void move(open.id, sid)} onMoveBoard={boards.length > 1 ? () => { setMoving({ cardId: open.id }); setOpenId(null); } : undefined} onSaved={(c) => setCards((cs) => (cs ?? []).map((x) => (x.id === c.id ? { ...x, ...c } : x)))} onDeleted={() => { setCards((cs) => (cs ?? []).filter((x) => x.id !== open.id)); setOpenId(null); }} post={post} />}
+      {moving && (() => {
+        const mc = cards?.find((c) => c.id === moving.cardId);
+        return mc ? (
+          <MoveToPipeline
+            card={mc}
+            boards={boards.filter((b) => b.id !== board?.id)}
+            stagesByBoard={stagesByBoard}
+            initialBoardId={moving.boardId}
+            purpose={purpose}
+            onClose={() => setMoving(null)}
+            onMoved={(msgText) => { setCards((cs) => (cs ?? []).filter((x) => x.id !== mc.id)); setMoving(null); setMsg(msgText); void load(board?.id); }}
+          />
+        ) : null;
+      })()}
       {settings && board && (
         <BoardSettings
           board={board}
@@ -1557,7 +1586,52 @@ function ColdReplyPanel({ card }: { card: Card }) {
   );
 }
 
-function CardDetail({ card, stages, scripts, qualOn, onAngle, onPick, onClose, onMove, onSaved, onDeleted, post }: { card: Card; stages: Stage[]; scripts: ScriptLite[]; qualOn: boolean; onAngle: (text: string) => void; onPick: (scriptId: string) => void; onClose: () => void; onMove: (stageId: string) => void; onSaved: (c: Card) => void; onDeleted: () => void; post: Post }) {
+// Move a person to a stage on a different pipeline. Their notes, DM history, link and score go with them.
+function MoveToPipeline({ card, boards, stagesByBoard, initialBoardId, purpose, onClose, onMoved }: { card: Card; boards: Board[]; stagesByBoard: Record<string, { id: string; name: string }[]>; initialBoardId?: string; purpose: string; onClose: () => void; onMoved: (msg: string) => void }) {
+  const [boardId, setBoardId] = useState(initialBoardId && boards.some((b) => b.id === initialBoardId) ? initialBoardId : boards[0]?.id ?? "");
+  const stagesOf = stagesByBoard[boardId] ?? [];
+  const [stageId, setStageId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const chosen = stagesOf.find((s) => s.id === stageId) ?? stagesOf[0];
+  return (
+    <Modal title={`Move ${card.name} to another pipeline`} onClose={onClose}>
+      <div className="space-y-3">
+        <label className="block text-xs font-medium text-[#5a6472]">Pipeline
+          <select value={boardId} onChange={(e) => { setBoardId(e.target.value); setStageId(""); setErr(""); }} className={`${box} h-10`}>
+            {boards.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-[#5a6472]">Start them in
+          <select value={chosen?.id ?? ""} onChange={(e) => setStageId(e.target.value)} className={`${box} h-10`}>
+            {stagesOf.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </label>
+        <p className="text-xs text-[#7a8a99]">Their notes, DMs sent, link and score go with them. The follow-up task is reset to suit the new stage, and the old pipeline&rsquo;s tags come off their contact record while the new ones go on.</p>
+        {err && <p role="alert" className="text-sm text-[#A4523C]">{err}</p>}
+        <div className="flex gap-2">
+          <Button
+            disabled={busy || !chosen}
+            onClick={async () => {
+              setBusy(true);
+              setErr("");
+              const r = await fetch("/api/dm-pipeline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "move-board", cardId: card.id, boardId, stageId: chosen?.id, purpose, tz: Intl.DateTimeFormat().resolvedOptions().timeZone }) }).catch(() => null);
+              const d = (await r?.json().catch(() => ({}))) as { error?: string; boardName?: string; stageName?: string } | undefined;
+              setBusy(false);
+              if (r?.ok) onMoved(`${card.name} moved to ${d?.boardName}: ${d?.stageName}.`);
+              else setErr(d?.error || "Couldn't move them. Try again.");
+            }}
+          >
+            {busy ? "Moving…" : "Move them"}
+          </Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function CardDetail({ card, stages, scripts, qualOn, onAngle, onPick, onClose, onMove, onMoveBoard, onSaved, onDeleted, post }: { card: Card; stages: Stage[]; scripts: ScriptLite[]; qualOn: boolean; onAngle: (text: string) => void; onPick: (scriptId: string) => void; onClose: () => void; onMove: (stageId: string) => void; onMoveBoard?: () => void; onSaved: (c: Card) => void; onDeleted: () => void; post: Post }) {
   const [d, setD] = useState({ name: card.name, handle: card.handle ?? "", profileUrl: card.profile_url ?? "", email: card.email ?? "", platform: card.platform ?? "", notes: card.notes ?? "", followUpOn: card.follow_up_on ?? "" });
   const [busy, setBusy] = useState(false);
   return (
@@ -1568,6 +1642,7 @@ function CardDetail({ card, stages, scripts, qualOn, onAngle, onPick, onClose, o
             {stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </label>
+        {onMoveBoard && <button type="button" onClick={onMoveBoard} className="inline-flex items-center gap-1 text-sm font-medium text-[#2E7C83] hover:underline"><ArrowRightLeft className="w-4 h-4" /> Move to another pipeline</button>}
         {stages.some((s) => s.key === "followed_up" && /^Emails 2 and 3/.test(s.name)) && <ColdReplyPanel card={card} />}
         <PlatformPick value={d.platform} onChange={(v) => setD({ ...d, platform: v })} />
         <DmSentPick card={card} scripts={scripts} stages={stages} onPick={onPick} />
