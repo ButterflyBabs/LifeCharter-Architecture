@@ -13,7 +13,7 @@ import { CONSULTANT_APIS, CONSULTANT_PAGES, SALES_APIS, SALES_PAGES, memberApiAc
 // visitors are redirected to /login (pages) or get 401 (API), and only
 // ALLOWED_EMAIL may sign in.
 
-const PUBLIC_PAGES = ["/.well-known", "/unsubscribe", "/f", "/book", "/r", "/a", "/l", "/collective", "/robots.txt", "/sitemap.xml", "/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/certificationportal", "/get-started", "/reviews/collect", "/demo", "/schedule", "/legal", "/partner", "/p", "/masterclass-signup", "/m", "/investor-brief", "/checkout/thanks", "/portal", "/e", "/yr", "/go", "/sign", "/pay"];
+const PUBLIC_PAGES = ["/.well-known", "/unsubscribe", "/f", "/book", "/r", "/a", "/l", "/collective", "/robots.txt", "/sitemap.xml", "/auth/confirm", "/join", "/community/sign-in", "/login", "/logout", "/forgot-password", "/reset-password", "/accept-invite", "/executive_consultation", "/certificationportal", "/get-started", "/reviews/collect", "/demo", "/schedule", "/legal", "/partner", "/p", "/masterclass-signup", "/mini-command-audit", "/m", "/investor-brief", "/checkout/thanks", "/portal", "/e", "/yr", "/go", "/sign", "/pay"];
 const PUBLIC_APIS = [
   "/api/sign/", // e-signature (task 1072): a signer's private link (the token is the key, plus an emailed code)
   "/api/cron/sign-reminders", // secured by its own CRON_SECRET check, not a session
@@ -43,6 +43,7 @@ const PUBLIC_APIS = [
   "/api/meta-leads", // Meta lead ads, secured by the secret in its address (?k=), not a session
   "/api/linkedin-leads", // LinkedIn Lead Gen Forms (through Make or Zapier), secured by the same secret in its address (?k=), not a session
   "/api/masterclass-signup", // the public MasterClass signup page registers people on Zoom
+  "/api/mini-audit", // the public Mini Command Audit lead magnet; the unguessable results link is the key
   "/api/investor-access/login", // the investor page's access-code check (rate limited, signed cookie)
   "/api/reviews/collect",
   "/auth/callback",
