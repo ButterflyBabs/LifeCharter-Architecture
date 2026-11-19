@@ -3,7 +3,7 @@ import { randomBytes } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
 import { crossOriginBlocked } from "@/lib/security";
 import { upsertContact, logEvent } from "@/lib/crm";
-import { ownerMasterPlanId } from "@/lib/sequences/engine";
+import { enrolContact, ownerMasterPlanId } from "@/lib/sequences/engine";
 import { browserContext, sendMetaEvent } from "@/lib/metaCapi";
 import { DEEP_QUESTIONS, QUICK_QUESTIONS, cleanAnswers, cleanProfile, computeResult, isComplete, PROFILE_QUESTIONS, type Answers } from "@/lib/miniAudit";
 import { miniAuditEmail } from "@/lib/miniAuditEmail";
@@ -21,6 +21,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const newToken = () => randomBytes(18).toString("base64url");
 const TAG_ALL = "mini-command-audit";
+const FOLLOW_UP_KEY = "mini-command-audit-follow-up";
 
 export async function GET(request: Request) {
   const token = str(new URL(request.url).searchParams.get("token"), 60);
@@ -81,6 +82,11 @@ export async function POST(request: Request) {
       const tags = [TAG_ALL, ...result.start.map((p) => `mca-lowest-${p.key}`)];
       const c = await upsertContact({ masterPlanId: plan, email, firstName, source: "mini-command-audit", tags }, db);
       contactId = c?.id ?? null;
+      // The follow-up series (a draft until Babs turns it on): start it only when it is live, so nobody is lined up behind a campaign that is off.
+      if (c && !c.unsubscribed) {
+        const { data: seq } = await db.from("sequences").select("active").eq("master_plan_id", plan).eq("key", FOLLOW_UP_KEY).maybeSingle();
+        if (seq?.active) await enrolContact({ masterPlanId: plan, sequenceKey: FOLLOW_UP_KEY, email, firstName, source: "mini-command-audit" }).catch((e) => console.error("mini-audit enrol:", e));
+      }
       if (c) await logEvent(plan, c.id, "form", `Finished the Mini Command Audit (quick set). Lowest: ${result.start.map((p) => p.name).join(", ") || "n/a"}. ${PROFILE_QUESTIONS.map((q) => `${profile[q.key]}`).join(" · ")}`, { profile, utm }, db).catch(() => {});
     }
   } catch (e) {

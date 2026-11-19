@@ -103,3 +103,17 @@ test("the results email links to the saved results, names the two places to star
   assert.match(m.text, /Head up - Wings out/);
   assert.ok(!/\$\d/.test(m.html + m.text));
 });
+
+import { fillAuditLink, usesAuditLink } from "../src/lib/sequences/auditLink";
+import { renderStep } from "../src/lib/sequences/render";
+
+test("{{audit_results_link}} becomes the person's results link in the body and the button", () => {
+  assert.equal(usesAuditLink("Hi", "{{ audit_results_link }}"), true);
+  assert.equal(usesAuditLink("Hi", null, undefined), false);
+  const link = "https://lccommandsuite.com/mini-command-audit/results/abc";
+  assert.equal(fillAuditLink("Open {{audit_results_link}} now", link), `Open ${link} now`);
+  assert.equal(fillAuditLink(null, link), null);
+  const m = renderStep({ brand: "LifeCharter", subject: "x", body: fillAuditLink("{{greeting}}\n\nSee {{audit_results_link}}", link), buttonLabel: "Open my results", buttonUrl: fillAuditLink("{{audit_results_link}}", link), contact: { id: "c1", first_name: "Eloise" } });
+  assert.ok(m.html.includes(`href="${link}"`));
+  assert.ok(m.text.includes(`Open my results: ${link}`));
+});

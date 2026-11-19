@@ -1,3 +1,4 @@
+import { auditLinkFor, fillAuditLink, usesAuditLink } from "@/lib/sequences/auditLink";
 import { createServerClient } from "@/lib/supabase/server";
 import { BABS_COPY, involvesCopied, replyWithBabs } from "@/lib/teamCopy";
 import { renderStep, unsubscribeApiUrl, type UnsubscribeList } from "@/lib/sequences/render";
@@ -249,7 +250,9 @@ export async function processEnrollment(db: Db, enrollmentId: string, now = new 
       .upsert({ enrollment_id: enr.id, step_id: st.id, status: "claimed" }, { onConflict: "enrollment_id,step_id", ignoreDuplicates: true })
       .select("id");
     if (!claim?.length) continue; // another run already has it
-    const mail = renderStep({ brand: s.brand, subject: st.subject, preview: st.preview, body: st.body, buttonLabel: st.button_label, buttonUrl: st.button_url, contact: { id: contact.id as string, first_name: contact.first_name as string | null }, footer: who.house ? undefined : who.footer });
+    // {{audit_results_link}}: this person's own Mini Command Audit results.
+    const auditLink = usesAuditLink(st.subject, st.preview, st.body, st.button_label, st.button_url) ? await auditLinkFor(db, contact.id as string) : "";
+    const mail = renderStep({ brand: s.brand, subject: auditLink ? fillAuditLink(st.subject, auditLink) : st.subject, preview: auditLink ? fillAuditLink(st.preview, auditLink) : st.preview, body: auditLink ? fillAuditLink(st.body, auditLink) : st.body, buttonLabel: st.button_label, buttonUrl: auditLink ? fillAuditLink(st.button_url, auditLink) : st.button_url, contact: { id: contact.id as string, first_name: contact.first_name as string | null }, footer: who.house ? undefined : who.footer });
     // Call to Close consultant campaigns are always copied to Babs (hidden copy).
     const copy = who.house && String((seq as { key?: string } | null)?.key ?? "").startsWith("c2c-") ? ["amilynne@amilynnecarroll.com"] : undefined;
     const r = await sendRendered(who.house ? { ...s, bcc: copy } : clientFrom(who), contact.email as string, contact.id as string, mail, who.house ? undefined : who.resendKey);
