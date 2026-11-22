@@ -37,14 +37,15 @@ export default function AuditResults() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className={`text-2xl font-bold ${ink}`}>Audit Results</h1>
-          <p className={`mt-1 text-sm ${faint}`}>Everyone who has finished the Mini Command Audit or the Business Health Check, newest first, with their contact details.</p>
+          <p className={`mt-1 text-sm ${faint}`}>Everyone who has finished the Executive Business Assessment, the Mini Command Audit or the Business Health Check, newest first, with their contact details.</p>
         </div>
         <a href="/api/audit-results?format=csv" className="rounded-xl bg-[#1a2b4a] px-4 py-2 text-sm font-semibold text-[#F8F5F0] hover:bg-[#243a63] dark:bg-[#c9a227] dark:text-[#1a2b4a]">Download spreadsheet</a>
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <select className={box} value={kind} onChange={(e) => setKind(e.target.value as "all" | ResultKind)} aria-label="Which audit">
-          <option value="all">Both audits{rows ? ` (${rows.length})` : ""}</option>
+          <option value="all">All three{rows ? ` (${rows.length})` : ""}</option>
+          <option value="exec">{KIND_LABEL.exec}{rows ? ` (${count("exec")})` : ""}</option>
           <option value="health">{KIND_LABEL.health}{rows ? ` (${count("health")})` : ""}</option>
           <option value="mini">{KIND_LABEL.mini}{rows ? ` (${count("mini")})` : ""}</option>
         </select>
@@ -73,7 +74,7 @@ export default function AuditResults() {
                 </div>
               </div>
               <p className={`mt-3 font-medium ${ink}`}>{r.headline}</p>
-              {r.kind === "health" && r.lowest.length > 0 && <p className={`text-sm ${faint}`}>Lowest areas: {r.lowest.join(", ")}</p>}
+              {r.lowest.length > 0 && <p className={`text-sm ${faint}`}>Lowest areas: {r.lowest.join(", ")}</p>}
               <p className={`mt-1 text-xs ${faint}`}>
                 {r.source ? `Came from ${r.source}` : "No campaign tag"}
                 {r.emailStatus ? ` · Scores email ${r.emailStatus}` : ""}

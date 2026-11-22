@@ -47,3 +47,22 @@ test("the spreadsheet has a header, one line per person, quoted cells, and neutr
   assert.ok(csv.includes(`"'=HYPERLINK(""http://x"")"`));
   assert.ok(csv.includes('"A ""B"" Co"'));
 });
+
+import { execRow, KIND_LABEL } from "../src/lib/auditResults";
+
+test("an Executive Business Assessment row is built from the timeline event: score, next step, gaps and every dimension", () => {
+  const ev = { id: "e1", contact_id: "c1", created_at: "2026-11-22T12:00:00Z", detail: { data: { overall: "62", top_gaps: "Finance, Systems, Legal & Admin", recommendation: "masterclass", Marketing: "4", Finance: "2" } } };
+  const r = execRow(ev, { name: "Jo Rivers", email: "jo@example.com", phone: "303-555-0100", company: "Rivers Co" });
+  assert.equal(r.kind, "exec");
+  assert.equal(KIND_LABEL.exec, "Executive Business Assessment");
+  assert.equal(r.headline, "62% · Sent toward the MasterClass");
+  assert.deepEqual(r.lowest, ["Finance", "Systems", "Legal & Admin"]);
+  assert.deepEqual(r.details, [{ label: "Recommended next step", value: "MasterClass" }, { label: "Marketing", value: "4 of 5" }, { label: "Finance", value: "2 of 5" }]);
+  assert.equal(r.business, "Rivers Co");
+});
+
+test("an Executive Business Assessment event with no saved detail still makes a row", () => {
+  const r = execRow({ id: "e2", contact_id: null, created_at: "2026-11-22T12:00:00Z", detail: null }, { name: "x", email: "x@example.com", phone: null, company: null });
+  assert.equal(r.headline, "?%");
+  assert.deepEqual(r.lowest, []);
+});

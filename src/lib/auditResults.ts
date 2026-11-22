@@ -1,7 +1,7 @@
 // Alignment Architect > Audit Results: every Mini Command Audit and Business Health Check a lead has finished, with the
 // person's name and contact details. Pure (no database here), so the mapping and the CSV can be tested.
 
-export type ResultKind = "mini" | "health";
+export type ResultKind = "exec" | "mini" | "health";
 export type Detail = { label: string; value: string };
 export type ResultRow = {
   id: string;
@@ -78,7 +78,39 @@ export function healthRow(r: HealthRun): ResultRow {
   };
 }
 
-export const KIND_LABEL: Record<ResultKind, string> = { mini: "Mini Command Audit", health: "Business Health Check" };
+export const KIND_LABEL: Record<ResultKind, string> = { exec: "Executive Business Assessment", mini: "Mini Command Audit", health: "Business Health Check" };
+
+/** The title the landing site's assessment logs on a contact's timeline (src/app/api/assessment-results). */
+export const EXEC_EVENT_TITLE = "Completed the Executive Business Assessment";
+const EXEC_NEXT: Record<string, string> = { consultation: "Executive Consultation", masterclass: "MasterClass", challenge: "Command Shift Challenge" };
+
+type ExecEvent = { id: string; created_at: string; contact_id: string | null; detail: { data?: Record<string, string> } | null };
+export type ContactIdentity = { name: string; email: string; phone: string | null; company: string | null };
+
+/** The Executive Business Assessment is not stored in a table of its own: its scores ride on the contact's timeline event. */
+export function execRow(e: ExecEvent, who: ContactIdentity): ResultRow {
+  const d = e.detail?.data ?? {};
+  const { overall, top_gaps, recommendation, ...rest } = d;
+  const lowest = (top_gaps || "").split(", ").map((x) => x.trim()).filter(Boolean);
+  return {
+    id: `exec-${e.id}`,
+    kind: "exec",
+    createdAt: e.created_at,
+    name: who.name,
+    email: who.email,
+    phone: who.phone ?? "",
+    business: who.company ?? "",
+    headline: `${overall ?? "?"}%${recommendation ? ` · Sent toward the ${EXEC_NEXT[recommendation] ?? recommendation}` : ""}`,
+    lowest,
+    source: "",
+    emailStatus: "",
+    contactId: e.contact_id,
+    details: [
+      ...(recommendation ? [{ label: "Recommended next step", value: EXEC_NEXT[recommendation] ?? recommendation }] : []),
+      ...Object.entries(rest).map(([label, v]) => ({ label, value: `${v} of 5` })),
+    ],
+  };
+}
 
 /** Newest first. */
 export const sortRows = (rows: ResultRow[]) => rows.slice().sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));

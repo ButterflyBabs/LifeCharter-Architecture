@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { KIND_LABEL, type ResultRow } from "@/lib/auditResults";
 import { X, FileText, StickyNote, Mail, ShoppingBag, Tag, UserPlus, ClipboardList, Pencil, Plus, Trash2, Settings2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -75,6 +76,39 @@ const fullName = (c: Pick<ContactFull, "first_name" | "last_name" | "email">) =>
 const box = "w-full rounded-lg border border-[#1a2b4a]/20 bg-white dark:bg-[#1a2b4a]/20 px-3 py-2 text-sm";
 const label = "block text-xs font-medium text-[#5a6472] dark:text-[#b8c2cf]";
 const heading = "text-xs font-semibold uppercase tracking-wide text-[#7a8a99] mb-2";
+
+// The audits this person finished (Executive Business Assessment, Mini Command Audit, Business Health Check), each opening to its full breakdown.
+function AuditsSection({ audits }: { audits: ResultRow[] }) {
+  const [open, setOpen] = useState<string | null>(audits.length === 1 ? audits[0].id : null);
+  return (
+    <div>
+      <p className={heading}>Audit results ({audits.length})</p>
+      <ul className="space-y-1.5">
+        {audits.map((a) => (
+          <li key={a.id} className="rounded-lg border border-[#1a2b4a]/10 px-3 py-2 text-sm dark:border-white/10">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+              <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{KIND_LABEL[a.kind]}</span>
+              <span className="text-xs text-[#7a8a99]">{new Date(a.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+            </div>
+            <p className="mt-0.5 text-[#1a2b4a] dark:text-[#F8F5F0]">{a.headline}</p>
+            {a.lowest.length > 0 && <p className="text-xs text-[#7a8a99]">Lowest: {a.lowest.join(", ")}</p>}
+            <button type="button" className="mt-1 text-xs font-semibold text-[#2E7C83] hover:underline" aria-expanded={open === a.id} onClick={() => setOpen(open === a.id ? null : a.id)}>{open === a.id ? "Hide the full breakdown" : "See the full breakdown"}</button>
+            {open === a.id && (
+              <dl className="mt-2 grid gap-x-6 gap-y-1 border-t border-[#1a2b4a]/10 pt-2 text-xs sm:grid-cols-2 dark:border-white/10">
+                {a.details.map((d) => (
+                  <div key={d.label} className="flex justify-between gap-3">
+                    <dt className="text-[#7a8a99]">{d.label}</dt>
+                    <dd className="text-right font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{d.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 // A tag or relationship as a readable pill button.
 export function Pill({ children, onClick, onRemove, tone = "teal", title }: { children: React.ReactNode; onClick?: () => void; onRemove?: () => void; tone?: "teal" | "gold"; title?: string }) {
@@ -397,6 +431,7 @@ export default function ContactRecord({
   const [purchases, setPurchases] = useState<HistoryItem[]>([]);
   const [agreements, setAgreements] = useState<{ id: string; title: string; kind: string; status: string; sentAt: string | null; completedAt: string | null; hasSigned: boolean }[]>([]);
   const [pipelines, setPipelines] = useState<{ id: string; board: string; stage: string; followUpOn: string | null }[]>([]);
+  const [audits, setAudits] = useState<ResultRow[]>([]);
   const [note, setNote] = useState("");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Draft>({} as Draft);
@@ -419,6 +454,7 @@ export default function ContactRecord({
     setAttended(d.attended ?? []);
     setPurchases(d.purchases ?? []);
     setAgreements(d.agreements ?? []);
+    setAudits(d.audits ?? []);
   }, [id]);
   useEffect(() => {
     fetch("/api/sequences", { cache: "no-store" })
@@ -642,6 +678,8 @@ export default function ContactRecord({
           <HistorySection kind="attended" title="Calls attended" items={attended} contactId={c.id} onChanged={() => { void load(); onChanged(); }} setMsg={setMsg} />
           <HistorySection kind="purchase" title="Purchases" items={purchases} contactId={c.id} onChanged={() => { void load(); onChanged(); }} setMsg={setMsg} />
         </div>
+
+        {audits.length > 0 && <AuditsSection audits={audits} />}
 
         {agreements.length > 0 && (
           <div>

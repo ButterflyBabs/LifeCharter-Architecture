@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { logEvent, EMAIL_RE } from "@/lib/crm";
 import { crmAccount } from "../../guard";
+import { EXEC_EVENT_TITLE, execRow, healthRow, miniRow, sortRows } from "@/lib/auditResults";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,26 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   const { data: agreementRows } = await db.from("sign_documents").select("id, title, kind, status, sent_at, completed_at, final_path").eq("master_plan_id", a.planId).or([`contact_id.eq.${contact.id}`, docIds.length ? `id.in.(${docIds.join(",")})` : ""].filter(Boolean).join(",")).order("created_at", { ascending: false });
   const agreements = (agreementRows ?? []).filter((d) => d.status !== "voided").map((d) => ({ id: d.id, title: d.title, kind: d.kind, status: d.status, sentAt: d.sent_at, completedAt: d.completed_at, hasSigned: !!d.final_path }));
   const { attended, purchases } = await history(db, a.planId, a.house, contact as { id: string; email: string }, (events ?? []) as { id: string; kind: string; title: string; detail: Record<string, unknown>; created_at: string }[]);
-  return NextResponse.json({ contact, events: events ?? [], series, submissions: subs ?? [], tagHistory: tagHistory ?? [], customFields: customFields ?? [], pipelines, attended, purchases, agreements });
+  const audits = a.house ? await auditsFor(db, a.planId, contact as { id: string; email: string; first_name: string | null; last_name: string | null; phone: string | null; company: string | null }) : [];
+  return NextResponse.json({ contact, events: events ?? [], series, submissions: subs ?? [], tagHistory: tagHistory ?? [], customFields: customFields ?? [], pipelines, attended, purchases, agreements, audits });
+}
+
+// The three public audits this person has finished (Executive Business Assessment, Mini Command Audit, Business Health Check),
+// newest first. They are Babs's lead magnets, so only her own account's contacts ever have any; matched by contact or by email.
+async function auditsFor(db: ReturnType<typeof createServerClient>, planId: string, c: { id: string; email: string; first_name: string | null; last_name: string | null; phone: string | null; company: string | null }) {
+  const email = (c.email || "").toLowerCase();
+  const who = { name: [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email, email: c.email, phone: c.phone, company: c.company };
+  const match = `contact_id.eq.${c.id}${email ? `,email.eq.${email}` : ""}`;
+  const [{ data: exec }, { data: mini }, { data: health }] = await Promise.all([
+    db.from("crm_events").select("id, contact_id, detail, created_at").eq("master_plan_id", planId).eq("contact_id", c.id).eq("title", EXEC_EVENT_TITLE),
+    db.from("mini_audit_runs").select("id, first_name, email, profile, result, attribution, email_status, contact_id, created_at").eq("master_plan_id", planId).or(match),
+    db.from("health_check_runs").select("id, first_name, email, phone, business_name, result, attribution, email_status, contact_id, created_at").eq("master_plan_id", planId).or(match),
+  ]);
+  return sortRows([
+    ...(exec ?? []).map((e) => execRow(e as never, who)),
+    ...(mini ?? []).map((m) => miniRow(m as never, { phone: c.phone, company: c.company })),
+    ...(health ?? []).map((h) => healthRow(h as never)),
+  ]);
 }
 
 type Item = { id: string; title: string; date: string; detail?: string | null; amount?: number | null; currency?: string; source: string; recordId?: string };
