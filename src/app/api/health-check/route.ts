@@ -37,11 +37,14 @@ export async function POST(request: Request) {
   if (b._utm && typeof b._utm === "object") for (const [k, v] of Object.entries(b._utm as Record<string, unknown>)) if (/^(utm_|fbclid)/.test(k) && typeof v === "string") utm[k] = v.slice(0, 120);
 
   const db = createServerClient();
+  let plan: string | null = null;
+  let contactId: string | null = null;
   try {
-    const plan = await ownerMasterPlanId().catch(() => null);
+    plan = await ownerMasterPlanId().catch(() => null);
     if (plan) {
       const tags = [TAG_ALL, `bhc-grade-${result.grade.grade.toLowerCase()}`, ...result.gaps.map((g) => `bhc-lowest-${g.key}`)];
       const c = await upsertContact({ masterPlanId: plan, email, firstName, phone: phone || undefined, company: businessName || undefined, source: TAG_ALL, tags }, db);
+      contactId = c?.id ?? null;
       if (c) {
         const summary = `Finished the Business Health Check: ${result.overall}% (${result.grade.grade}, ${result.grade.label}). Lowest: ${result.gaps.map((g) => `${g.name} ${g.pct}%`).join(", ")}.${businessName ? ` Business: ${businessName}.` : ""}`;
         await logEvent(plan, c.id, "form", summary, { overall: result.overall, categories: Object.fromEntries(result.categories.map((x) => [x.key, x.pct])), utm }, db).catch(() => {});
@@ -51,6 +54,15 @@ export async function POST(request: Request) {
     // The report is on the person's screen either way; never fail the request over the CRM.
     console.error("health-check crm:", (e as Error).message);
   }
+
+  // Keep the full result for Babs's Alignment Architect > Audit Results page. A failed save never fails the request:
+  // the report is on the person's screen and the contact and activity note above already exist.
+  const { data: saved, error: saveErr } = await db
+    .from("health_check_runs")
+    .insert({ master_plan_id: plan, contact_id: contactId, first_name: firstName, email, phone: phone || null, business_name: businessName || null, answers, result, overall: result.overall, grade: result.grade.grade, attribution: utm })
+    .select("id")
+    .maybeSingle();
+  if (saveErr) console.error("health-check save:", saveErr.message);
 
   // The scores email. A failed send never fails the request.
   let emailed = false;
@@ -69,6 +81,7 @@ export async function POST(request: Request) {
       console.error("health-check email:", (e as Error).message);
     }
   }
+  if (saved?.id) await db.from("health_check_runs").update({ email_status: emailed ? "sent" : key ? "failed" : "skipped" }).eq("id", saved.id);
 
   await sendMetaEvent({
     eventName: "Lead",

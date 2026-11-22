@@ -271,6 +271,7 @@ const ownerSections = [
       { id: "platform-costs", label: "Platform Costs", icon: Wallet, href: "/platform-costs" },
       { id: "planner-sales", label: "Planner Sales", icon: Wallet, href: "/planner-sales" },
       { id: "masterclass-results", label: "MasterClass Results", icon: BarChart3, href: "/masterclass-results" },
+      { id: "audit-results", label: "Audit Results", icon: ClipboardCheck, href: "/audit-results" },
       { id: "challenge-participants", label: "Command Shift Participants", icon: Activity, href: "/challenge-participants" },
       { id: "website-reviews", label: "Website Reviews", icon: Globe, href: "/website-reviews" },
       { id: "accountability-coach", label: "Accountability Partners", icon: HeartHandshake, href: "/accountability-coach" },
@@ -973,7 +974,7 @@ export function CollapsibleSidebar() {
     const known = saved.filter((id) => byId.has(id));
     // A new item that has a home right after another (Reminders sits under Tasks) goes there, even in an order the
     // client saved before it existed; anything else new goes to the end of its section.
-    const NEW_AFTER: Record<string, string> = { reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle", "welcome-overview": "starter-guide", payments: "finance", events: "sequences-manager", time: "volant", "work-log": "time", offers: "dm-pipeline", agreements: "offers", segments: "vault", glossary: "website-review" };
+    const NEW_AFTER: Record<string, string> = { "audit-results": "masterclass-results", reminders: "tasks", "due-diligence-review": "platform-costs", "prep-documents": "due-diligence-review", "fb-event-copy": "prep-documents", "team-huddle": "reminders", "assistant-approvals": "reminders", volant: "team-huddle", "welcome-overview": "starter-guide", payments: "finance", events: "sequences-manager", time: "volant", "work-log": "time", offers: "dm-pipeline", agreements: "offers", segments: "vault", glossary: "website-review" };
     const placed = [...known];
     for (const i of s.items) {
       if (known.includes(i.id) || !NEW_AFTER[i.id]) continue;
