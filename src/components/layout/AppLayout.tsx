@@ -40,6 +40,7 @@ const BARE_ROUTES = [
   "/portal", // a client's private portal (task 1147) and the send-my-link page
   "/masterclass-signup", // public MasterClass signup
   "/mini-command-audit", // the public Mini Command Audit lead magnet
+  "/business-health-check", // the public Business Health Check lead magnet
   "/investor-brief", // unlisted investor page: the brief with its PDFs
   "/dm-send", // a DM message in its own small window, opened from a pipeline card
   "/m", // a prospect's personal registration link (redirects)
