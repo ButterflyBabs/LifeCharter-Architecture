@@ -28,7 +28,12 @@ const nextConfig = {
     };
   },
   async redirects() {
-    return [{ source: "/dashboard", destination: "/business-alignment", permanent: false }];
+    return [
+      { source: "/dashboard", destination: "/business-alignment", permanent: false },
+      // The Executive Business Assessment is the one front door (Babs, 2026-11-22). The Business Health Check page and its
+      // saved results stay in the app (Audit Results still lists them); only the public address now sends people to the assessment.
+      { source: "/business-health-check", destination: "https://landingpage.lccommandsuite.com/assessment?utm_source=health-check-link&utm_medium=redirect", permanent: false },
+    ];
   },
   experimental: {
     // Disable the client-side Router Cache so navigating between pages always
