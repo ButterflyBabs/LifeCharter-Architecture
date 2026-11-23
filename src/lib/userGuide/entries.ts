@@ -10471,8 +10471,8 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
     "aiNote": "This runs on your own AI key. It answers straight away, and anything that would change your account waits behind Approve. Emails it writes are saved as drafts: it never sends or schedules a broadcast or campaign. The microphone and speaker use your browser's own speech tools, so they need no key.",
     "steps": [
       "Add your AI key in Settings > AI Assistant if you have not yet. Until then the assistant stays offline.",
-      "Open Executive Home and type in the AI Assistant box. Enter sends, and Shift+Enter adds a line.",
-      "Or press the microphone and speak your question. Press the speaker to have replies read aloud.",
+      "Open Executive Home and type in the AI Assistant box, under the conversation. Enter sends, and Shift+Enter adds a line. The conversation reads from the top down, so the newest message is always at the bottom.",
+      "Or press the microphone and speak. It keeps listening through pauses and adds to what is already in the box. Press it again to stop, and again to add more. Press the speaker to have replies read aloud.",
       "When it prepares a change, read the card and press Approve, Edit or Cancel.",
       "Press New conversation to start fresh. The old one is saved under Past conversations.",
       "Press Teach to tell it about you, your team and how you work."
@@ -10535,7 +10535,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       {
         "id": "assistant-voice",
         "title": "Voice",
-        "body": "Press the microphone to speak a question, and the speaker to hear replies. Voice works in Chrome, Edge and Safari, at no extra cost and with no key.",
+        "body": "Press the microphone, speak, and press it again when you are done: your words are added to what is in the box, and a pause does not stop it. Press the speaker to hear replies. Voice works in Chrome, Edge and Safari, at no extra cost and with no key.",
         "keywords": [
           "speak",
           "microphone",

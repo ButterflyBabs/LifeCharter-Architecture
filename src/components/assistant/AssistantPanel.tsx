@@ -13,7 +13,7 @@ type Msg = { id: string; role: "user" | "assistant"; content: string };
 
 // The browser's own speech tools: speaking a question in, and hearing the reply read aloud. Nothing is sent anywhere
 // for this except what the browser itself does, so it costs nothing and needs no key. (Chrome, Edge and Safari.)
-type SpeechResultEvent = { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> };
+type SpeechResultEvent = { resultIndex?: number; results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> };
 type Recognizer = { lang: string; interimResults: boolean; continuous: boolean; onresult: ((e: SpeechResultEvent) => void) | null; onend: (() => void) | null; onerror: ((e: { error?: string }) => void) | null; start: () => void; stop: () => void };
 const getRecognizer = (): (new () => Recognizer) | null => {
   if (typeof window === "undefined") return null;
@@ -24,7 +24,8 @@ const plainForSpeech = (t: string) => t.replace(/\*\*/g, "").replace(/[^\x20-\x7
 
 const SUGGESTIONS = ["What's my focus today?", "Schedule focus time", "Draft email to team", "Review weekly goals"];
 
-// The AI assistant: ask box, conversation (newest first), previews to approve, past conversations.
+// The AI assistant: the conversation (oldest at the top, newest at the bottom, like any chat), previews to approve,
+// and the ask box under it. Past conversations open above the conversation.
 // One component used in two places, both reading the same saved conversation:
 //   variant "card"     → on Executive Home
 //   variant "floating" → popped out, on top of whatever page you are working on
@@ -43,8 +44,16 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
   useEffect(() => {
     if (!input && inputBox.current) inputBox.current.style.height = "auto";
   }, [input]);
+  useEffect(() => {
+    if (inputBox.current && input) {
+      inputBox.current.style.height = "auto";
+      inputBox.current.style.height = `${Math.min(inputBox.current.scrollHeight, 192)}px`;
+    }
+  }, [input]);
   const [loading, setLoading] = useState(false);
   const [thread, setThread] = useState<Msg[]>([]);
+  // The conversation reads top to bottom, so it always shows the newest message at the bottom.
+  const threadBox = useRef<HTMLDivElement | null>(null);
   // Thumbs up / down on an answer (down asks for an optional note). One rating per answer.
   const [rated, setRated] = useState<Record<string, "up" | "down">>({});
   const [noteFor, setNoteFor] = useState<string | null>(null);
@@ -62,6 +71,10 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
     }).catch(() => {});
   };
   const [actions, setActions] = useState<ActionCardData[]>([]);
+  useEffect(() => {
+    const el = threadBox.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [thread, loading]);
   const [pastOpen, setPastOpen] = useState(false);
   const [pastNote, setPastNote] = useState(false);
   // Voice: speak a question in (microphone), and hear the reply read aloud (speaker).
@@ -73,8 +86,17 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
   const [voiceNote, setVoiceNote] = useState("");
   const rec = useRef<Recognizer | null>(null);
   const heard = useRef("");
+  // Press the microphone, talk, press it again when you are done: what you say is added to what is already in the box,
+  // pressing it again keeps adding, and a pause never stops it (only your tap does). While replies are read aloud the
+  // old hands-free way is kept: stop talking and the question is sent.
+  const wantListening = useRef(false);
+  const base = useRef("");
+  const finals = useRef("");
+  const inputRef = useRef("");
+  const silentRestarts = useRef(0);
   const speakOnRef = useRef(false);
   speakOnRef.current = speakOn;
+  inputRef.current = input;
   useEffect(() => {
     setCanListen(Boolean(getRecognizer()));
     setCanSpeak(typeof window !== "undefined" && "speechSynthesis" in window);
@@ -112,8 +134,10 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
     if (!next) stopSpeaking();
     setVoiceNote(next ? "Replies will be read aloud." : "");
   };
+  const joinSpoken = (b: string, spoken: string) => (b && spoken ? `${b}${/\s$/.test(b) ? "" : " "}${spoken}` : b || spoken);
   const toggleListen = () => {
     if (listening) {
+      wantListening.current = false;
       try { rec.current?.stop(); } catch { /* already stopped */ }
       return;
     }
@@ -122,30 +146,71 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
     stopSpeaking();
     setVoiceNote("");
     heard.current = "";
-    const r = new R();
-    r.lang = "en-US";
-    r.interimResults = true;
-    r.continuous = false;
-    r.onresult = (e) => {
-      let text = "";
-      for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
-      heard.current = text.trim();
-      setInput(heard.current);
+    finals.current = "";
+    base.current = inputRef.current;
+    silentRestarts.current = 0;
+    wantListening.current = true;
+    const handsFree = speakOnRef.current;
+    const start = () => {
+      const r = new R();
+      r.lang = "en-US";
+      r.interimResults = true;
+      r.continuous = !handsFree;
+      r.onresult = (e) => {
+        let interim = "";
+        for (let k = e.resultIndex ?? 0; k < e.results.length; k++) {
+          const res = e.results[k];
+          if (res.isFinal) finals.current += res[0].transcript;
+          else interim += res[0].transcript;
+        }
+        const spoken = `${finals.current}${interim}`.trim();
+        if (spoken) silentRestarts.current = 0;
+        heard.current = spoken;
+        const next = joinSpoken(base.current, spoken);
+        inputRef.current = next;
+        setInput(next);
+      };
+      r.onerror = (e) => {
+        // A quiet moment or a session the browser closed on its own is not an error while you are still listening.
+        if (!handsFree && wantListening.current && (e.error === "no-speech" || e.error === "aborted")) return;
+        wantListening.current = false;
+        setListening(false);
+        setVoiceNote(e.error === "not-allowed" || e.error === "service-not-allowed" ? "The microphone is blocked. Allow it for this site in your browser, then try again." : e.error === "no-speech" ? "I didn't hear anything. Tap the microphone and try again." : "Voice didn't work just now. You can still type.");
+      };
+      r.onend = () => {
+        // The browser ends a listening session by itself after a while: carry on, keeping everything said so far.
+        if (!handsFree && wantListening.current) {
+          if (!heard.current) silentRestarts.current += 1;
+          if (silentRestarts.current < 4) {
+            base.current = inputRef.current;
+            finals.current = "";
+            heard.current = "";
+            try {
+              const again = start();
+              again.start();
+              rec.current = again;
+              return;
+            } catch {
+              /* fall through and stop */
+            }
+          } else {
+            setVoiceNote("I didn't hear anything. Tap the microphone and try again.");
+          }
+        }
+        wantListening.current = false;
+        setListening(false);
+        // When replies are read aloud, a spoken question is sent when you stop talking, so it works like a conversation.
+        if (handsFree && speakOnRef.current && heard.current) ask(heard.current);
+      };
+      return r;
     };
-    r.onerror = (e) => {
-      setListening(false);
-      setVoiceNote(e.error === "not-allowed" || e.error === "service-not-allowed" ? "The microphone is blocked. Allow it for this site in your browser, then try again." : e.error === "no-speech" ? "I didn't hear anything. Tap the microphone and try again." : "Voice didn't work just now. You can still type.");
-    };
-    r.onend = () => {
-      setListening(false);
-      // When replies are read aloud, a spoken question is sent when you stop talking, so it works like a conversation.
-      if (speakOnRef.current && heard.current) ask(heard.current);
-    };
+    const r = start();
     rec.current = r;
     try {
       r.start();
       setListening(true);
     } catch {
+      wantListening.current = false;
       setVoiceNote("Voice didn't start. You can still type.");
     }
   };
@@ -260,67 +325,14 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
       )}
 
       <div className={floating ? "flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3" : "px-6 pb-6"}>
-        <div className="flex items-center gap-3 mb-4">
-          {/* A textarea so a pasted summary keeps its paragraphs. Enter sends, Shift+Enter adds a line. */}
-          <textarea
-            ref={inputBox}
-            rows={1}
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              const el = e.currentTarget;
-              el.style.height = "auto";
-              el.style.height = `${Math.min(el.scrollHeight, 192)}px`;
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-                e.preventDefault();
-                ask();
-              }
-            }}
-            placeholder={floating ? `Ask ${name}${page ? ` about ${page}` : ""}…` : `Ask ${name} anything about your business...`}
-            aria-label={`Ask ${name}`}
-            className="w-full max-h-48 resize-none overflow-y-auto px-4 py-3 bg-white rounded-xl text-sm text-indigo-900 placeholder-gray-400 outline-none border border-gray-200/60 focus:border-[#c9a227]/50"
-          />
-          {canListen && (
-            <button type="button" onClick={toggleListen} aria-pressed={listening} aria-label={listening ? "Stop listening" : `Speak to ${name}`} title={listening ? "Listening… tap to stop" : `Tap and speak your question to ${name}`} className={`w-11 h-11 shrink-0 rounded-xl border flex items-center justify-center transition-colors ${listening ? "border-[#c0632f] bg-[#c0632f] text-white animate-pulse" : "border-gray-200 bg-white text-[#1a2b4a] hover:border-[#2E7C83]"}`}>
-              <Mic className="w-5 h-5" />
-            </button>
-          )}
-          {canSpeak && (
-            <button type="button" onClick={speaking ? stopSpeaking : toggleSpeak} aria-pressed={speakOn} aria-label={speaking ? "Stop reading aloud" : speakOn ? "Turn off reading replies aloud" : "Read replies aloud"} title={speaking ? "Stop reading aloud" : speakOn ? "Replies are read aloud. Tap to turn off." : "Tap to have replies read aloud"} className={`w-11 h-11 shrink-0 rounded-xl border flex items-center justify-center transition-colors ${speakOn ? "border-[#2E7C83] bg-[#2E7C83]/10 text-[#1f6a70]" : "border-gray-200 bg-white text-[#5a6472] hover:border-[#2E7C83]"}`}>
-              {speaking ? <Square className="w-4 h-4" /> : speakOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-            </button>
-          )}
-          <button onClick={() => ask()} disabled={loading || !input.trim()} aria-label="Send" className="w-11 h-11 shrink-0 rounded-xl bg-[#1a2b4a] flex items-center justify-center hover:bg-[#1a2b4a]/90 transition-colors disabled:opacity-50">
-            <ArrowRight className="w-5 h-5 text-white" />
-          </button>
-        </div>
-
-        {(voiceNote || (canListen && speakOn)) && (
-          <p className="-mt-2 mb-3 text-xs text-[#7a8a99]" role="status">{voiceNote || `Speak your question and pause: ${name} answers and reads it aloud.`}</p>
-        )}
-
         <PastConversations open={pastOpen} onClose={() => setPastOpen(false)} onContinued={loadThread} />
         {pastNote && thread.length === 0 && (
           <p className="mb-3 text-xs text-[#7a8a99]">Your last conversation is saved under Past conversations. {name} still knows your account, your notes and your settings.</p>
         )}
 
-        <AssistantActionCards
-          fresh={actions}
-          onFinished={(line) => setThread((t) => [...t, { id: `d${Date.now()}`, role: "assistant", content: line }])}
-          onRevise={(card, instruction) =>
-            ask(
-              `Please change what you prepared for me: "${card.title}". What to change: ${instruction}\n\nThe details you had prepared (JSON, for your reference): ${JSON.stringify(card.args ?? {}).slice(0, 8000)}\n\nThat earlier preview has been cancelled and nothing was created, so do not look for it or update anything in my account. Call the ${card.tool} tool again now with the full corrected details to prepare a NEW preview for my approval.`,
-              `Change "${card.title}": ${instruction}`
-            )
-          }
-        />
-
         {(loading || thread.length > 0) && (
-          <div className={`mb-4 space-y-2 overflow-y-auto rounded-xl border border-gray-200/60 bg-[#F8F5F0] p-3 text-sm text-[#3F4654] ${floating ? "min-h-[8rem] flex-1" : "max-h-96"}`} aria-live="polite" aria-label="Conversation, newest first">
-            {loading && <div className="text-xs text-[#7a8a99]">{name} is thinking…</div>}
-            {[...thread].reverse().map((m) => /^(Done|Undone): /.test(m.content) && m.role === "assistant" ? (
+          <div className={`mb-4 space-y-2 overflow-y-auto rounded-xl border border-gray-200/60 bg-[#F8F5F0] p-3 text-sm text-[#3F4654] ${floating ? "min-h-[8rem] flex-1" : "max-h-96"}`} aria-live="polite" aria-label="Conversation, oldest first, newest at the bottom" ref={threadBox}>
+            {thread.map((m) => /^(Done|Undone): /.test(m.content) && m.role === "assistant" ? (
               <div key={m.id} className="flex items-start gap-1.5 px-1 text-xs text-[#5a6472]">
                 <span aria-hidden className={m.content.startsWith("Undone") ? "text-[#7a8a99]" : "text-[#2c6b3f]"}>{m.content.startsWith("Undone") ? "↶" : "✓"}</span>
                 <span>{m.content.replace(/^(Done|Undone): /, m.content.startsWith("Undone") ? "Undone: " : "")}</span>
@@ -355,16 +367,74 @@ export default function AssistantPanel({ variant, onPopOut, onBringBack }: { var
                 </div>
               </div>
             ))}
+            {loading && <div className="text-xs text-[#7a8a99]">{name} is thinking…</div>}
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2">
+        <AssistantActionCards
+          fresh={actions}
+          onFinished={(line) => setThread((t) => [...t, { id: `d${Date.now()}`, role: "assistant", content: line }])}
+          onRevise={(card, instruction) =>
+            ask(
+              `Please change what you prepared for me: "${card.title}". What to change: ${instruction}\n\nThe details you had prepared (JSON, for your reference): ${JSON.stringify(card.args ?? {}).slice(0, 8000)}\n\nThat earlier preview has been cancelled and nothing was created, so do not look for it or update anything in my account. Call the ${card.tool} tool again now with the full corrected details to prepare a NEW preview for my approval.`,
+              `Change "${card.title}": ${instruction}`
+            )
+          }
+        />
+
+        <div className="mb-3 flex flex-wrap gap-2">
           {SUGGESTIONS.map((s) => (
             <button key={s} onClick={() => ask(s)} disabled={loading} className="px-4 py-2 bg-[#F8F5F0] border border-gray-200/60 text-gray-600 rounded-full text-sm hover:bg-gray-50 transition-colors disabled:opacity-50">
               {s}
             </button>
           ))}
         </div>
+        <div className="flex items-center gap-3 mb-3">
+          {/* A textarea so a pasted summary keeps its paragraphs. Enter sends, Shift+Enter adds a line. */}
+          <textarea
+            ref={inputBox}
+            rows={1}
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              // Typing while the microphone is on: what is in the box now is the new starting point for what you say next.
+              if (wantListening.current) {
+                base.current = e.target.value;
+                finals.current = "";
+              }
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = `${Math.min(el.scrollHeight, 192)}px`;
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                ask();
+              }
+            }}
+            placeholder={floating ? `Ask ${name}${page ? ` about ${page}` : ""}…` : `Ask ${name} anything about your business...`}
+            aria-label={`Ask ${name}`}
+            className="w-full max-h-48 resize-none overflow-y-auto px-4 py-3 bg-white rounded-xl text-sm text-indigo-900 placeholder-gray-400 outline-none border border-gray-200/60 focus:border-[#c9a227]/50"
+          />
+          {canListen && (
+            <button type="button" onClick={toggleListen} aria-pressed={listening} aria-label={listening ? "Stop listening" : `Speak to ${name}`} title={listening ? "Listening… tap to stop" : `Tap and speak your question to ${name}`} className={`w-11 h-11 shrink-0 rounded-xl border flex items-center justify-center transition-colors ${listening ? "border-[#c0632f] bg-[#c0632f] text-white animate-pulse" : "border-gray-200 bg-white text-[#1a2b4a] hover:border-[#2E7C83]"}`}>
+              <Mic className="w-5 h-5" />
+            </button>
+          )}
+          {canSpeak && (
+            <button type="button" onClick={speaking ? stopSpeaking : toggleSpeak} aria-pressed={speakOn} aria-label={speaking ? "Stop reading aloud" : speakOn ? "Turn off reading replies aloud" : "Read replies aloud"} title={speaking ? "Stop reading aloud" : speakOn ? "Replies are read aloud. Tap to turn off." : "Tap to have replies read aloud"} className={`w-11 h-11 shrink-0 rounded-xl border flex items-center justify-center transition-colors ${speakOn ? "border-[#2E7C83] bg-[#2E7C83]/10 text-[#1f6a70]" : "border-gray-200 bg-white text-[#5a6472] hover:border-[#2E7C83]"}`}>
+              {speaking ? <Square className="w-4 h-4" /> : speakOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            </button>
+          )}
+          <button onClick={() => ask()} disabled={loading || !input.trim()} aria-label="Send" className="w-11 h-11 shrink-0 rounded-xl bg-[#1a2b4a] flex items-center justify-center hover:bg-[#1a2b4a]/90 transition-colors disabled:opacity-50">
+            <ArrowRight className="w-5 h-5 text-white" />
+          </button>
+        </div>
+
+        {(voiceNote || (canListen && speakOn)) && (
+          <p className="mb-1 text-xs text-[#7a8a99]" role="status">{voiceNote || `Speak your question and pause: ${name} answers and reads it aloud.`}</p>
+        )}
+
       </div>
     </div>
   );

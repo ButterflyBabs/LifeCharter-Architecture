@@ -62,7 +62,7 @@ export default function AIGuideHelpPage() {
           <p>You can reach your assistant in three places:</p>
           <ol className="list-decimal pl-5 space-y-1 text-[#7b6b8d] dark:text-[#e8e4f0]">
             <li><strong><Term id="travel-partner">Travel Partner</Term> widget:</strong> Travel Partner is the button and window in the bottom-right corner of the page (you can drag the button elsewhere, open or collapsed); your assistant is who you talk to inside it. Once you name your assistant, the button shows that name. Open it and choose the &quot;Ask&quot; tab with your assistant&apos;s name. The other tab, Help &amp; setup, guides you through setting up and answers how-to questions.</li>
-            <li><strong>Executive Home:</strong> The AI Assistant card has an ask box, your conversation (newest first), and links for New conversation, Past conversations and Teach.</li>
+            <li><strong>Executive Home:</strong> The AI Assistant card shows your conversation like any chat (oldest at the top, newest at the bottom) with the ask box right under it, and links for New conversation, Past conversations and Teach.</li>
             <li><strong>Business Alignment:</strong> The AI Business Guide card shows a greeting built from your score and your next moves, with an Ask button to chat.</li>
           </ol>
           <p>All three share the same memory of your recent conversation. To change its name, replies or notes, click AI Assistant under Settings in the left menu.</p>
@@ -194,7 +194,7 @@ export default function AIGuideHelpPage() {
     },
     {
       question: "Does the AI Guide remember past conversations?",
-      answer: "Your conversation stays on the AI Assistant card (and in the Business Alignment panel), newest first, even when you leave the page and come back. For answering you, your assistant follows roughly the last six hours of it, so older advice never overrides what is true in your account today. Its long-term memory is your Teach notes in Settings, which it offers to add to when you mention something lasting. New conversation saves the current chat under Past conversations, where you can read it, continue it or delete it. Each time you ask, it reads your account fresh."
+      answer: "Your conversation stays on the AI Assistant card (and in the Business Alignment panel), with the newest message at the bottom next to the ask box, even when you leave the page and come back. For answering you, your assistant follows roughly the last six hours of it, so older advice never overrides what is true in your account today. Its long-term memory is your Teach notes in Settings, which it offers to add to when you mention something lasting. New conversation saves the current chat under Past conversations, where you can read it, continue it or delete it. Each time you ask, it reads your account fresh."
     },
     {
       question: "What if the AI Guide gives incorrect information?",

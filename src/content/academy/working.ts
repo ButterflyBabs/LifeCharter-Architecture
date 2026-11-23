@@ -503,10 +503,10 @@ export const WORKING: Lesson[] = [
       },
       {
         heading: "Chatting with your assistant",
-        text: "The conversation stays on the card with the newest message first. It answers from your assessments, scores, pillars, tasks, income, SOPs, plans and your next 7 days of calendar, plus the Help library and what you have taught it. It can also prepare changes for you, and it can write plan sections for you, behind Approve. Emails it writes are saved as drafts. It never sends or schedules a broadcast or campaign.",
+        text: "The conversation stays on the card and reads like any chat: the oldest message is at the top, the newest is at the bottom, and the ask box sits right under it. It answers from your assessments, scores, pillars, tasks, income, SOPs, plans and your next 7 days of calendar, plus the Help library and what you have taught it. It can also prepare changes for you, and it can write plan sections for you, behind Approve. Emails it writes are saved as drafts. It never sends or schedules a broadcast or campaign.",
         steps: [
-          "Open Executive Home and type in the AI Assistant box. Enter sends, and Shift+Enter adds a line.",
-          "Or press the microphone and speak your question. Press the speaker to have replies read aloud.",
+          "Open Executive Home and type in the AI Assistant box under the conversation. Enter sends, and Shift+Enter adds a line.",
+          "Or press the microphone and speak. It keeps listening through pauses and adds to what is already in the box. Press it again to stop, and again to add more. Press the speaker to have replies read aloud.",
           "When it prepares a change, read the card and press Approve, Edit or Cancel.",
           "Press New conversation to start fresh. The old one is saved under Past conversations, where you can read it, continue it or delete it.",
           "Press Teach to tell it about you, your team and how you work.",
