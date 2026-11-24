@@ -67,6 +67,9 @@ async function pipelineIndex(db: Db, planId: string) {
     if ((data ?? []).length < 1000) break;
   }
   const { data: boards } = await db.from("pipeline_boards").select("id, name").eq("master_plan_id", planId);
+  const boardIdList = (boards ?? []).map((b) => b.id as string);
+  const { data: stageRows } = boardIdList.length ? await db.from("dm_stages").select("id, name").in("board_id", boardIdList) : { data: [] as { id: string; name: string }[] };
+  const stageName = new Map((stageRows ?? []).map((x) => [x.id as string, x.name as string]));
   type C = { id?: string; stage_id?: string; board_id: string; name: string; email: string | null; profile_url: string | null };
   const byUrl = new Map<string, C[]>();
   const byEmail = new Map<string, C[]>();
@@ -95,7 +98,19 @@ async function pipelineIndex(db: Db, planId: string) {
     ];
     return hits.find((c) => c.board_id === boardId && c.id) ?? null;
   };
-  return { boardsOf, cardOn, add, names: (ids: string[]) => ids.map((id) => ({ id, name: boardName.get(id) ?? "a pipeline" })) };
+  // Every pipeline a person is on, with the step their card is in right now.
+  const placed = (p: Person): { id: string; name: string; stage: string }[] => {
+    const url = normUrl(p.url);
+    const hits = [
+      ...(byUrl.get(url) ?? []),
+      ...(byEmail.get(normEmail(p.email)) ?? []),
+      ...(byName.get(normName(p.name)) ?? []).filter((c) => !url || !normUrl(c.profile_url) || normUrl(c.profile_url) === url),
+    ];
+    const seen = new Map<string, { id: string; name: string; stage: string }>();
+    for (const c of hits) if (!seen.has(c.board_id)) seen.set(c.board_id, { id: c.board_id, name: boardName.get(c.board_id) ?? "a pipeline", stage: (c.stage_id && stageName.get(c.stage_id)) || "" });
+    return Array.from(seen.values());
+  };
+  return { boardsOf, cardOn, placed, add, names: (ids: string[]) => ids.map((id) => ({ id, name: boardName.get(id) ?? "a pipeline" })) };
 }
 
 async function loadIcp(db: Db, planId: string, id: string): Promise<Icp | null> {
@@ -158,7 +173,7 @@ export async function GET(request: Request) {
         key: r.id as string, name: r.name as string, email: (r.email as string | null) ?? "", profile_url: (r.profile_url as string | null) ?? "", platform: (r.platform as string | null) ?? null,
         qualId: r.id as string, priority: r.priority as string, fit: r.fit as string, contactId: null, stop: false, facts: str(r.source_text, 1200),
         scored_at: r.created_at as string, icp_name: (r.icp_name as string | null) ?? "", list_name: r.audience_id ? audName.get(r.audience_id as string) ?? "" : "One profile",
-        on_boards: idx2.names(idx2.boardsOf({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null })),
+        on_boards: idx2.placed({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null }),
       }));
       const total = count ?? out.length;
       return NextResponse.json({ rows: out, total, hasMore: offset + 25 < total, capped: false });
@@ -213,7 +228,7 @@ export async function GET(request: Request) {
     const pageAud = Array.from(new Set(page.map((r) => r.audId).filter((x): x is string => !!x)));
     const { data: pageAuds } = pageAud.length ? await db.from("icp_audiences").select("id, name").eq("master_plan_id", a.planId).in("id", pageAud) : { data: [] as { id: string; name: string }[] };
     const pageAudName = new Map((pageAuds ?? []).map((x) => [x.id as string, x.name as string]));
-    const rows = page.map(({ audId, ...r }) => ({ ...r, list_name: r.qualId ? (audId ? pageAudName.get(audId) ?? "" : "One profile") : "", on_boards: idx.names(idx.boardsOf({ name: r.name, url: r.profile_url, email: r.email })) }));
+    const rows = page.map(({ audId, ...r }) => ({ ...r, list_name: r.qualId ? (audId ? pageAudName.get(audId) ?? "" : "One profile") : "", on_boards: idx.placed({ name: r.name, url: r.profile_url, email: r.email }) }));
     return NextResponse.json({ rows, total: all.length, hasMore: offset + PAGE < all.length, capped: [quals1, quals2, cards, contacts].some((x) => (x ?? []).length >= CAP) });
   }
 
@@ -222,7 +237,7 @@ export async function GET(request: Request) {
     const { data } = await db.from("icp_qualifications").select(QUAL_COLUMNS).eq("master_plan_id", a.planId).eq("audience_id", audienceId).limit(2000);
     const idx = await pipelineIndex(db, a.planId);
     const rows = (data ?? [])
-      .map((r) => ({ ...r, on_boards: idx.names(idx.boardsOf({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null })) }))
+      .map((r) => ({ ...r, on_boards: idx.placed({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null }) }))
       .sort((x, y) => (RANK[x.priority as string] ?? 9) - (RANK[y.priority as string] ?? 9));
     return NextResponse.json({ rows });
   }
@@ -242,7 +257,7 @@ export async function GET(request: Request) {
     recent: await (async () => {
       if (!recent?.length) return [];
       const idx = await pipelineIndex(db, a.planId);
-      return recent.map((r) => ({ ...r, on_boards: idx.names(idx.boardsOf({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null })) }));
+      return recent.map((r) => ({ ...r, on_boards: idx.placed({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null }) }));
     })(),
     audiences: audiences ?? [],
     defaultLevels: DEFAULT_LEVELS,
@@ -397,7 +412,7 @@ export async function POST(request: Request) {
   if (b.action === "list-check") {
     const idx = await pipelineIndex(db, a.planId);
     const people = (Array.isArray(b.people) ? b.people : []).slice(0, 2000) as Person[];
-    const on = people.map((p) => idx.names(idx.boardsOf({ name: str(p.name, 120), url: str(p.url, 500), email: str(p.email, 200) })).map((x) => x.name));
+    const on = people.map((p) => idx.placed({ name: str(p.name, 120), url: str(p.url, 500), email: str(p.email, 200) }).map((x) => x.name));
     return NextResponse.json({ on });
   }
 

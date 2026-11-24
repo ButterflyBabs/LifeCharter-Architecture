@@ -15,7 +15,7 @@ export type Qual = {
   profile_url: string | null;
   email?: string | null;
   // Pipelines this person is already on (matched by profile link, email or exact name).
-  on_boards?: { id: string; name: string }[];
+  on_boards?: { id: string; name: string; stage?: string }[];
   fit: string | null;
   level: string | null;
   priority: string | null;

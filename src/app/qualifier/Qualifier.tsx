@@ -16,7 +16,7 @@ type Stages = Record<string, { id: string; name: string }[]>;
 type Offer = { id: string; name: string; transformation: string; idealClient: string; notFor: string };
 type Audience = { id: string; name: string; icp_id: string | null; total: number; created_at: string };
 type ListRow = { name: string; url: string; code: string; email: string; facts: string };
-const onNames = (q: Qual) => (q.on_boards ?? []).map((b) => b.name).join(", ");
+const onNames = (q: Qual) => (q.on_boards ?? []).map((b) => (b.stage ? `${b.name} (${b.stage})` : b.name)).join(", ");
 
 const PLATFORMS = [
   { id: "LI", label: "LinkedIn" },
@@ -367,14 +367,14 @@ function RescoreBar({ icps, people, post, setMsg, onScored }: { icps: Icp[]; peo
 }
 
 // The pipelines a person is on, each with a one-click Remove from pipeline. They stay in Contacts and keep their scores.
-function OnBoards({ person, boards, post, setMsg, onRemoved, className }: { person: { name: string; email?: string | null; profile_url?: string | null }; boards: { id: string; name: string }[]; post: Post; setMsg: (m: string) => void; onRemoved: () => void; className?: string }) {
+function OnBoards({ person, boards, post, setMsg, onRemoved, className }: { person: { name: string; email?: string | null; profile_url?: string | null }; boards: { id: string; name: string; stage?: string }[]; post: Post; setMsg: (m: string) => void; onRemoved: () => void; className?: string }) {
   const [busy, setBusy] = useState("");
   if (!boards.length) return null;
   return (
     <span className={className}>
       {boards.map((b) => (
         <span key={b.id} className="mr-3 inline-flex items-center gap-1">
-          {b.name}
+          <span><strong className="font-semibold">{b.name}</strong>{b.stage ? <span className="ml-1 rounded-full bg-[#2E7C83]/10 px-2 py-0.5 text-[11px] font-medium text-[#1F5E63]">{b.stage}</span> : null}</span>
           <button
             type="button"
             disabled={busy === b.id}
@@ -396,7 +396,7 @@ function OnBoards({ person, boards, post, setMsg, onRemoved, className }: { pers
   );
 }
 
-type Found = { key: string; name: string; email: string; profile_url: string; platform: string | null; qualId: string | null; priority: string | null; fit: string | null; contactId: string | null; stop: boolean; facts: string; scored_at?: string; icp_name?: string; list_name?: string; on_boards: { id: string; name: string }[] };
+type Found = { key: string; name: string; email: string; profile_url: string; platform: string | null; qualId: string | null; priority: string | null; fit: string | null; contactId: string | null; stop: boolean; facts: string; scored_at?: string; icp_name?: string; list_name?: string; on_boards: { id: string; name: string; stage?: string }[] };
 
 // Everyone the Suite knows: scored people, people on a pipeline and every contact, scored or not. 25 to a screen.
 function FindAnyone({ icps, boards, stages, post, setMsg, onChanged, onScored }: { icps: Icp[]; boards: Board[]; stages: Stages; post: Post; setMsg: (m: string) => void; onChanged: () => void; onScored: (audienceId: string) => void }) {
@@ -462,7 +462,7 @@ function FindAnyone({ icps, boards, stages, post, setMsg, onChanged, onScored }:
       {rows.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead><tr className="border-b border-[#1a2b4a]/10 text-xs text-[#7a8a99]"><th className="w-8 py-2"><input type="checkbox" aria-label="Select everyone shown" checked={rows.some((r) => !r.stop) && rows.filter((r) => !r.stop).every((r) => picked.has(r.key))} onChange={(e) => { const n = new Set(picked); rows.filter((r) => !r.stop).forEach((r) => (e.target.checked ? n.add(r.key) : n.delete(r.key))); setPicked(n); }} /></th><th className="py-2 pr-3">Person</th><th className="py-2 pr-3">Score</th><th className="py-2 pr-3">Date scored</th><th className="py-2">On a pipeline</th></tr></thead>
+            <thead><tr className="border-b border-[#1a2b4a]/10 text-xs text-[#7a8a99]"><th className="w-8 py-2"><input type="checkbox" aria-label="Select everyone shown" checked={rows.some((r) => !r.stop) && rows.filter((r) => !r.stop).every((r) => picked.has(r.key))} onChange={(e) => { const n = new Set(picked); rows.filter((r) => !r.stop).forEach((r) => (e.target.checked ? n.add(r.key) : n.delete(r.key))); setPicked(n); }} /></th><th className="py-2 pr-3">Person</th><th className="py-2 pr-3">Score</th><th className="py-2 pr-3">Date scored</th><th className="py-2">Pipeline and step</th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.key} className="border-b border-[#1a2b4a]/5 align-top">
