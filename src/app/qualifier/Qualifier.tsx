@@ -327,10 +327,79 @@ function rowsFromTable(table: string[][]): ListRow[] {
 }
 
 
-type Found = { key: string; name: string; email: string; profile_url: string; platform: string | null; qualId: string | null; priority: string | null; fit: string | null; contactId: string | null; stop: boolean; on_boards: { id: string; name: string }[] };
+// Score people again against a different Ideal Client Profile. They land in a new scored list, ready to add to that profile's pipeline.
+function RescoreBar({ icps, people, post, setMsg, onScored }: { icps: Icp[]; people: { name: string; url: string; email: string; facts: string }[]; post: Post; setMsg: (m: string) => void; onScored: (audienceId: string) => void }) {
+  const [icpId, setIcpId] = useState("");
+  const [running, setRunning] = useState<{ done: number; total: number } | null>(null);
+  if (!people.length || !icps.length) return null;
+  async function go() {
+    const icp = icps.find((i) => i.id === icpId);
+    if (!icp) return;
+    const made = (await post({ action: "audience-create", name: `${icp.name}: scored again ${new Date().toISOString().slice(0, 10)}`, icpId: icp.id, total: people.length })) as { audience?: { id: string } } | null;
+    if (!made?.audience) return;
+    setRunning({ done: 0, total: people.length });
+    let done = 0;
+    for (let i = 0; i < people.length; i += 10) {
+      const batch = people.slice(i, i + 10).map((r) => ({ name: r.name, url: r.url, email: r.email, code: "", facts: r.facts || "No details on file beyond the name." }));
+      const r = await post({ action: "audience-score", audienceId: made.audience.id, rows: batch });
+      if (!r) break;
+      done = Math.min(people.length, i + 10);
+      setRunning({ done, total: people.length });
+    }
+    setRunning(null);
+    if (done) {
+      setMsg(`${done} scored against ${icp.name}. They are in a new list: choose the pipeline for that profile and add them.`);
+      onScored(made.audience.id);
+    }
+  }
+  return (
+    <div className="flex flex-wrap items-end gap-2 rounded-xl bg-[#1a2b4a]/5 p-3">
+      <label className={label}>Score the {people.length} selected again against
+        <select value={icpId} onChange={(e) => setIcpId(e.target.value)} className={`${box} h-10 min-w-[240px]`}>
+          <option value="">Choose a profile</option>
+          {icps.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
+        </select>
+      </label>
+      <Button variant="outline" disabled={!icpId || !!running} onClick={() => void go()}>{running ? `Scoring ${running.done} of ${running.total}…` : "Score again"}</Button>
+      <span className="basis-full text-xs text-[#7a8a99]">Uses what the Suite holds about each person: the details from their earlier score, or a contact&rsquo;s company and tags. A contact with little on file gets a weaker first read. Each person scored uses a small AI request.</span>
+    </div>
+  );
+}
+
+// The pipelines a person is on, each with a one-click Remove from pipeline. They stay in Contacts and keep their scores.
+function OnBoards({ person, boards, post, setMsg, onRemoved, className }: { person: { name: string; email?: string | null; profile_url?: string | null }; boards: { id: string; name: string }[]; post: Post; setMsg: (m: string) => void; onRemoved: () => void; className?: string }) {
+  const [busy, setBusy] = useState("");
+  if (!boards.length) return null;
+  return (
+    <span className={className}>
+      {boards.map((b) => (
+        <span key={b.id} className="mr-3 inline-flex items-center gap-1">
+          {b.name}
+          <button
+            type="button"
+            disabled={busy === b.id}
+            aria-label={`Remove ${person.name} from ${b.name}`}
+            onClick={async () => {
+              if (!confirm(`Take ${person.name} off ${b.name}? Their open follow-up task and this stage's tag come off; they stay in Contacts and keep their scores.`)) return;
+              setBusy(b.id);
+              const r = await post({ action: "remove-from-pipeline", boardId: b.id, name: person.name, email: person.email ?? "", url: person.profile_url ?? "" });
+              setBusy("");
+              if (r) { setMsg(`${person.name} was taken off ${b.name}.`); onRemoved(); }
+            }}
+            className="inline-flex items-center gap-0.5 text-[11px] font-medium text-[#A4523C] hover:underline disabled:opacity-50"
+          >
+            <Trash2 className="h-3 w-3" /> {busy === b.id ? "Removing…" : "Remove from pipeline"}
+          </button>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+type Found = { key: string; name: string; email: string; profile_url: string; platform: string | null; qualId: string | null; priority: string | null; fit: string | null; contactId: string | null; stop: boolean; facts: string; on_boards: { id: string; name: string }[] };
 
 // Everyone the Suite knows: scored people, people on a pipeline and every contact, scored or not. 25 to a screen.
-function FindAnyone({ boards, stages, post, setMsg, onChanged }: { boards: Board[]; stages: Stages; post: Post; setMsg: (m: string) => void; onChanged: () => void }) {
+function FindAnyone({ icps, boards, stages, post, setMsg, onChanged, onScored }: { icps: Icp[]; boards: Board[]; stages: Stages; post: Post; setMsg: (m: string) => void; onChanged: () => void; onScored: (audienceId: string) => void }) {
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<Found[]>([]);
   const [total, setTotal] = useState(0);
@@ -374,6 +443,7 @@ function FindAnyone({ boards, stages, post, setMsg, onChanged }: { boards: Board
         <span className="text-xs text-[#7a8a99]">{busy && !rows.length ? "Looking…" : `${total.toLocaleString()} ${total === 1 ? "person" : "people"}${q ? " match" : ""}${capped ? " (showing the newest of a very large set: narrow the search to find anyone else)" : ""}`}</span>
         <AddToPipeline boards={boards} stages={stages} ids={ids} people={people} post={post} setMsg={setMsg} onAdded={() => { setPicked(new Set()); onChanged(); void load(q, false, 0); }} labelText={`Add or move ${picked.size} selected`} />
       </div>
+      <RescoreBar icps={icps} people={chosen.filter((r) => !r.stop).map((r) => ({ name: r.name, url: r.profile_url, email: r.email, facts: r.facts }))} post={post} setMsg={setMsg} onScored={onScored} />
       {rows.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -388,7 +458,7 @@ function FindAnyone({ boards, stages, post, setMsg, onChanged }: { boards: Board
                     {r.stop && <p className="text-xs font-medium text-[#C76F56]">Asked to stop: can&rsquo;t be added</p>}
                   </td>
                   <td className="py-2 pr-3">{r.priority ? <PriorityBadge priority={r.priority} small /> : <span className="text-xs text-[#7a8a99]">Not scored</span>}</td>
-                  <td className="py-2 text-xs text-[#2E7C83]">{r.on_boards.length ? r.on_boards.map((b) => b.name).join(", ") : <span className="text-[#7a8a99]">Not on one</span>}</td>
+                  <td className="py-2 text-xs text-[#2E7C83]">{r.on_boards.length ? <OnBoards person={r} boards={r.on_boards} post={post} setMsg={setMsg} onRemoved={() => { onChanged(); void load(q, false, 0); }} /> : <span className="text-[#7a8a99]">Not on one</span>}</td>
                 </tr>
               ))}
             </tbody>
@@ -485,7 +555,7 @@ function ListTab({ icps, boards, stages, audiences, post, setMsg, onChanged }: {
 
   return (
     <div className="space-y-5">
-      <FindAnyone boards={boards} stages={stages} post={post} setMsg={setMsg} onChanged={onChanged} />
+      <FindAnyone icps={icps} boards={boards} stages={stages} post={post} setMsg={setMsg} onChanged={onChanged} onScored={(id) => { onChanged(); void openAudience(id); setTimeout(() => document.getElementById("opened-list")?.scrollIntoView({ behavior: "smooth", block: "start" }), 900); }} />
       <div className={`${panel} space-y-3`}>
         <h2 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Score a whole list</h2>
         {isPartner ? (
@@ -590,7 +660,7 @@ function ListTab({ icps, boards, stages, audiences, post, setMsg, onChanged }: {
       )}
 
       {open && (
-        <div className={panel}>
+        <div id="opened-list" className={panel}>
           <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
             <div>
               <h3 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">{open.name}</h3>
@@ -605,6 +675,7 @@ function ListTab({ icps, boards, stages, audiences, post, setMsg, onChanged }: {
               <button onClick={async () => { if (confirm(`Delete the list “${open.name}” and its scores? Anyone already added to a pipeline stays there.`) && (await post({ action: "audience-delete", id: open.id }))) { setOpenId(null); setRows([]); onChanged(); } }} className="inline-flex items-center gap-1 pb-2.5 text-sm text-[#C76F56] hover:underline"><Trash2 className="h-4 w-4" /> Delete list</button>
             </div>
           </div>
+          <div className="mb-3"><RescoreBar icps={icps} people={rows.filter((r) => picked.has(r.id)).map((r) => ({ name: r.name, url: r.profile_url ?? "", email: r.email ?? "", facts: ((r.result as { facts?: string })?.facts) ?? "" }))} post={post} setMsg={setMsg} onScored={(id) => { onChanged(); void openAudience(id); setTimeout(() => document.getElementById("opened-list")?.scrollIntoView({ behavior: "smooth", block: "start" }), 900); }} /></div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-left text-sm">
               <thead>
@@ -625,7 +696,7 @@ function ListTab({ icps, boards, stages, audiences, post, setMsg, onChanged }: {
                       <td className="py-2 pr-3">
                         {r.profile_url ? <a href={r.profile_url} target="_blank" rel="noreferrer" className="font-medium text-[#1a2b4a] hover:underline dark:text-[#F8F5F0]">{r.name}</a> : <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{r.name}</span>}
                         {headline && <p className="max-w-md truncate text-xs text-[#7a8a99]" title={headline}>{headline}</p>}
-                        {onNames(r) && <p className="text-xs font-medium text-[#8a6a15] dark:text-[#e6d28a]">Also on: {onNames(r)}</p>}
+                        {(r.on_boards ?? []).length > 0 && <p className="text-xs font-medium text-[#8a6a15] dark:text-[#e6d28a]">Also on: <OnBoards person={r} boards={r.on_boards ?? []} post={post} setMsg={setMsg} onRemoved={() => void openAudience(open.id)} /></p>}
                       </td>
                       <td className="py-2 pr-3"><PriorityBadge priority={r.priority} small /></td>
                       <td className="py-2 pr-3 text-xs font-semibold text-[#5a6472] dark:text-[#b8c2cf]">{r.fit === "BORDERLINE" ? "Borderline" : r.fit === "YES" ? "Yes" : "No"}</td>

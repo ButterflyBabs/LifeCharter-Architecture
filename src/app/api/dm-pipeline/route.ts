@@ -5,9 +5,9 @@ import { crossOriginBlocked } from "@/lib/security";
 import { resolveUserTimeZone } from "@/lib/userTimezone";
 import { upsertContact, logEvent, EMAIL_RE } from "@/lib/crm";
 import { parseList } from "@/lib/dmListParse";
-import { isSameCard, sameLinkSamePerson, type CardKey } from "@/lib/dmCardDuplicate";
+import { isSameCard, sameLinkSamePerson, normProfileUrl, usableProfileUrl, type CardKey } from "@/lib/dmCardDuplicate";
 import { landingStage } from "@/lib/dmLanding";
-import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, moveCard, moveCardToBoard, createCard, dateIn, platformTag, retagContact, slugTag, shapeStage, movesForward, markDoNotContact, type Board, setFollowUp, nurtureStepOf, NURTURE_GAP_DAYS } from "@/lib/dmPipeline";
+import { CARD_PLATFORMS, ensureBoards, boardStages, createBoard, removeCardFromPipeline, moveCard, moveCardToBoard, createCard, dateIn, platformTag, retagContact, slugTag, shapeStage, movesForward, markDoNotContact, type Board, setFollowUp, nurtureStepOf, NURTURE_GAP_DAYS } from "@/lib/dmPipeline";
 import { mapPeople, parseCsv } from "@/lib/dmEmailList";
 import { cleanLinkUrl } from "@/lib/coldEmail";
 import { zonedToUtcISO } from "@/lib/tz";
@@ -320,7 +320,7 @@ export async function POST(request: Request) {
     const stage = landingStage(stages, platform, stages.find((s) => s.key === "to_reach") ?? stages[0]);
     if (!stage) return NextResponse.json({ error: "Add a stage to this pipeline first." }, { status: 400 });
     const existing = await allRows<{ name: string | null; profile_url: string | null; platform: string | null }>((from, to) => db.from("dm_cards").select("name, profile_url, platform").eq("board_id", board.id).order("id").range(from, to));
-    const norm = (u: string | null | undefined) => (u ?? "").toLowerCase().replace(/^https?:\/\/(www\.|m\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, "");
+    const norm = normProfileUrl;
     // A link only means "the same person" for a personal profile (LinkedIn, Facebook...). On a shared website, a different
     // name is a different person who may work in the same office.
     const seenLinks: { url: string; name: string }[] = [];
@@ -359,7 +359,7 @@ export async function POST(request: Request) {
     const stages = await boardStages(db, a.planId, board.id);
     const stage = stages.find((s) => s.key === "to_reach") ?? stages[0];
     if (!stage) return NextResponse.json({ error: "Add a stage to this pipeline first." }, { status: 400 });
-    const norm = (u: string | null | undefined) => (u ?? "").toLowerCase().replace(/^https?:\/\/(www\.|m\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, "");
+    const norm = normProfileUrl;
     const existing = await allRows<{ email: string | null; profile_url: string | null; name: string | null }>((from, to) => db.from("dm_cards").select("email, profile_url, name").eq("board_id", board.id).order("id").range(from, to));
     const haveEmail = new Set<string>();
     // The same email is always the same person. The same link is too, but only for a personal profile (LinkedIn, Facebook...):
@@ -395,7 +395,7 @@ export async function POST(request: Request) {
       if (r.email) haveEmail.add(r.email);
       if (u) haveLinks.push({ url: r.profileUrl as string, name: r.name });
       if (known) linked.push(known.id);
-      toAdd.push({ master_plan_id: a.planId, board_id: board.id, stage_id: stage.id, contact_id: known?.id ?? null, name: r.name, email: r.email, profile_url: r.profileUrl, platform, notes: r.notes, link_code: code(), stage_changed_at: now });
+      toAdd.push({ master_plan_id: a.planId, board_id: board.id, stage_id: stage.id, contact_id: known?.id ?? null, name: r.name, email: r.email, profile_url: usableProfileUrl(r.profileUrl), platform, notes: r.notes, link_code: code(), stage_changed_at: now });
     }
     let added = 0;
     for (let i = 0; i < toAdd.length; i += 200) {
@@ -554,7 +554,7 @@ export async function POST(request: Request) {
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (str(b.name, 120)) patch.name = str(b.name, 120);
     if (b.handle !== undefined) patch.handle = str(b.handle, 120) || null;
-    if (b.profileUrl !== undefined) patch.profile_url = str(b.profileUrl, 500) || null;
+    if (b.profileUrl !== undefined) patch.profile_url = usableProfileUrl(str(b.profileUrl, 500));
     if (b.email !== undefined) {
       const e = str(b.email, 200).toLowerCase();
       if (e && !EMAIL_RE.test(e)) return NextResponse.json({ error: "That email doesn't look right." }, { status: 400 });
@@ -591,10 +591,7 @@ export async function POST(request: Request) {
   }
 
   if (b.action === "delete") {
-    if (card.follow_up_task_id) await db.from("tasks").delete().eq("id", card.follow_up_task_id).eq("master_plan_id", a.planId).neq("status", "done");
-    const { data: st } = await db.from("dm_stages").select("tag").eq("id", card.stage_id).maybeSingle();
-    await retagContact(db, a.planId, card.contact_id as string | null, [], [(st?.tag as string) ?? null]);
-    await db.from("dm_cards").delete().eq("id", card.id).eq("master_plan_id", a.planId);
+    await removeCardFromPipeline(db, a.planId, card.id as string);
     return NextResponse.json({ ok: true });
   }
 

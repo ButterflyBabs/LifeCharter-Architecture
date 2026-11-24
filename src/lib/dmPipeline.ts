@@ -5,6 +5,7 @@ import { ensureStages } from "@/lib/sales/pipeline";
 import { homeCurrency } from "@/lib/currencyServer";
 import { logEvent, upsertContact } from "@/lib/crm";
 import { uniqueCode } from "@/lib/affiliates";
+import { usableProfileUrl } from "@/lib/dmCardDuplicate";
 
 // Outreach pipelines: each account can have many boards (the DM pipeline is one).
 // A board has its own stages, a short tag given to everyone on it, and a tag per
@@ -346,7 +347,7 @@ export async function createCard(
         contact_id: input.contactId ?? null,
         name: input.name,
         handle: input.handle ?? null,
-        profile_url: input.profileUrl ?? null,
+        profile_url: usableProfileUrl(input.profileUrl),
         email: input.email ?? null,
         platform: input.platform,
         script_id: input.scriptId ?? null,
@@ -385,4 +386,16 @@ export async function markDoNotContact(db: Db, planId: string, email: string, na
   const { data: seqs } = await db.from("sequences").select("id").eq("master_plan_id", planId);
   const ids = ((seqs ?? []) as { id: string }[]).map((x) => x.id);
   if (ids.length) await db.from("sequence_enrollments").update({ status: "stopped" }).eq("contact_id", made.id).in("sequence_id", ids).in("status", ["active", "paused"]);
+}
+
+// Takes a person off a pipeline: the open follow-up task and the stage's tag come off, the card goes, and they stay in Contacts.
+export async function removeCardFromPipeline(db: Db, planId: string, cardId: string): Promise<boolean> {
+  const { data: card } = await db.from("dm_cards").select("id, stage_id, contact_id, follow_up_task_id").eq("id", cardId).eq("master_plan_id", planId).maybeSingle();
+  if (!card) return false;
+  if (card.follow_up_task_id) await db.from("tasks").delete().eq("id", card.follow_up_task_id).eq("master_plan_id", planId).neq("status", "done");
+  const { data: st } = await db.from("dm_stages").select("tag").eq("id", card.stage_id).maybeSingle();
+  await retagContact(db, planId, card.contact_id as string | null, [], [(st?.tag as string) ?? null]);
+  await db.from("icp_qualifications").update({ card_id: null }).eq("card_id", card.id).eq("master_plan_id", planId);
+  await db.from("dm_cards").delete().eq("id", card.id).eq("master_plan_id", planId);
+  return true;
 }

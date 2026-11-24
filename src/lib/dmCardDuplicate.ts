@@ -8,8 +8,22 @@
 export type CardKey = { name: string | null; profile_url: string | null; handle: string | null; platform: string | null };
 export type IncomingCard = { name: string; profileUrl: string | null; handle: string | null; platform: string | null };
 
+// A Facebook profile without a custom name is facebook.com/profile.php?id=<number>: the number IS the person, so it stays.
+// Without it, profile.php opens whoever is signed in, so it identifies no one.
+const FB_PROFILE_ID = /^facebook\.com\/profile\.php\?(?:[^#]*&)?id=(\d+)/;
 export function normProfileUrl(u: string | null | undefined): string {
-  return (u ?? "").trim().toLowerCase().replace(/^https?:\/\/(www\.|m\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, "");
+  const t = (u ?? "").trim().toLowerCase().replace(/^https?:\/\/(www\.|m\.|web\.|mbasic\.)?/, "");
+  const fb = t.match(FB_PROFILE_ID);
+  if (fb) return `facebook.com/profile.php?id=${fb[1]}`;
+  const bare = t.replace(/[?#].*$/, "").replace(/\/+$/, "");
+  return bare === "facebook.com/profile.php" ? "" : bare;
+}
+
+/** A profile link worth saving: a bare facebook.com/profile.php (no id) opens the signed-in person's OWN profile, so it is dropped. */
+export function usableProfileUrl(u: string | null | undefined): string | null {
+  const t = (u ?? "").trim();
+  if (!t) return null;
+  return /^(https?:\/\/)?(www\.|m\.|web\.|mbasic\.)?facebook\.com\/profile\.php\/?(\?(?![^#]*\bid=\d)[^#]*)?(#.*)?$/i.test(t) ? null : t;
 }
 
 const SOCIAL_HOSTS = /^(linkedin\.com|facebook\.com|fb\.com|instagram\.com|x\.com|twitter\.com|tiktok\.com|threads\.net|youtube\.com|pinterest\.com|wa\.me|t\.me)(\/|$)/;

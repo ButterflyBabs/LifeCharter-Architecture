@@ -8,7 +8,8 @@ import { resolveAiConfig } from "@/lib/ai/config";
 import { memberAiGate } from "@/lib/ai/memberCap";
 import { buildAssistantKnowledge } from "@/lib/ai/assistantContext";
 import { logEvent } from "@/lib/crm";
-import { CARD_PLATFORMS, ensureBoards, boardStages, createCard, moveCard, dateIn } from "@/lib/dmPipeline";
+import { normProfileUrl } from "@/lib/dmCardDuplicate";
+import { CARD_PLATFORMS, ensureBoards, boardStages, createCard, moveCard, removeCardFromPipeline, dateIn } from "@/lib/dmPipeline";
 import { DEFAULT_LEVELS, ICP_COLUMNS, QUALIFIER_OPEN_TO_ALL, audiencePrompt, cleanFit, cleanPriority, icpRow, PRIORITIES, profilePrompt, shapeIcp, stageKeyFor, type Icp } from "@/lib/qualifier";
 
 export const dynamic = "force-dynamic";
@@ -54,7 +55,7 @@ async function gate(request?: Request): Promise<CrmAccount | { denied: NextRespo
 // Who is already on a pipeline. A person matches a card by profile link, by email, or by exact name (a name
 // match is ignored when both have a profile link and the links differ: two people can share a name).
 type Person = { name?: string | null; url?: string | null; email?: string | null };
-const normUrl = (v: string | null | undefined) => (v ?? "").trim().toLowerCase().replace(/^https?:\/\/(www\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, "");
+const normUrl = normProfileUrl;
 const normName = (v: string | null | undefined) => (v ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 const normEmail = (v: string | null | undefined) => (v ?? "").trim().toLowerCase();
 async function pipelineIndex(db: Db, planId: string) {
@@ -143,23 +144,23 @@ export async function GET(request: Request) {
     const [first, ...rest] = q.split(/\s+/);
     const last = rest.join(" ");
     const both = last ? `,and(first_name.ilike.%${first}%,last_name.ilike.%${last}%)` : "";
-    let qq = db.from("icp_qualifications").select(QUAL_COLUMNS).eq("master_plan_id", a.planId).eq("kind", "profile").order("created_at", { ascending: false }).limit(CAP);
-    let aq = db.from("icp_qualifications").select(QUAL_COLUMNS).eq("master_plan_id", a.planId).eq("kind", "audience").order("created_at", { ascending: false }).limit(CAP);
+    let qq = db.from("icp_qualifications").select(`${QUAL_COLUMNS}, source_text`).eq("master_plan_id", a.planId).eq("kind", "profile").order("created_at", { ascending: false }).limit(CAP);
+    let aq = db.from("icp_qualifications").select(`${QUAL_COLUMNS}, source_text`).eq("master_plan_id", a.planId).eq("kind", "audience").order("created_at", { ascending: false }).limit(CAP);
     let cq = db.from("dm_cards").select("id, name, email, profile_url, platform, contact_id, qual_priority, qual_fit").eq("master_plan_id", a.planId).order("created_at", { ascending: false }).limit(CAP);
-    let kq = db.from("seq_contacts").select("id, email, first_name, last_name, unsubscribed_at").eq("master_plan_id", a.planId).order("last_activity_at", { ascending: false, nullsFirst: false }).limit(CAP);
+    let kq = db.from("seq_contacts").select("id, email, first_name, last_name, company, tags, unsubscribed_at").eq("master_plan_id", a.planId).order("last_activity_at", { ascending: false, nullsFirst: false }).limit(CAP);
     if (q) {
       const like = `name.ilike.%${q}%,email.ilike.%${q}%,profile_url.ilike.%${q}%`;
       qq = qq.or(like); aq = aq.or(like); cq = cq.or(like);
       kq = kq.or(`email.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%,company.ilike.%${q}%${both}`);
     }
     const [{ data: quals1 }, { data: quals2 }, { data: cards }, { data: contacts }] = await Promise.all([qq, aq, cq, kq]);
-    type Found = { key: string; name: string; email: string; profile_url: string; platform: string | null; qualId: string | null; priority: string | null; fit: string | null; contactId: string | null; stop: boolean };
+    type Found = { key: string; name: string; email: string; profile_url: string; platform: string | null; qualId: string | null; priority: string | null; fit: string | null; contactId: string | null; stop: boolean; facts: string };
     const byKey = new Map<string, Found>();
     const keyOf = (p: Person) => normEmail(p.email) || normUrl(p.url) || normName(p.name);
     const put = (p: Person, extra: Partial<Found>) => {
       const k = keyOf(p);
       if (!k) return;
-      const cur = byKey.get(k) ?? { key: k, name: (p.name ?? "").trim(), email: (p.email ?? "").trim(), profile_url: (p.url ?? "").trim(), platform: null, qualId: null, priority: null, fit: null, contactId: null, stop: false };
+      const cur = byKey.get(k) ?? { key: k, name: (p.name ?? "").trim(), email: (p.email ?? "").trim(), profile_url: (p.url ?? "").trim(), platform: null, qualId: null, priority: null, fit: null, contactId: null, stop: false, facts: "" };
       // The first source to fill a field keeps it, so a saved score is never replaced by a card's copy of it.
       if (!cur.qualId && extra.qualId) cur.qualId = extra.qualId;
       if (!cur.priority && extra.priority) cur.priority = extra.priority;
@@ -167,14 +168,16 @@ export async function GET(request: Request) {
       if (!cur.platform && extra.platform) cur.platform = extra.platform;
       if (!cur.contactId && extra.contactId) cur.contactId = extra.contactId;
       if (extra.stop) cur.stop = true;
+      // What is known about them, so they can be scored again against another profile.
+      if (!cur.facts && extra.facts) cur.facts = extra.facts;
       if (!cur.name && p.name) cur.name = p.name.trim();
       if (!cur.email && p.email) cur.email = p.email.trim();
       if (!cur.profile_url && p.url) cur.profile_url = p.url.trim();
       byKey.set(k, cur);
     };
-    for (const r of [...(quals1 ?? []), ...(quals2 ?? [])] as Record<string, unknown>[]) put({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null }, { qualId: r.id as string, priority: r.priority as string, fit: r.fit as string, platform: (r.platform as string | null) ?? null });
+    for (const r of [...(quals1 ?? []), ...(quals2 ?? [])] as Record<string, unknown>[]) put({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null }, { qualId: r.id as string, priority: r.priority as string, fit: r.fit as string, platform: (r.platform as string | null) ?? null, facts: str(r.source_text, 1200) });
     for (const r of (cards ?? []) as Record<string, unknown>[]) put({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null }, { priority: (r.qual_priority as string | null) ?? null, fit: (r.qual_fit as string | null) ?? null, platform: (r.platform as string | null) ?? null, contactId: (r.contact_id as string | null) ?? null });
-    for (const r of (contacts ?? []) as Record<string, unknown>[]) put({ name: [r.first_name, r.last_name].filter(Boolean).join(" ") || (r.email as string), email: r.email as string }, { contactId: r.id as string, stop: Boolean(r.unsubscribed_at) });
+    for (const r of (contacts ?? []) as Record<string, unknown>[]) put({ name: [r.first_name, r.last_name].filter(Boolean).join(" ") || (r.email as string), email: r.email as string }, { contactId: r.id as string, stop: Boolean(r.unsubscribed_at), facts: [r.company ? `Company: ${r.company}` : "", Array.isArray(r.tags) && r.tags.length ? `Tags: ${(r.tags as string[]).slice(0, 12).join(", ")}` : ""].filter(Boolean).join("\n") });
     const all = Array.from(byKey.values()).sort((x, y) => x.name.toLowerCase().localeCompare(y.name.toLowerCase()));
     const PAGE = 25;
     const page = all.slice(offset, offset + PAGE);
@@ -344,6 +347,19 @@ export async function POST(request: Request) {
       landed[stage.name] = (landed[stage.name] ?? 0) + 1;
     }
     return NextResponse.json({ added, moved, movedTo, stopped: stopIds.size, sameStep: sameStep.slice(0, 12), skipped: already.length, already: already.slice(0, 12), failed, board: board.name, landed });
+  }
+
+  // Take someone off one pipeline from the Qualifier. They stay in Contacts and keep their scores.
+  if (b.action === "remove-from-pipeline") {
+    const boards = await ensureBoards(db, a.planId, "outreach");
+    const board = boards.find((x) => x.id === b.boardId);
+    if (!board) return NextResponse.json({ error: "Choose a pipeline." }, { status: 400 });
+    const idx = await pipelineIndex(db, a.planId);
+    const person = { name: str(b.name, 160), url: str(b.url, 500), email: str(b.email, 200) };
+    const mine = idx.cardOn(person, board.id);
+    if (!mine?.id) return NextResponse.json({ error: `${person.name || "They"} aren't on ${board.name}.` }, { status: 404 });
+    const ok = await removeCardFromPipeline(db, a.planId, mine.id);
+    return ok ? NextResponse.json({ ok: true, board: board.name }) : NextResponse.json({ error: "Couldn't remove them." }, { status: 500 });
   }
 
   // Which people on a list are already on a pipeline (asked before scoring, so no score is spent on them).

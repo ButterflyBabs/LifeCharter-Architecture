@@ -371,10 +371,12 @@ export function extrasApiAccess(extras: AccessExtras | null, path: string, metho
 }
 
 /** A POST/PATCH whose JSON body asks to delete or remove something ({ action: "delete" | "stage-delete" | "share-remove" ... }). */
-export function bodyDeleteVerdict(extras: AccessExtras | null, body: unknown): Verdict {
+export function bodyDeleteVerdict(extras: AccessExtras | null, body: unknown, path?: string): Verdict {
   if (!extras?.noDelete || !body || typeof body !== "object") return ok;
   const b = body as Record<string, unknown>;
   const acts = [b.action, b.op, b.intent].filter((v): v is string => typeof v === "string");
+  // Taking someone off a pipeline is day-to-day outreach work, not deleting data: the contact stays in Contacts with their scores.
+  if (acts.length === 1 && ((path === "/api/dm-pipeline" && acts[0] === "delete") || (path === "/api/qualifier" && acts[0] === "remove-from-pipeline")) && b.delete !== true) return ok;
   if (acts.some((a) => /(^|[-_ ])(delete|remove|destroy|purge)($|[-_ ])/i.test(a)) || b.delete === true) return no(NO_DELETE_MESSAGE);
   return ok;
 }

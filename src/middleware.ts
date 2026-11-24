@@ -605,7 +605,7 @@ export async function middleware(request: NextRequest) {
       // Delete-by-POST ({ action: "delete" | "stage-delete" | "share-remove" ... }): peek at the JSON body.
       if (verdict.allow && memberExtras?.noDelete && ["POST", "PUT", "PATCH"].includes(request.method) && (request.headers.get("content-type") || "").includes("json")) {
         const body = await request.clone().json().catch(() => null);
-        verdict = bodyDeleteVerdict(memberExtras, body);
+        verdict = bodyDeleteVerdict(memberExtras, body, path);
       }
       if (!verdict.allow) {
         // Pages that show the owner's inbox/calendar read "not connected" instead of erroring.
