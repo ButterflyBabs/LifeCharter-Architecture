@@ -4787,6 +4787,19 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
         ]
       },
       {
+        "id": "finding-anyone-in-the-qualifier",
+        "title": "Finding anyone, scored or not",
+        "body": "Open the Audience Qualifier tab. Find anyone sits at the top and lists everyone in your Suite: people from your scored lists, people already on a pipeline and every contact, whether or not they have a score. Type a name, an email or part of a profile link to narrow it. Each screen shows 25 people. Press See more for the next 25. Each row shows their score (or Not scored) and any pipeline they are on. Tick people, choose a pipeline and press Add or move selected. Someone not yet on that pipeline is added (in To reach out, or the step you pick). Someone already on it moves to the step you pick. People who asked to stop cannot be ticked.",
+        "keywords": [
+          "find anyone",
+          "search contacts",
+          "not scored",
+          "see more",
+          "move to a step",
+          "all contacts"
+        ]
+      },
+      {
         "id": "qualifier-on-a-pipeline-card",
         "title": "On a pipeline card",
         "body": "Open any card on an Outreach Pipeline and use its Prospect Qualifier section. The score stays on the card, and you can press Score again later. Under the result, Not right? lets you add what you know about the person and score again without pasting the profile a second time, or set the priority yourself. Setting it yourself changes the card's priority badge and adds a line to the card's notes.",

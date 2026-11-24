@@ -134,6 +134,55 @@ export async function GET(request: Request) {
     return NextResponse.json({ qualification: q ?? null, icps: icps ?? [] });
   }
 
+  // Find anyone: every scored person, every pipeline card and every contact, scored or not, 25 to a screen.
+  const findQ = u.searchParams.get("find");
+  if (findQ !== null) {
+    const q = findQ.trim().replace(/[%,()*\\]/g, "").slice(0, 80);
+    const offset = Math.max(0, Math.min(50000, parseInt(u.searchParams.get("offset") || "0", 10) || 0));
+    const CAP = 1000;
+    const [first, ...rest] = q.split(/\s+/);
+    const last = rest.join(" ");
+    const both = last ? `,and(first_name.ilike.%${first}%,last_name.ilike.%${last}%)` : "";
+    let qq = db.from("icp_qualifications").select(QUAL_COLUMNS).eq("master_plan_id", a.planId).eq("kind", "profile").order("created_at", { ascending: false }).limit(CAP);
+    let aq = db.from("icp_qualifications").select(QUAL_COLUMNS).eq("master_plan_id", a.planId).eq("kind", "audience").order("created_at", { ascending: false }).limit(CAP);
+    let cq = db.from("dm_cards").select("id, name, email, profile_url, platform, contact_id, qual_priority, qual_fit").eq("master_plan_id", a.planId).order("created_at", { ascending: false }).limit(CAP);
+    let kq = db.from("seq_contacts").select("id, email, first_name, last_name, unsubscribed_at").eq("master_plan_id", a.planId).order("last_activity_at", { ascending: false, nullsFirst: false }).limit(CAP);
+    if (q) {
+      const like = `name.ilike.%${q}%,email.ilike.%${q}%,profile_url.ilike.%${q}%`;
+      qq = qq.or(like); aq = aq.or(like); cq = cq.or(like);
+      kq = kq.or(`email.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%,company.ilike.%${q}%${both}`);
+    }
+    const [{ data: quals1 }, { data: quals2 }, { data: cards }, { data: contacts }] = await Promise.all([qq, aq, cq, kq]);
+    type Found = { key: string; name: string; email: string; profile_url: string; platform: string | null; qualId: string | null; priority: string | null; fit: string | null; contactId: string | null; stop: boolean };
+    const byKey = new Map<string, Found>();
+    const keyOf = (p: Person) => normEmail(p.email) || normUrl(p.url) || normName(p.name);
+    const put = (p: Person, extra: Partial<Found>) => {
+      const k = keyOf(p);
+      if (!k) return;
+      const cur = byKey.get(k) ?? { key: k, name: (p.name ?? "").trim(), email: (p.email ?? "").trim(), profile_url: (p.url ?? "").trim(), platform: null, qualId: null, priority: null, fit: null, contactId: null, stop: false };
+      // The first source to fill a field keeps it, so a saved score is never replaced by a card's copy of it.
+      if (!cur.qualId && extra.qualId) cur.qualId = extra.qualId;
+      if (!cur.priority && extra.priority) cur.priority = extra.priority;
+      if (!cur.fit && extra.fit) cur.fit = extra.fit;
+      if (!cur.platform && extra.platform) cur.platform = extra.platform;
+      if (!cur.contactId && extra.contactId) cur.contactId = extra.contactId;
+      if (extra.stop) cur.stop = true;
+      if (!cur.name && p.name) cur.name = p.name.trim();
+      if (!cur.email && p.email) cur.email = p.email.trim();
+      if (!cur.profile_url && p.url) cur.profile_url = p.url.trim();
+      byKey.set(k, cur);
+    };
+    for (const r of [...(quals1 ?? []), ...(quals2 ?? [])] as Record<string, unknown>[]) put({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null }, { qualId: r.id as string, priority: r.priority as string, fit: r.fit as string, platform: (r.platform as string | null) ?? null });
+    for (const r of (cards ?? []) as Record<string, unknown>[]) put({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null }, { priority: (r.qual_priority as string | null) ?? null, fit: (r.qual_fit as string | null) ?? null, platform: (r.platform as string | null) ?? null, contactId: (r.contact_id as string | null) ?? null });
+    for (const r of (contacts ?? []) as Record<string, unknown>[]) put({ name: [r.first_name, r.last_name].filter(Boolean).join(" ") || (r.email as string), email: r.email as string }, { contactId: r.id as string, stop: Boolean(r.unsubscribed_at) });
+    const all = Array.from(byKey.values()).sort((x, y) => x.name.toLowerCase().localeCompare(y.name.toLowerCase()));
+    const PAGE = 25;
+    const page = all.slice(offset, offset + PAGE);
+    const idx = await pipelineIndex(db, a.planId);
+    const rows = page.map((r) => ({ ...r, on_boards: idx.names(idx.boardsOf({ name: r.name, url: r.profile_url, email: r.email })) }));
+    return NextResponse.json({ rows, total: all.length, hasMore: offset + PAGE < all.length, capped: [quals1, quals2, cards, contacts].some((x) => (x ?? []).length >= CAP) });
+  }
+
   const audienceId = u.searchParams.get("audience");
   if (audienceId) {
     const { data } = await db.from("icp_qualifications").select(QUAL_COLUMNS).eq("master_plan_id", a.planId).eq("audience_id", audienceId).limit(2000);
@@ -220,14 +269,25 @@ export async function POST(request: Request) {
   // ── Add scored people to an outreach pipeline ──
   if (b.action === "add-to-pipeline") {
     const ids = (Array.isArray(b.ids) ? b.ids : []).map((x: unknown) => str(x, 40)).filter(Boolean).slice(0, 200);
-    if (!ids.length) return NextResponse.json({ error: "Choose at least one person." }, { status: 400 });
+    // People found by search who have no score yet: they go on the pipeline without one.
+    const people = (Array.isArray(b.people) ? b.people : []).slice(0, 200).map((x: Record<string, unknown>) => ({ name: str(x?.name, 160), email: str(x?.email, 200), url: str(x?.url, 500), platform: str(x?.platform, 10), contactId: str(x?.contactId, 40) })).filter((x: { name: string }) => x.name);
+    if (!ids.length && !people.length) return NextResponse.json({ error: "Choose at least one person." }, { status: 400 });
     const boards = await ensureBoards(db, a.planId, "outreach");
     const board = boards.find((x) => x.id === b.boardId);
     if (!board) return NextResponse.json({ error: "Choose a pipeline." }, { status: 400 });
     const stages = await boardStages(db, a.planId, board.id);
     if (!stages.length) return NextResponse.json({ error: "Add a stage to that pipeline first." }, { status: 400 });
     const tz = await resolveUserTimeZone(str(b.tz, 60) || null);
-    const { data: quals } = await db.from("icp_qualifications").select("id, name, platform, profile_url, email, link_code, fit, level, priority, card_id, result, icp_id").eq("master_plan_id", a.planId).in("id", ids);
+    const { data: quals } = ids.length ? await db.from("icp_qualifications").select("id, name, platform, profile_url, email, link_code, fit, level, priority, card_id, result, icp_id").eq("master_plan_id", a.planId).in("id", ids) : { data: [] as Record<string, unknown>[] };
+    // Anyone who asked to stop is never put on a pipeline.
+    const contactIds = people.map((x: { contactId: string }) => x.contactId).filter(Boolean);
+    const { data: stopped } = contactIds.length ? await db.from("seq_contacts").select("id").eq("master_plan_id", a.planId).in("id", contactIds).not("unsubscribed_at", "is", null) : { data: [] as { id: string }[] };
+    const stopIds = new Set((stopped ?? []).map((x) => x.id as string));
+    type Item = { id: string | null; name: unknown; platform: unknown; profile_url: unknown; email: unknown; link_code: unknown; fit: unknown; level: unknown; priority: unknown; result: unknown; icp_id: unknown; contact_id: string | null };
+    const items: Item[] = [
+      ...(quals ?? []).map((x) => ({ ...(x as Record<string, unknown>), contact_id: null }) as Item),
+      ...people.filter((x: { contactId: string }) => !x.contactId || !stopIds.has(x.contactId)).map((x: { name: string; platform: string; url: string; email: string; contactId: string }) => ({ id: null, name: x.name, platform: x.platform, profile_url: x.url, email: x.email, link_code: null, fit: null, level: null, priority: null, result: null, icp_id: null, contact_id: x.contactId || null }) as Item),
+    ];
     const icpIds = Array.from(new Set((quals ?? []).map((q) => q.icp_id as string | null).filter((x): x is string => !!x)));
     const { data: icpRows } = icpIds.length ? await db.from("icp_profiles").select("id, purpose").eq("master_plan_id", a.planId).in("id", icpIds) : { data: [] as { id: string; purpose: string }[] };
     const purposeOf = new Map((icpRows ?? []).map((r) => [r.id as string, r.purpose as string]));
@@ -242,7 +302,7 @@ export async function POST(request: Request) {
     let failed = 0;
     // A step the person chose on purpose. Someone already on this pipeline moves to it; without one they are left where they are.
     const chosen = stages.find((s) => s.id === str(b.stageId, 40)) ?? null;
-    for (const q of quals ?? []) {
+    for (const q of items) {
       const url = ((q.profile_url as string) || "").trim();
       const email = normEmail(q.email as string | null);
       if (!q.name) { failed++; continue; }
@@ -253,35 +313,37 @@ export async function POST(request: Request) {
         const saved = await moveCard(db, a.planId, mine.id, chosen, board.name, tz);
         if (!saved) { failed++; continue; }
         // Their score goes with the card, and this score now belongs to it.
-        await db.from("dm_cards").update({ qual_priority: q.priority, qual_fit: q.fit, qual_level: q.level, qual_id: q.id }).eq("id", mine.id).eq("master_plan_id", a.planId);
-        await db.from("icp_qualifications").update({ card_id: mine.id }).eq("id", q.id).eq("master_plan_id", a.planId);
+        if (q.id) {
+          await db.from("dm_cards").update({ qual_priority: q.priority, qual_fit: q.fit, qual_level: q.level, qual_id: q.id }).eq("id", mine.id).eq("master_plan_id", a.planId);
+          await db.from("icp_qualifications").update({ card_id: mine.id }).eq("id", q.id).eq("master_plan_id", a.planId);
+        }
         idx.add({ id: mine.id, stage_id: chosen.id, board_id: board.id, name: q.name as string, email: email || null, profile_url: url || null });
         moved++;
         movedTo[chosen.name] = (movedTo[chosen.name] ?? 0) + 1;
         continue;
       }
       // "Add anyway" on a Skip result is a person's own call to reach out, so it starts in To reach out.
-      const key = b.force === true ? "to_reach" : stageKeyFor(q.priority as string, purposeOf.get(q.icp_id as string));
+      const key = b.force === true || !q.id ? "to_reach" : stageKeyFor(q.priority as string, purposeOf.get(q.icp_id as string));
       // A stage the person picked wins over the one the priority would choose.
       const stage = stages.find((s) => s.id === str(b.stageId, 40)) ?? stages.find((s) => s.key === key) ?? stages.find((s) => s.kind === "open") ?? stages[0];
       const platform = PLATFORM_IDS.includes(q.platform as string) ? (q.platform as string) : PLATFORM_IDS.includes(b.platform) ? (b.platform as string) : null;
       const why = str((q.result as { fitReason?: string; reason?: string })?.fitReason, 300) || str((q.result as { reason?: string })?.reason, 300);
-      const notes = `[${dateIn(tz, 0)}] Qualifier: ${q.priority} priority · Fit ${q.fit}${q.level ? ` · ${q.level}` : ""}${why ? `\n${why}` : ""}`;
-      const r = await createCard(db, a.planId, board, stage, tz, { name: q.name as string, profileUrl: url || null, email: email || null, platform, notes });
+      const notes = q.id ? `[${dateIn(tz, 0)}] Qualifier: ${q.priority} priority · Fit ${q.fit}${q.level ? ` · ${q.level}` : ""}${why ? `\n${why}` : ""}` : `[${dateIn(tz, 0)}] Added from Audience Qualifier search (not scored)`;
+      const r = await createCard(db, a.planId, board, stage, tz, { name: q.name as string, profileUrl: url || null, email: email || null, platform, notes, contactId: q.contact_id });
       if ("error" in r || !r.card) { failed++; continue; }
-      const patch: Record<string, unknown> = { qual_priority: q.priority, qual_fit: q.fit, qual_level: q.level, qual_id: q.id };
+      const patch: Record<string, unknown> = q.id ? { qual_priority: q.priority, qual_fit: q.fit, qual_level: q.level, qual_id: q.id } : {};
       // A personal registration link that came with the list stays with the person.
       if (q.link_code) {
         const { data: taken } = await db.from("dm_cards").select("id").eq("link_code", q.link_code).maybeSingle();
         if (!taken) patch.link_code = q.link_code;
       }
-      await db.from("dm_cards").update(patch).eq("id", r.card.id).eq("master_plan_id", a.planId);
-      await db.from("icp_qualifications").update({ card_id: r.card.id }).eq("id", q.id).eq("master_plan_id", a.planId);
+      if (Object.keys(patch).length) await db.from("dm_cards").update(patch).eq("id", r.card.id).eq("master_plan_id", a.planId);
+      if (q.id) await db.from("icp_qualifications").update({ card_id: r.card.id }).eq("id", q.id).eq("master_plan_id", a.planId);
       idx.add({ board_id: board.id, name: q.name as string, email: email || null, profile_url: url || null });
       added++;
       landed[stage.name] = (landed[stage.name] ?? 0) + 1;
     }
-    return NextResponse.json({ added, moved, movedTo, sameStep: sameStep.slice(0, 12), skipped: already.length, already: already.slice(0, 12), failed, board: board.name, landed });
+    return NextResponse.json({ added, moved, movedTo, stopped: stopIds.size, sameStep: sameStep.slice(0, 12), skipped: already.length, already: already.slice(0, 12), failed, board: board.name, landed });
   }
 
   // Which people on a list are already on a pipeline (asked before scoring, so no score is spent on them).

@@ -142,7 +142,8 @@ function PlatformPick({ value, onChange }: { value: string; onChange: (v: string
   );
 }
 
-function AddToPipeline({ boards, stages, ids, platform, post, setMsg, onAdded, labelText, force }: { boards: Board[]; stages?: Stages; ids: string[]; platform?: string; force?: boolean; post: Post; setMsg: (m: string) => void; onAdded: () => void; labelText?: string }) {
+type FoundPerson = { name: string; email: string; url: string; platform: string; contactId: string };
+function AddToPipeline({ boards, stages, ids, people, platform, post, setMsg, onAdded, labelText, force }: { boards: Board[]; stages?: Stages; ids: string[]; people?: FoundPerson[]; platform?: string; force?: boolean; post: Post; setMsg: (m: string) => void; onAdded: () => void; labelText?: string }) {
   const [boardId, setBoardId] = useState(boards[0]?.id ?? "");
   const [stageId, setStageId] = useState("");
   const [busy, setBusy] = useState(false);
@@ -164,10 +165,10 @@ function AddToPipeline({ boards, stages, ids, platform, post, setMsg, onAdded, l
         </label>
       )}
       <Button
-        disabled={busy || !ids.length}
+        disabled={busy || (!ids.length && !(people ?? []).length)}
         onClick={async () => {
           setBusy(true);
-          const r = (await post({ action: "add-to-pipeline", ids, boardId, stageId: stageId || undefined, platform, force: !!force })) as { added?: number; moved?: number; movedTo?: Record<string, number>; sameStep?: string[]; skipped?: number; already?: string[]; failed?: number; board?: string; landed?: Record<string, number> } | null;
+          const r = (await post({ action: "add-to-pipeline", ids, people: people ?? [], boardId, stageId: stageId || undefined, platform, force: !!force })) as { added?: number; moved?: number; movedTo?: Record<string, number>; sameStep?: string[]; skipped?: number; already?: string[]; failed?: number; stopped?: number; board?: string; landed?: Record<string, number> } | null;
           setBusy(false);
           if (r) {
             const parts: string[] = [];
@@ -175,6 +176,7 @@ function AddToPipeline({ boards, stages, ids, platform, post, setMsg, onAdded, l
             if (r.moved) parts.push(`${r.moved} already on ${r.board} moved: ${Object.entries(r.movedTo ?? {}).map(([k, n]) => `${k} (${n})`).join(", ")}.`);
             if (r.sameStep?.length) parts.push(`${r.sameStep.join(", ")} ${r.sameStep.length === 1 ? "is" : "are"} already in that step.`);
             if (r.skipped) parts.push(`${r.skipped} already on ${r.board} and left where they are: ${(r.already ?? []).join(", ")}${r.skipped > (r.already ?? []).length ? ", and more" : ""}. Choose a step under Start in / move to and press the button again to move them.`);
+            if (r.stopped) parts.push(`${r.stopped} not added because they asked to stop.`);
             if (r.failed) parts.push(`${r.failed} couldn't be added or moved.`);
             setMsg(parts.join(" ") || "Nothing changed.");
             onAdded();
@@ -324,6 +326,81 @@ function rowsFromTable(table: string[][]): ListRow[] {
   }).filter((r) => r.name && r.facts);
 }
 
+
+type Found = { key: string; name: string; email: string; profile_url: string; platform: string | null; qualId: string | null; priority: string | null; fit: string | null; contactId: string | null; stop: boolean; on_boards: { id: string; name: string }[] };
+
+// Everyone the Suite knows: scored people, people on a pipeline and every contact, scored or not. 25 to a screen.
+function FindAnyone({ boards, stages, post, setMsg, onChanged }: { boards: Board[]; stages: Stages; post: Post; setMsg: (m: string) => void; onChanged: () => void }) {
+  const [q, setQ] = useState("");
+  const [rows, setRows] = useState<Found[]>([]);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [capped, setCapped] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const seq = useRef(0);
+
+  const load = useCallback(async (query: string, more: boolean, have: number) => {
+    const mine = ++seq.current;
+    setBusy(true);
+    const d = await fetch(`/api/qualifier?find=${encodeURIComponent(query)}&offset=${more ? have : 0}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+    if (mine !== seq.current) return;
+    const list = (d.rows ?? []) as Found[];
+    setRows((cur) => (more ? [...cur, ...list.filter((x) => !cur.some((c) => c.key === x.key))] : list));
+    setTotal(d.total ?? 0);
+    setHasMore(Boolean(d.hasMore));
+    setCapped(Boolean(d.capped));
+    setBusy(false);
+  }, []);
+
+  // Everyone on open; then the search runs as you type.
+  useEffect(() => {
+    const t = setTimeout(() => void load(q, false, 0), q ? 300 : 0);
+    return () => clearTimeout(t);
+  }, [q, load]);
+
+  const chosen = rows.filter((r) => picked.has(r.key));
+  const ids = chosen.filter((r) => r.qualId).map((r) => r.qualId as string);
+  const people: FoundPerson[] = chosen.filter((r) => !r.qualId).map((r) => ({ name: r.name, email: r.email, url: r.profile_url, platform: r.platform ?? "", contactId: r.contactId ?? "" }));
+
+  return (
+    <div className={`${panel} space-y-3`}>
+      <div>
+        <h2 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Find anyone</h2>
+        <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Everyone in your Suite, scored or not: your scored lists, your pipelines and your contacts. Search by name, email or profile link. Tick people, choose a pipeline and a step, and add them, or move them if they are already on it.</p>
+      </div>
+      <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name, email or profile link" aria-label="Search everyone" />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <span className="text-xs text-[#7a8a99]">{busy && !rows.length ? "Looking…" : `${total.toLocaleString()} ${total === 1 ? "person" : "people"}${q ? " match" : ""}${capped ? " (showing the newest of a very large set: narrow the search to find anyone else)" : ""}`}</span>
+        <AddToPipeline boards={boards} stages={stages} ids={ids} people={people} post={post} setMsg={setMsg} onAdded={() => { setPicked(new Set()); onChanged(); void load(q, false, 0); }} labelText={`Add or move ${picked.size} selected`} />
+      </div>
+      {rows.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead><tr className="border-b border-[#1a2b4a]/10 text-xs text-[#7a8a99]"><th className="w-8 py-2" /><th className="py-2 pr-3">Person</th><th className="py-2 pr-3">Score</th><th className="py-2">On a pipeline</th></tr></thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.key} className="border-b border-[#1a2b4a]/5 align-top">
+                  <td className="py-2"><input type="checkbox" aria-label={`Select ${r.name}`} disabled={r.stop} checked={picked.has(r.key)} onChange={(e) => { const n = new Set(picked); if (e.target.checked) n.add(r.key); else n.delete(r.key); setPicked(n); }} /></td>
+                  <td className="py-2 pr-3">
+                    {r.profile_url ? <a href={r.profile_url} target="_blank" rel="noreferrer" className="font-medium text-[#1a2b4a] hover:underline dark:text-[#F8F5F0]">{r.name}</a> : <span className="font-medium text-[#1a2b4a] dark:text-[#F8F5F0]">{r.name}</span>}
+                    {r.email && r.email !== r.name && <p className="text-xs text-[#7a8a99]">{r.email}</p>}
+                    {r.stop && <p className="text-xs font-medium text-[#C76F56]">Asked to stop: can&rsquo;t be added</p>}
+                  </td>
+                  <td className="py-2 pr-3">{r.priority ? <PriorityBadge priority={r.priority} small /> : <span className="text-xs text-[#7a8a99]">Not scored</span>}</td>
+                  <td className="py-2 text-xs text-[#2E7C83]">{r.on_boards.length ? r.on_boards.map((b) => b.name).join(", ") : <span className="text-[#7a8a99]">Not on one</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {!busy && !rows.length && <p className="py-2 text-sm text-[#7a8a99]">No one found.</p>}
+      {hasMore && <div className="flex justify-center"><Button variant="outline" disabled={busy} onClick={() => void load(q, true, rows.length)}>{busy ? "Loading…" : "See more"}</Button></div>}
+    </div>
+  );
+}
+
 function ListTab({ icps, boards, stages, audiences, post, setMsg, onChanged }: { icps: Icp[]; boards: Board[]; stages: Stages; audiences: Audience[]; post: Post; setMsg: (m: string) => void; onChanged: () => void }) {
   const [icpId, setIcpId] = useState(() => lastIcp(icps));
   const isPartner = icps.find((i) => i.id === icpId)?.purpose === "partner";
@@ -408,6 +485,7 @@ function ListTab({ icps, boards, stages, audiences, post, setMsg, onChanged }: {
 
   return (
     <div className="space-y-5">
+      <FindAnyone boards={boards} stages={stages} post={post} setMsg={setMsg} onChanged={onChanged} />
       <div className={`${panel} space-y-3`}>
         <h2 className="text-lg font-semibold text-[#1a2b4a] dark:text-[#F8F5F0]">Score a whole list</h2>
         {isPartner ? (
