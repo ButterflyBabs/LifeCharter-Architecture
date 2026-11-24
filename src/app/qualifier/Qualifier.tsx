@@ -455,14 +455,14 @@ function FindAnyone({ icps, boards, stages, post, setMsg, onChanged, onScored }:
         <span className="pb-2.5 text-xs text-[#7a8a99]">{ranged ? "Showing every profile run through the Qualifier in these dates, newest first." : "Pick dates to see only the profiles run through the Qualifier in that period."}</span>
       </div>
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <span className="text-xs text-[#7a8a99]">{busy && !rows.length ? "Looking…" : `${total.toLocaleString()} ${ranged ? (total === 1 ? "profile" : "profiles") : (total === 1 ? "person" : "people")}${q ? " match" : ""}${capped ? " (showing the newest of a very large set: narrow the search to find anyone else)" : ""}`}</span>
+        <span className="text-xs text-[#7a8a99]">{picked.size > 0 && <button type="button" onClick={() => setPicked(new Set())} className="mr-2 font-medium text-[#2E7C83] hover:underline">{picked.size} selected: clear</button>}{busy && !rows.length ? "Looking…" : `${total.toLocaleString()} ${ranged ? (total === 1 ? "profile" : "profiles") : (total === 1 ? "person" : "people")}${q ? " match" : ""}${capped ? " (showing the newest of a very large set: narrow the search to find anyone else)" : ""}`}</span>
         <AddToPipeline boards={boards} stages={stages} ids={ids} people={people} post={post} setMsg={setMsg} onAdded={() => { setPicked(new Set()); onChanged(); void load(q, false, 0); }} labelText={`Add or move ${picked.size} selected`} />
       </div>
       <RescoreBar icps={icps} people={chosen.filter((r) => !r.stop).map((r) => ({ name: r.name, url: r.profile_url, email: r.email, facts: r.facts }))} post={post} setMsg={setMsg} onScored={onScored} />
       {rows.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead><tr className="border-b border-[#1a2b4a]/10 text-xs text-[#7a8a99]"><th className="w-8 py-2" /><th className="py-2 pr-3">Person</th><th className="py-2 pr-3">Score</th>{ranged && <th className="py-2 pr-3">Scored</th>}<th className="py-2">On a pipeline</th></tr></thead>
+            <thead><tr className="border-b border-[#1a2b4a]/10 text-xs text-[#7a8a99]"><th className="w-8 py-2"><input type="checkbox" aria-label="Select everyone shown" checked={rows.some((r) => !r.stop) && rows.filter((r) => !r.stop).every((r) => picked.has(r.key))} onChange={(e) => { const n = new Set(picked); rows.filter((r) => !r.stop).forEach((r) => (e.target.checked ? n.add(r.key) : n.delete(r.key))); setPicked(n); }} /></th><th className="py-2 pr-3">Person</th><th className="py-2 pr-3">Score</th>{ranged && <th className="py-2 pr-3">Scored</th>}<th className="py-2">On a pipeline</th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.key} className="border-b border-[#1a2b4a]/5 align-top">
