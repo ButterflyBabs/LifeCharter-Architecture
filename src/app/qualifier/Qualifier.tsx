@@ -98,7 +98,7 @@ export default function Qualifier() {
         <p className="text-sm text-[#7a8a99]">Loading…</p>
       ) : tab === "icp" ? (
         <IcpTab icps={icps} offers={offers} post={post} setMsg={setMsg} onChanged={load} />
-      ) : !icps.length ? (
+      ) : !icps.length && tab === "one" ? (
         <div className={panel}>
           <p className="text-sm text-[#1a2b4a] dark:text-[#F8F5F0]">Start by describing who you serve. Every score is measured against an Ideal Client Profile.</p>
           <Button className="mt-3" onClick={() => setTab("icp")}><Plus className="mr-1 h-4 w-4" /> Create your first Ideal Client Profile</Button>
@@ -462,7 +462,7 @@ function FindAnyone({ icps, boards, stages, post, setMsg, onChanged, onScored }:
       {rows.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead><tr className="border-b border-[#1a2b4a]/10 text-xs text-[#7a8a99]"><th className="w-8 py-2"><input type="checkbox" aria-label="Select everyone shown" checked={rows.some((r) => !r.stop) && rows.filter((r) => !r.stop).every((r) => picked.has(r.key))} onChange={(e) => { const n = new Set(picked); rows.filter((r) => !r.stop).forEach((r) => (e.target.checked ? n.add(r.key) : n.delete(r.key))); setPicked(n); }} /></th><th className="py-2 pr-3">Person</th><th className="py-2 pr-3">Score</th>{ranged && <th className="py-2 pr-3">Scored</th>}<th className="py-2">On a pipeline</th></tr></thead>
+            <thead><tr className="border-b border-[#1a2b4a]/10 text-xs text-[#7a8a99]"><th className="w-8 py-2"><input type="checkbox" aria-label="Select everyone shown" checked={rows.some((r) => !r.stop) && rows.filter((r) => !r.stop).every((r) => picked.has(r.key))} onChange={(e) => { const n = new Set(picked); rows.filter((r) => !r.stop).forEach((r) => (e.target.checked ? n.add(r.key) : n.delete(r.key))); setPicked(n); }} /></th><th className="py-2 pr-3">Person</th><th className="py-2 pr-3">Score</th><th className="py-2 pr-3">Date scored</th><th className="py-2">On a pipeline</th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.key} className="border-b border-[#1a2b4a]/5 align-top">
@@ -473,7 +473,7 @@ function FindAnyone({ icps, boards, stages, post, setMsg, onChanged, onScored }:
                     {r.stop && <p className="text-xs font-medium text-[#C76F56]">Asked to stop: can&rsquo;t be added</p>}
                   </td>
                   <td className="py-2 pr-3">{r.priority ? <PriorityBadge priority={r.priority} small /> : <span className="text-xs text-[#7a8a99]">Not scored</span>}</td>
-                  {ranged && <td className="py-2 pr-3 text-xs text-[#5a6472] dark:text-[#b8c2cf]">{r.scored_at ? new Date(r.scored_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : ""}<span className="block text-[#7a8a99]">{[r.icp_name, r.list_name].filter(Boolean).join(" · ")}</span></td>}
+                  <td className="py-2 pr-3 text-xs text-[#5a6472] dark:text-[#b8c2cf]">{r.scored_at ? <><span className="font-medium">{new Date(r.scored_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span><span className="block text-[#7a8a99]">{[r.icp_name, r.list_name].filter(Boolean).join(" · ")}</span></> : <span className="text-[#7a8a99]">Not scored</span>}</td>
                   <td className="py-2 text-xs text-[#2E7C83]">{r.on_boards.length ? <OnBoards person={r} boards={r.on_boards} post={post} setMsg={setMsg} onRemoved={() => { onChanged(); void load(q, false, 0); }} /> : <span className="text-[#7a8a99]">Not on one</span>}</td>
                 </tr>
               ))}
@@ -699,7 +699,7 @@ function ListTab({ icps, boards, stages, audiences, post, setMsg, onChanged }: {
                   <th className="w-8 py-2">
                     <input type="checkbox" aria-label="Select everyone shown" checked={visible.length > 0 && visible.every((r) => picked.has(r.id))} onChange={(e) => { const n = new Set(picked); visible.forEach((r) => (e.target.checked ? n.add(r.id) : n.delete(r.id))); setPicked(n); }} />
                   </th>
-                  <th className="py-2 pr-3">Person</th><th className="py-2 pr-3">Priority</th><th className="py-2 pr-3">Fit</th><th className="py-2 pr-3">Why</th><th className="py-2">Likely level</th>
+                  <th className="py-2 pr-3">Person</th><th className="py-2 pr-3">Priority</th><th className="py-2 pr-3">Date scored</th><th className="py-2 pr-3">Fit</th><th className="py-2 pr-3">Why</th><th className="py-2">Likely level</th>
                 </tr>
               </thead>
               <tbody>
@@ -715,6 +715,7 @@ function ListTab({ icps, boards, stages, audiences, post, setMsg, onChanged }: {
                         {(r.on_boards ?? []).length > 0 && <p className="text-xs font-medium text-[#8a6a15] dark:text-[#e6d28a]">Also on: <OnBoards person={r} boards={r.on_boards ?? []} post={post} setMsg={setMsg} onRemoved={() => void openAudience(open.id)} /></p>}
                       </td>
                       <td className="py-2 pr-3"><PriorityBadge priority={r.priority} small /></td>
+                      <td className="py-2 pr-3 text-xs font-medium text-[#5a6472] dark:text-[#b8c2cf]">{new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td>
                       <td className="py-2 pr-3 text-xs font-semibold text-[#5a6472] dark:text-[#b8c2cf]">{r.fit === "BORDERLINE" ? "Borderline" : r.fit === "YES" ? "Yes" : "No"}</td>
                       <td className="py-2 pr-3 text-[#1a2b4a] dark:text-[#F8F5F0]">{res.reason}</td>
                       <td className="py-2 text-xs text-[#7a8a99]">{r.level}</td>

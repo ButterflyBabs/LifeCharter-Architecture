@@ -176,15 +176,21 @@ export async function GET(request: Request) {
       kq = kq.or(`email.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%,company.ilike.%${q}%${both}`);
     }
     const [{ data: quals1 }, { data: quals2 }, { data: cards }, { data: contacts }] = await Promise.all([qq, aq, cq, kq]);
-    type Found = { key: string; name: string; email: string; profile_url: string; platform: string | null; qualId: string | null; priority: string | null; fit: string | null; contactId: string | null; stop: boolean; facts: string };
+    type Found = { key: string; name: string; email: string; profile_url: string; platform: string | null; qualId: string | null; priority: string | null; fit: string | null; contactId: string | null; stop: boolean; facts: string; scored_at: string | null; icp_name: string; audId: string | null };
     const byKey = new Map<string, Found>();
     const keyOf = (p: Person) => normEmail(p.email) || normUrl(p.url) || normName(p.name);
     const put = (p: Person, extra: Partial<Found>) => {
       const k = keyOf(p);
       if (!k) return;
-      const cur = byKey.get(k) ?? { key: k, name: (p.name ?? "").trim(), email: (p.email ?? "").trim(), profile_url: (p.url ?? "").trim(), platform: null, qualId: null, priority: null, fit: null, contactId: null, stop: false, facts: "" };
+      const cur = byKey.get(k) ?? { key: k, name: (p.name ?? "").trim(), email: (p.email ?? "").trim(), profile_url: (p.url ?? "").trim(), platform: null, qualId: null, priority: null, fit: null, contactId: null, stop: false, facts: "", scored_at: null, icp_name: "", audId: null };
       // The first source to fill a field keeps it, so a saved score is never replaced by a card's copy of it.
-      if (!cur.qualId && extra.qualId) cur.qualId = extra.qualId;
+      // A person scored more than once shows their latest score.
+      if (extra.qualId && extra.scored_at && (!cur.scored_at || extra.scored_at > cur.scored_at)) {
+        cur.qualId = extra.qualId; cur.scored_at = extra.scored_at; cur.icp_name = extra.icp_name ?? ""; cur.audId = extra.audId ?? null;
+        if (extra.priority) cur.priority = extra.priority;
+        if (extra.fit) cur.fit = extra.fit;
+        if (extra.facts) cur.facts = extra.facts;
+      }
       if (!cur.priority && extra.priority) cur.priority = extra.priority;
       if (!cur.fit && extra.fit) cur.fit = extra.fit;
       if (!cur.platform && extra.platform) cur.platform = extra.platform;
@@ -197,14 +203,17 @@ export async function GET(request: Request) {
       if (!cur.profile_url && p.url) cur.profile_url = p.url.trim();
       byKey.set(k, cur);
     };
-    for (const r of [...(quals1 ?? []), ...(quals2 ?? [])] as Record<string, unknown>[]) put({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null }, { qualId: r.id as string, priority: r.priority as string, fit: r.fit as string, platform: (r.platform as string | null) ?? null, facts: str(r.source_text, 1200) });
+    for (const r of [...(quals1 ?? []), ...(quals2 ?? [])] as Record<string, unknown>[]) put({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null }, { qualId: r.id as string, priority: r.priority as string, fit: r.fit as string, platform: (r.platform as string | null) ?? null, facts: str(r.source_text, 1200), scored_at: r.created_at as string, icp_name: (r.icp_name as string | null) ?? "", audId: (r.audience_id as string | null) ?? null });
     for (const r of (cards ?? []) as Record<string, unknown>[]) put({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null }, { priority: (r.qual_priority as string | null) ?? null, fit: (r.qual_fit as string | null) ?? null, platform: (r.platform as string | null) ?? null, contactId: (r.contact_id as string | null) ?? null });
     for (const r of (contacts ?? []) as Record<string, unknown>[]) put({ name: [r.first_name, r.last_name].filter(Boolean).join(" ") || (r.email as string), email: r.email as string }, { contactId: r.id as string, stop: Boolean(r.unsubscribed_at), facts: [r.company ? `Company: ${r.company}` : "", Array.isArray(r.tags) && r.tags.length ? `Tags: ${(r.tags as string[]).slice(0, 12).join(", ")}` : ""].filter(Boolean).join("\n") });
     const all = Array.from(byKey.values()).sort((x, y) => x.name.toLowerCase().localeCompare(y.name.toLowerCase()));
     const PAGE = 25;
     const page = all.slice(offset, offset + PAGE);
     const idx = await pipelineIndex(db, a.planId);
-    const rows = page.map((r) => ({ ...r, on_boards: idx.names(idx.boardsOf({ name: r.name, url: r.profile_url, email: r.email })) }));
+    const pageAud = Array.from(new Set(page.map((r) => r.audId).filter((x): x is string => !!x)));
+    const { data: pageAuds } = pageAud.length ? await db.from("icp_audiences").select("id, name").eq("master_plan_id", a.planId).in("id", pageAud) : { data: [] as { id: string; name: string }[] };
+    const pageAudName = new Map((pageAuds ?? []).map((x) => [x.id as string, x.name as string]));
+    const rows = page.map(({ audId, ...r }) => ({ ...r, list_name: r.qualId ? (audId ? pageAudName.get(audId) ?? "" : "One profile") : "", on_boards: idx.names(idx.boardsOf({ name: r.name, url: r.profile_url, email: r.email })) }));
     return NextResponse.json({ rows, total: all.length, hasMore: offset + PAGE < all.length, capped: [quals1, quals2, cards, contacts].some((x) => (x ?? []).length >= CAP) });
   }
 
