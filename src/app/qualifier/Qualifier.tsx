@@ -396,7 +396,7 @@ function OnBoards({ person, boards, post, setMsg, onRemoved, className }: { pers
   );
 }
 
-type Found = { key: string; name: string; email: string; profile_url: string; platform: string | null; qualId: string | null; priority: string | null; fit: string | null; contactId: string | null; stop: boolean; facts: string; on_boards: { id: string; name: string }[] };
+type Found = { key: string; name: string; email: string; profile_url: string; platform: string | null; qualId: string | null; priority: string | null; fit: string | null; contactId: string | null; stop: boolean; facts: string; scored_at?: string; icp_name?: string; list_name?: string; on_boards: { id: string; name: string }[] };
 
 // Everyone the Suite knows: scored people, people on a pipeline and every contact, scored or not. 25 to a screen.
 function FindAnyone({ icps, boards, stages, post, setMsg, onChanged, onScored }: { icps: Icp[]; boards: Board[]; stages: Stages; post: Post; setMsg: (m: string) => void; onChanged: () => void; onScored: (audienceId: string) => void }) {
@@ -408,11 +408,16 @@ function FindAnyone({ icps, boards, stages, post, setMsg, onChanged, onScored }:
   const [busy, setBusy] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const seq = useRef(0);
+  // Scored in a date range: from the start of the first day to the end of the last, in the browser's own time zone.
+  const [fromDay, setFromDay] = useState("");
+  const [toDay, setToDay] = useState("");
+  const ranged = Boolean(fromDay || toDay);
 
   const load = useCallback(async (query: string, more: boolean, have: number) => {
     const mine = ++seq.current;
     setBusy(true);
-    const d = await fetch(`/api/qualifier?find=${encodeURIComponent(query)}&offset=${more ? have : 0}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+    const range = [fromDay ? `&from=${encodeURIComponent(new Date(`${fromDay}T00:00:00`).toISOString())}` : "", toDay ? `&to=${encodeURIComponent(new Date(new Date(`${toDay}T00:00:00`).getTime() + 86_400_000).toISOString())}` : ""].join("");
+    const d = await fetch(`/api/qualifier?find=${encodeURIComponent(query)}&offset=${more ? have : 0}${range}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
     if (mine !== seq.current) return;
     const list = (d.rows ?? []) as Found[];
     setRows((cur) => (more ? [...cur, ...list.filter((x) => !cur.some((c) => c.key === x.key))] : list));
@@ -420,7 +425,7 @@ function FindAnyone({ icps, boards, stages, post, setMsg, onChanged, onScored }:
     setHasMore(Boolean(d.hasMore));
     setCapped(Boolean(d.capped));
     setBusy(false);
-  }, []);
+  }, [fromDay, toDay]);
 
   // Everyone on open; then the search runs as you type.
   useEffect(() => {
@@ -439,15 +444,25 @@ function FindAnyone({ icps, boards, stages, post, setMsg, onChanged, onScored }:
         <p className="text-sm text-[#5a6472] dark:text-[#b8c2cf]">Everyone in your Suite, scored or not: your scored lists, your pipelines and your contacts. Search by name, email or profile link. Tick people, choose a pipeline and a step, and add them, or move them if they are already on it.</p>
       </div>
       <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name, email or profile link" aria-label="Search everyone" />
+      <div className="flex flex-wrap items-end gap-3">
+        <label className={label}>Scored from
+          <input type="date" value={fromDay} max={toDay || undefined} onChange={(e) => setFromDay(e.target.value)} className={`${box} h-10 w-44`} />
+        </label>
+        <label className={label}>to
+          <input type="date" value={toDay} min={fromDay || undefined} onChange={(e) => setToDay(e.target.value)} className={`${box} h-10 w-44`} />
+        </label>
+        {ranged && <button type="button" onClick={() => { setFromDay(""); setToDay(""); }} className="pb-2.5 text-sm text-[#2E7C83] hover:underline">Show everyone</button>}
+        <span className="pb-2.5 text-xs text-[#7a8a99]">{ranged ? "Showing every profile run through the Qualifier in these dates, newest first." : "Pick dates to see only the profiles run through the Qualifier in that period."}</span>
+      </div>
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <span className="text-xs text-[#7a8a99]">{busy && !rows.length ? "Looking…" : `${total.toLocaleString()} ${total === 1 ? "person" : "people"}${q ? " match" : ""}${capped ? " (showing the newest of a very large set: narrow the search to find anyone else)" : ""}`}</span>
+        <span className="text-xs text-[#7a8a99]">{busy && !rows.length ? "Looking…" : `${total.toLocaleString()} ${ranged ? (total === 1 ? "profile" : "profiles") : (total === 1 ? "person" : "people")}${q ? " match" : ""}${capped ? " (showing the newest of a very large set: narrow the search to find anyone else)" : ""}`}</span>
         <AddToPipeline boards={boards} stages={stages} ids={ids} people={people} post={post} setMsg={setMsg} onAdded={() => { setPicked(new Set()); onChanged(); void load(q, false, 0); }} labelText={`Add or move ${picked.size} selected`} />
       </div>
       <RescoreBar icps={icps} people={chosen.filter((r) => !r.stop).map((r) => ({ name: r.name, url: r.profile_url, email: r.email, facts: r.facts }))} post={post} setMsg={setMsg} onScored={onScored} />
       {rows.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead><tr className="border-b border-[#1a2b4a]/10 text-xs text-[#7a8a99]"><th className="w-8 py-2" /><th className="py-2 pr-3">Person</th><th className="py-2 pr-3">Score</th><th className="py-2">On a pipeline</th></tr></thead>
+            <thead><tr className="border-b border-[#1a2b4a]/10 text-xs text-[#7a8a99]"><th className="w-8 py-2" /><th className="py-2 pr-3">Person</th><th className="py-2 pr-3">Score</th>{ranged && <th className="py-2 pr-3">Scored</th>}<th className="py-2">On a pipeline</th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.key} className="border-b border-[#1a2b4a]/5 align-top">
@@ -458,6 +473,7 @@ function FindAnyone({ icps, boards, stages, post, setMsg, onChanged, onScored }:
                     {r.stop && <p className="text-xs font-medium text-[#C76F56]">Asked to stop: can&rsquo;t be added</p>}
                   </td>
                   <td className="py-2 pr-3">{r.priority ? <PriorityBadge priority={r.priority} small /> : <span className="text-xs text-[#7a8a99]">Not scored</span>}</td>
+                  {ranged && <td className="py-2 pr-3 text-xs text-[#5a6472] dark:text-[#b8c2cf]">{r.scored_at ? new Date(r.scored_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : ""}<span className="block text-[#7a8a99]">{[r.icp_name, r.list_name].filter(Boolean).join(" · ")}</span></td>}
                   <td className="py-2 text-xs text-[#2E7C83]">{r.on_boards.length ? <OnBoards person={r} boards={r.on_boards} post={post} setMsg={setMsg} onRemoved={() => { onChanged(); void load(q, false, 0); }} /> : <span className="text-[#7a8a99]">Not on one</span>}</td>
                 </tr>
               ))}

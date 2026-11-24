@@ -141,6 +141,28 @@ export async function GET(request: Request) {
     const q = findQ.trim().replace(/[%,()*\\]/g, "").slice(0, 80);
     const offset = Math.max(0, Math.min(50000, parseInt(u.searchParams.get("offset") || "0", 10) || 0));
     const CAP = 1000;
+    // A date range lists everyone who was scored in it (every run, newest first), straight from the database so nothing is cut off.
+    const fromAt = Date.parse(u.searchParams.get("from") || "");
+    const toAt = Date.parse(u.searchParams.get("to") || "");
+    if (Number.isFinite(fromAt) || Number.isFinite(toAt)) {
+      let rq = db.from("icp_qualifications").select(`${QUAL_COLUMNS}, source_text`, { count: "exact" }).eq("master_plan_id", a.planId).order("created_at", { ascending: false }).order("id").range(offset, offset + 24);
+      if (Number.isFinite(fromAt)) rq = rq.gte("created_at", new Date(fromAt).toISOString());
+      if (Number.isFinite(toAt)) rq = rq.lt("created_at", new Date(toAt).toISOString());
+      if (q) rq = rq.or(`name.ilike.%${q}%,email.ilike.%${q}%,profile_url.ilike.%${q}%`);
+      const { data: ran, count } = await rq;
+      const audIds = Array.from(new Set((ran ?? []).map((r) => r.audience_id as string | null).filter((x): x is string => !!x)));
+      const { data: auds } = audIds.length ? await db.from("icp_audiences").select("id, name").eq("master_plan_id", a.planId).in("id", audIds) : { data: [] as { id: string; name: string }[] };
+      const audName = new Map((auds ?? []).map((x) => [x.id as string, x.name as string]));
+      const idx2 = await pipelineIndex(db, a.planId);
+      const out = (ran ?? []).map((r) => ({
+        key: r.id as string, name: r.name as string, email: (r.email as string | null) ?? "", profile_url: (r.profile_url as string | null) ?? "", platform: (r.platform as string | null) ?? null,
+        qualId: r.id as string, priority: r.priority as string, fit: r.fit as string, contactId: null, stop: false, facts: str(r.source_text, 1200),
+        scored_at: r.created_at as string, icp_name: (r.icp_name as string | null) ?? "", list_name: r.audience_id ? audName.get(r.audience_id as string) ?? "" : "One profile",
+        on_boards: idx2.names(idx2.boardsOf({ name: r.name as string, url: r.profile_url as string | null, email: r.email as string | null })),
+      }));
+      const total = count ?? out.length;
+      return NextResponse.json({ rows: out, total, hasMore: offset + 25 < total, capped: false });
+    }
     const [first, ...rest] = q.split(/\s+/);
     const last = rest.join(" ");
     const both = last ? `,and(first_name.ilike.%${first}%,last_name.ilike.%${last}%)` : "";
