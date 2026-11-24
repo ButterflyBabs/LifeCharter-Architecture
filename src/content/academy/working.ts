@@ -2084,7 +2084,7 @@ export const WORKING: Lesson[] = [
           "Paste their profile text.",
           "Press Score this prospect.",
           "Read the priority, the fit, their level, the gap and the warm DM angle.",
-          "Choose a pipeline and press Add to pipeline if you want to reach out. If the score is Skip, the button reads Add anyway, and you can still add them. They start in To reach out. Use Start in to choose a different stage.",
+          "Choose a pipeline and press Add to pipeline if you want to reach out. If the score is Skip, the button reads Add anyway, and you can still add them. They start in To reach out. Use Start in / move to to choose a different stage. If they are already on that pipeline, the same choice moves their card to that step instead.",
         ],
         tips: [
           "For the best read, paste their profile page and their recent posts. LinkedIn keeps some of a profile on separate pages, so paste those into More of their profile.",
@@ -2109,7 +2109,7 @@ export const WORKING: Lesson[] = [
       },
       {
         heading: "Adding a scored list to a pipeline",
-        text: "Open a list under Your scored lists. Everyone scored High who is not already on a pipeline starts ticked. Change the ticks, choose a pipeline and press the Add selected to pipeline button. It warns you who is already on a pipeline, and nobody goes on the same pipeline twice. High priority starts in To reach out, and Medium and Low start in Nurture. If the pipeline does not have that stage, they go to its first open stage.",
+        text: "Open a list under Your scored lists. Everyone scored High who is not already on a pipeline starts ticked. Change the ticks, choose a pipeline and press the Add selected to pipeline button. It warns you who is already on a pipeline, and nobody goes on the same pipeline twice. To move someone who is already on that pipeline, tick them, pick the step under Start in / move to and press the button: their card moves to that step and keeps its notes and history. If you pick no step, they stay where they are. New people start where their priority puts them (High in To reach out, Medium and Low in Nurture), or in the step you pick. If the pipeline does not have that stage, they go to its first open stage.",
       },
     ],
     tryIt: { label: "Open Prospect Qualifier", href: "/qualifier", task: "Open the Ideal Client Profiles tab and read the profile marked as the ideal client.", question: "Who is the best-fit client for this business, and what is the clearest sign that someone is not a fit?" },
@@ -2118,6 +2118,7 @@ export const WORKING: Lesson[] = [
       { id: "ws1-2", q: "A prospect scores Medium. What should you do?", right: "Engage with a few of their posts first, then message later", wrong: ["Send the warm DM today", "Move on to the next profile", "Add them to a broadcast"], why: "High means send the warm DM this week. Medium means engage first." },
       { id: "ws1-3", q: "Why does a list score read less deeply than a single score?", right: "It uses only what the list holds, because it cannot see their posts", wrong: ["It uses a smaller AI key", "It only scores the first ten people", "It skips anyone with a title"], why: "The score uses what the list holds, such as title, headline and company." },
       { id: "ws1-4", q: "You add a scored list to a pipeline. Where does a High priority person start?", right: "In To reach out", wrong: ["In Nurture", "In Booked", "In Asked to stop"], why: "High starts in To reach out. Medium and Low start in Nurture." },
+      { id: "ws1-7", q: "A person you scored is already on your Outreach Pipeline in Nurture, and you want them in To reach out. What do you do?", right: "Tick them in the list, pick To reach out under Start in / move to and press the button", wrong: ["Delete their card and add them again", "Nothing: someone already on a pipeline cannot be moved from the Qualifier", "Score them again with Not right?"], why: "Someone already on the pipeline is moved to the step you pick, and their card keeps its notes. With no step picked, they stay where they are." },
       { id: "ws1-6", q: "A prospect scores Skip, but you know they are a referral with a real need. What is the quickest way to fix the score?", right: "Open Not right?, say what you know, and score again", wrong: ["Delete the score and paste a new profile", "Add them to a broadcast instead", "Change your Ideal Client Profile"], why: "Not right? re-reads the profile already saved with your note, so nothing is pasted twice. You can also set the priority yourself." },
       { id: "ws1-5", q: "How many Ideal Client Profiles should you keep?", right: "One for each offer", wrong: ["One for each prospect", "Only one for the whole account", "One for each team member"], why: "Each offer has a different ideal client." },
     ],

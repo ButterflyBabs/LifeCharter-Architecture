@@ -4681,7 +4681,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       "Reword the levels to fit your market, mark This is my ideal client on one, and press Save profile.",
       "Open Qualify a prospect, pick the profile under Score against, and paste their profile text.",
       "Press Score this prospect. Read the priority, the fit, their level, the gap and the warm DM angle.",
-      "Choose a pipeline and press Add to pipeline if you want to reach out. If the score is Skip, the button reads Add anyway, and you can still add them. They start in To reach out. Use Start in to choose a different stage.",
+      "Choose a pipeline and press Add to pipeline if you want to reach out. If the score is Skip, the button reads Add anyway, and you can still add them. They start in To reach out. Use Start in / move to to choose a different stage. If they are already on that pipeline, the same choice moves their card to that step instead.",
       "If the score is wrong, open Not right? under the result. Tell it what you know about them that is not on the profile, paste any more of their profile, and press Score again with this. Or press High, Medium, Low or Skip to make the call yourself."
     ],
     "health": "Scoring prospects does not change your scores or your plans. Draft it for me reads your plans and offers, but it does not change them. This page helps you spend your outreach time on the right people.",
@@ -4777,7 +4777,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
       {
         "id": "adding-a-scored-list",
         "title": "Adding a scored list to a pipeline",
-        "body": "Open a list under Your scored lists. Everyone scored High who is not already on a pipeline starts ticked. Change the ticks, choose a pipeline and press the Add selected to pipeline button. It warns you who is already on a pipeline, and nobody goes on the same pipeline twice. High priority starts in To reach out, and Medium and Low start in Nurture. If your pipeline does not have that stage, they go to its first open stage.",
+        "body": "Open a list under Your scored lists. Everyone scored High who is not already on a pipeline starts ticked. Change the ticks, choose a pipeline and press the Add selected to pipeline button. It warns you who is already on a pipeline, and nobody goes on the same pipeline twice. To move someone who is already on that pipeline, tick them, pick the step under Start in / move to and press the button: their card moves to that step and keeps its notes and history. If you pick no step, they stay where they are. New people start where their priority puts them (High in To reach out, Medium and Low in Nurture), or in the step you pick. If your pipeline does not have that stage, they go to its first open stage.",
         "keywords": [
           "your scored lists",
           "add selected to pipeline",

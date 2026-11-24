@@ -8,7 +8,7 @@ import { resolveAiConfig } from "@/lib/ai/config";
 import { memberAiGate } from "@/lib/ai/memberCap";
 import { buildAssistantKnowledge } from "@/lib/ai/assistantContext";
 import { logEvent } from "@/lib/crm";
-import { CARD_PLATFORMS, ensureBoards, boardStages, createCard, dateIn } from "@/lib/dmPipeline";
+import { CARD_PLATFORMS, ensureBoards, boardStages, createCard, moveCard, dateIn } from "@/lib/dmPipeline";
 import { DEFAULT_LEVELS, ICP_COLUMNS, QUALIFIER_OPEN_TO_ALL, audiencePrompt, cleanFit, cleanPriority, icpRow, PRIORITIES, profilePrompt, shapeIcp, stageKeyFor, type Icp } from "@/lib/qualifier";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +26,8 @@ export const maxDuration = 60;
 //     context = what the person knows that is not on the profile (a referral, a stated need); extraText = more profile pages;
 //     qualId = score the same person again from the saved profile text, in place (profileText then optional)
 //   override { qualId, priority }                       (the person's own call: no AI request; the card's badge follows)
-//   add-to-pipeline { ids: [qualification], boardId, stageId?, platform? }   (stageId = start in that stage instead of the one the priority picks)
+//   add-to-pipeline { ids: [qualification], boardId, stageId?, platform? }   (stageId = start in that stage instead of the one the priority picks;
+//                                                                              someone already on that pipeline is MOVED to the stageId step, and left alone when none is chosen)
 //   audience-create { name, icpId, total }
 //   audience-score { audienceId, rows: [{ name, url?, code?, facts }] }             (up to 10 rows per request)
 //   audience-delete { id } · delete { id }
@@ -58,14 +59,14 @@ const normName = (v: string | null | undefined) => (v ?? "").trim().toLowerCase(
 const normEmail = (v: string | null | undefined) => (v ?? "").trim().toLowerCase();
 async function pipelineIndex(db: Db, planId: string) {
   // Every card, page by page: the database returns at most 1,000 rows per request.
-  const cards: { board_id: string; name: string; email: string | null; profile_url: string | null }[] = [];
+  const cards: { id?: string; stage_id?: string; board_id: string; name: string; email: string | null; profile_url: string | null }[] = [];
   for (let from = 0; from < 40000; from += 1000) {
-    const { data } = await db.from("dm_cards").select("board_id, name, email, profile_url").eq("master_plan_id", planId).order("id").range(from, from + 999);
+    const { data } = await db.from("dm_cards").select("id, stage_id, board_id, name, email, profile_url").eq("master_plan_id", planId).order("id").range(from, from + 999);
     cards.push(...((data ?? []) as typeof cards));
     if ((data ?? []).length < 1000) break;
   }
   const { data: boards } = await db.from("pipeline_boards").select("id, name").eq("master_plan_id", planId);
-  type C = { board_id: string; name: string; email: string | null; profile_url: string | null };
+  type C = { id?: string; stage_id?: string; board_id: string; name: string; email: string | null; profile_url: string | null };
   const byUrl = new Map<string, C[]>();
   const byEmail = new Map<string, C[]>();
   const byName = new Map<string, C[]>();
@@ -83,7 +84,17 @@ async function pipelineIndex(db: Db, planId: string) {
     ];
     return Array.from(new Set(hits.map((c) => c.board_id)));
   };
-  return { boardsOf, add, names: (ids: string[]) => ids.map((id) => ({ id, name: boardName.get(id) ?? "a pipeline" })) };
+  // Their card on one pipeline (the first, if somehow there are two), so it can be moved to another step.
+  const cardOn = (p: Person, boardId: string): C | null => {
+    const url = normUrl(p.url);
+    const hits = [
+      ...(byUrl.get(url) ?? []),
+      ...(byEmail.get(normEmail(p.email)) ?? []),
+      ...(byName.get(normName(p.name)) ?? []).filter((c) => !url || !normUrl(c.profile_url) || normUrl(c.profile_url) === url),
+    ];
+    return hits.find((c) => c.board_id === boardId && c.id) ?? null;
+  };
+  return { boardsOf, cardOn, add, names: (ids: string[]) => ids.map((id) => ({ id, name: boardName.get(id) ?? "a pipeline" })) };
 }
 
 async function loadIcp(db: Db, planId: string, id: string): Promise<Icp | null> {
@@ -223,14 +234,32 @@ export async function POST(request: Request) {
     // Never twice on the same pipeline; being on another pipeline is allowed.
     const idx = await pipelineIndex(db, a.planId);
     let added = 0;
+    let moved = 0;
     const landed: Record<string, number> = {};
+    const movedTo: Record<string, number> = {};
     const already: string[] = [];
+    const sameStep: string[] = [];
     let failed = 0;
+    // A step the person chose on purpose. Someone already on this pipeline moves to it; without one they are left where they are.
+    const chosen = stages.find((s) => s.id === str(b.stageId, 40)) ?? null;
     for (const q of quals ?? []) {
       const url = ((q.profile_url as string) || "").trim();
       const email = normEmail(q.email as string | null);
       if (!q.name) { failed++; continue; }
-      if (idx.boardsOf({ name: q.name as string, url, email }).includes(board.id)) { already.push(q.name as string); continue; }
+      if (idx.boardsOf({ name: q.name as string, url, email }).includes(board.id)) {
+        const mine = chosen ? idx.cardOn({ name: q.name as string, url, email }, board.id) : null;
+        if (!chosen || !mine?.id) { already.push(q.name as string); continue; }
+        if (mine.stage_id === chosen.id) { sameStep.push(q.name as string); continue; }
+        const saved = await moveCard(db, a.planId, mine.id, chosen, board.name, tz);
+        if (!saved) { failed++; continue; }
+        // Their score goes with the card, and this score now belongs to it.
+        await db.from("dm_cards").update({ qual_priority: q.priority, qual_fit: q.fit, qual_level: q.level, qual_id: q.id }).eq("id", mine.id).eq("master_plan_id", a.planId);
+        await db.from("icp_qualifications").update({ card_id: mine.id }).eq("id", q.id).eq("master_plan_id", a.planId);
+        idx.add({ id: mine.id, stage_id: chosen.id, board_id: board.id, name: q.name as string, email: email || null, profile_url: url || null });
+        moved++;
+        movedTo[chosen.name] = (movedTo[chosen.name] ?? 0) + 1;
+        continue;
+      }
       // "Add anyway" on a Skip result is a person's own call to reach out, so it starts in To reach out.
       const key = b.force === true ? "to_reach" : stageKeyFor(q.priority as string, purposeOf.get(q.icp_id as string));
       // A stage the person picked wins over the one the priority would choose.
@@ -252,7 +281,7 @@ export async function POST(request: Request) {
       added++;
       landed[stage.name] = (landed[stage.name] ?? 0) + 1;
     }
-    return NextResponse.json({ added, skipped: already.length, already: already.slice(0, 12), failed, board: board.name, landed });
+    return NextResponse.json({ added, moved, movedTo, sameStep: sameStep.slice(0, 12), skipped: already.length, already: already.slice(0, 12), failed, board: board.name, landed });
   }
 
   // Which people on a list are already on a pipeline (asked before scoring, so no score is spent on them).

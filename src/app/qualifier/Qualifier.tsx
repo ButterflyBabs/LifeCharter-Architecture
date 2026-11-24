@@ -156,9 +156,9 @@ function AddToPipeline({ boards, stages, ids, platform, post, setMsg, onAdded, l
         </select>
       </label>
       {boardStages.length > 0 && (
-        <label className={label}>Start in
+        <label className={label}>Start in / move to
           <select value={stageId} onChange={(e) => setStageId(e.target.value)} className={`${box} h-10 min-w-[180px]`}>
-            <option value="">Where the priority puts them</option>
+            <option value="">New people: where the priority puts them</option>
             {boardStages.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
           </select>
         </label>
@@ -167,11 +167,16 @@ function AddToPipeline({ boards, stages, ids, platform, post, setMsg, onAdded, l
         disabled={busy || !ids.length}
         onClick={async () => {
           setBusy(true);
-          const r = (await post({ action: "add-to-pipeline", ids, boardId, stageId: stageId || undefined, platform, force: !!force })) as { added?: number; skipped?: number; already?: string[]; failed?: number; board?: string; landed?: Record<string, number> } | null;
+          const r = (await post({ action: "add-to-pipeline", ids, boardId, stageId: stageId || undefined, platform, force: !!force })) as { added?: number; moved?: number; movedTo?: Record<string, number>; sameStep?: string[]; skipped?: number; already?: string[]; failed?: number; board?: string; landed?: Record<string, number> } | null;
           setBusy(false);
           if (r) {
-            const dup = r.skipped ? ` ${r.skipped} not added because ${r.skipped === 1 ? "they are" : "they are"} already on ${r.board}: ${(r.already ?? []).join(", ")}${r.skipped > (r.already ?? []).length ? ", and more" : ""}.` : "";
-            setMsg(`${r.added} added to ${r.board}.${dup}${r.failed ? ` ${r.failed} couldn't be added.` : ""}${r.added ? (r.landed && Object.keys(r.landed).length ? ` Started in: ${Object.entries(r.landed as Record<string, number>).map(([k, n]) => `${k} (${n})`).join(", ")}.` : " High priority starts in To reach out; Medium and Low start in Nurture.") : ""}`);
+            const parts: string[] = [];
+            if (r.added) parts.push(`${r.added} added to ${r.board}.${r.landed && Object.keys(r.landed).length ? ` Started in: ${Object.entries(r.landed).map(([k, n]) => `${k} (${n})`).join(", ")}.` : " High priority starts in To reach out; Medium and Low start in Nurture."}`);
+            if (r.moved) parts.push(`${r.moved} already on ${r.board} moved: ${Object.entries(r.movedTo ?? {}).map(([k, n]) => `${k} (${n})`).join(", ")}.`);
+            if (r.sameStep?.length) parts.push(`${r.sameStep.join(", ")} ${r.sameStep.length === 1 ? "is" : "are"} already in that step.`);
+            if (r.skipped) parts.push(`${r.skipped} already on ${r.board} and left where they are: ${(r.already ?? []).join(", ")}${r.skipped > (r.already ?? []).length ? ", and more" : ""}. Choose a step under Start in / move to and press the button again to move them.`);
+            if (r.failed) parts.push(`${r.failed} couldn't be added or moved.`);
+            setMsg(parts.join(" ") || "Nothing changed.");
             onAdded();
           }
         }}
@@ -259,7 +264,7 @@ function OneTab({ icps, boards, stages, recent, post, setMsg, onChanged }: { icp
                 </div>
               )}
             </div>
-            {onNames(shown) && <p className="mb-3 rounded-lg bg-[#c9a227]/10 px-3 py-2 text-sm text-[#6b5410] dark:text-[#e6d28a]">Already on: <strong>{onNames(shown)}</strong>. They can&rsquo;t be added to the same pipeline twice.</p>}
+            {onNames(shown) && <p className="mb-3 rounded-lg bg-[#c9a227]/10 px-3 py-2 text-sm text-[#6b5410] dark:text-[#e6d28a]">Already on: <strong>{onNames(shown)}</strong>. They won&rsquo;t be added twice. To change their step, pick one under Start in / move to and press the button, and their card moves there.</p>}
             <QualResult q={shown} />
             {shown.kind === "profile" && (
               <div className="mt-3">
